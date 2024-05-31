@@ -1,0 +1,13 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/res/Sources/CarveraBody.SLDPRT
+/res/Sources/CarveraBody.STEP
+/res/Sources/ProbeBore_Large.png
+/bin/x64/Debug
+*.ini
+/imgui.in_
+/src/.vs/Clout
+/res/Sources
+/.vs
