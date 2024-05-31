@@ -2,15 +2,12 @@
 	path = src/external/imgui
 	url = https://github.com/ocornut/imgui
 	branch = docking
-[submodule "glew"]
-	path = src/external/glew
-	url = https://github.com/nigels-com/glew
 [submodule "glm"]
 	path = src/external/glm
 	url = https://github.com/g-truc/glm
 [submodule "assimp"]
 	path = src/external/assimp
 	url = https://github.com/assimp/assimp
-[submodule "src/external/stb"]
+[submodule "stb"]
 	path = src/external/stb
 	url = https://github.com/nothings/stb/
