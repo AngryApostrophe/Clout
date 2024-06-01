@@ -51,10 +51,10 @@ source_group("Source Files" FILES ${CLOUT_SOURCES})
 # Set Properties->General->Configuration Type to Application(.exe)
 # Creates app.exe with the listed sources (main.cxx)
 # Adds sources to the Solution Explorer
-add_executable (CloutProj WIN32 ${CLOUT_SOURCES} ${IMGUI_SOURCES} ${CLOUT_HEADERS})
+add_executable (Clout WIN32 ${CLOUT_SOURCES} ${IMGUI_SOURCES} ${CLOUT_HEADERS})
 
 # Properties->Linker->Input->Additional Dependencies
-target_link_libraries (CloutProj 
+target_link_libraries (Clout
 "${PROJECT_SOURCE_DIR}/src/external/assimp/lib/Release/assimp-vc143-mt.lib"
 "${PROJECT_SOURCE_DIR}/src/external/glew/lib/Release/x64/glew32.lib"
 )
@@ -64,14 +64,14 @@ target_link_libraries (CloutProj
 # set_property(TARGET Clout PROPERTY FOLDER "Clout")
 
 # Properties->General->Output Directory
-set_target_properties(CloutProj PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+set_target_properties(Clout PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 # Adds logic to INSTALL.vcproj to copy app.exe to destination directory
-install (TARGETS CloutProj RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/bin)
+install (TARGETS Clout RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 
 # Set the Visual Studio working directory so we can run the app
-set_property(TARGET CloutProj PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
+set_property(TARGET Clout PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
 
 #Set the Visual Studio startup project, so we can run and debug the app
-set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT CloutProj)
+set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Clout)
 
