@@ -4,6 +4,7 @@ name: CMake on a Windows platform
 
 on: 
   workflow_dispatch:
+  push:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
