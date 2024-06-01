@@ -39,12 +39,12 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Archive the result
+    - name: Snatch the result
       run: copy ${{github.workspace}}/build/bin/Release/*.exe  ${{github.workspace}}/bin
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Clout
+        name: Clout-win-x64
         path: ${{github.workspace}}/bin/*
 
