@@ -5,13 +5,7 @@ The **C**arvera **L**ean **O**pen source **UT**ility is a custom controller for 
 
 # Building
 
-* Clone the repository
-* [Build Assimp](https://github.com/assimp/assimp/blob/master/Build.md) - From Assimp directory: 
-```bash
-cmake CMakeLists.txt
-```
-If using Visual Studio, open Assimp.sln, ensure you're on Release config and build the ALL_BUILD project
-* Build Clout.  Note assimp-vc143-mt.dll and glew32.dll are already included in the project root folder.  Ensure your working directory is set here when running.
+* See https://github.com/AngryApostrophe/Clout/blob/main/build/BUILD.md
 
 # Credits
 
