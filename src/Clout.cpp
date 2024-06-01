@@ -54,7 +54,14 @@ void Window_Utilities_Draw()
 	//Tool section
 		ImGui::SeparatorText("Tool");
 		ImGui::Button("ATC change tool");	ImGui::SameLine(); ImGui::Text("   "); ImGui::SameLine(); 		ImGui::Button("ATC drop tool");
-		ImGui::Button("Open collet");		ImGui::SameLine(); ImGui::Text("       "); ImGui::SameLine();		ImGui::Button("Close collet");
+		
+		if (ImGui::Button("Open collet"))
+			Comms_SendString("M490.2");
+
+		ImGui::SameLine(); ImGui::Text("       "); ImGui::SameLine();		
+		
+		if (ImGui::Button("Close collet"))
+			Comms_SendString("M490.1");
 
 	//Probing section
 		ImGui::SeparatorText("Probing");
