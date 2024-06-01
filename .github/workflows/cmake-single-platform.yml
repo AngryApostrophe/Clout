@@ -33,7 +33,7 @@ jobs:
 
     - name: Build Assimp
       working-directory: ${{github.workspace}}/src/external/assimp
-      run: cmake --build CMakeLists.txt --config ${{env.BUILD_TYPE}}
+      run: cmake --build . --config ${{env.BUILD_TYPE}}
       
     - name: Build
       # Build your program with the given configuration
