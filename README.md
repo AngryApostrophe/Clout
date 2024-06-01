@@ -1,17 +1,11 @@
 # Clout
-The **C**arvera **L**ean **O**pen source **UT**ility is a custom controller for the Makera Carvera CNC mill.  Aiming to add advanced features and usability improvements over the stock controller.  This project is in early development.
+The **C**arvera **L**ean **O**pen source **UT**ility is a custom controller for the Makera Carvera CNC mill.  Aiming to add advanced features and usability improvements over the stock controller.  This project is in very early development.  As such, use of this software is at your own risk.  There is a decent chance of a broken probe as bugs are found.
 
 <img src="./images/Clout.png" width="800px">
 
 # Building
 
-* Clone the repository
-* [Build Assimp](https://github.com/assimp/assimp/blob/master/Build.md) - From Assimp directory: 
-```bash
-cmake CMakeLists.txt
-```
-If using Visual Studio, open Assimp.sln, ensure you're on Release config and build the ALL_BUILD project
-* Build Clout.  Note assimp-vc143-mt.dll and glew32.dll are already included in the project root folder.  Ensure your working directory is set here when running.
+* See https://github.com/AngryApostrophe/Clout/blob/main/build/BUILD.md
 
 # Credits
 
