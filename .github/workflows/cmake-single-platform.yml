@@ -2,7 +2,8 @@
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
 name: CMake on a Windows platform
 
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
