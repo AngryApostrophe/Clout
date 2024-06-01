@@ -30,6 +30,10 @@ jobs:
     - name: Configure Assimp
       working-directory: ${{github.workspace}}/src/external/assimp
       run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build Assimp
+      working-directory: ${{github.workspace}}/src/external/assimp
+      run: cmake --build CMakeLists.txt --config ${{env.BUILD_TYPE}}
       
     - name: Build
       # Build your program with the given configuration
