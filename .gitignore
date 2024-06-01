@@ -30,3 +30,16 @@
 /build/cmake_install.cmake
 /build/CMakeCache.txt
 /build/Clout.sln
+/build/build/bin/Debug
+/build/build/CMakeFiles
+/build/build/src
+/build/build/x64/Debug
+/build/build/ZERO_CHECK.vcxproj.filters
+/build/build/ZERO_CHECK.vcxproj
+/build/build/INSTALL.vcxproj.filters
+/build/build/INSTALL.vcxproj
+/build/build/cmake_install.cmake
+/build/build/CMakeCache.txt
+/build/build/Clout.sln
+/build/build/ALL_BUILD.vcxproj.filters
+/build/build/ALL_BUILD.vcxproj
