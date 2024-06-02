@@ -18,6 +18,14 @@ using namespace std;
 //The main Model viewer object
 MODEL_VIEWER ModelViewer;
 
+//Camera
+#define CAMERA_OFFSET_X		140
+#define CAMERA_OFFSET_Y		260
+#define CAMERA_OFFSET_Z		-780
+#define CAMERA_OFFSET_YAW	-90
+
+bool bDrawDebugData = false;
+
 
 unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
 {
@@ -60,6 +68,156 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 }
 
 
+//For debugging, draws a grid in OpenGL coordinates
+void MODEL_VIEWER::DrawGrid()
+{
+	const float fStep = 20;
+	ModelMatrix = glm::mat4(1.0f); //Reset all model matrix values
+	CloutShader->setMat4("model", ModelMatrix);
+
+	objectColor = glm::vec3(0.0f, 0.0f, 0.0f);
+	CloutShader->setVec3("objectColor", objectColor);
+	CloutShader->setFloat("Lighting_Ambient", 1.0f);
+
+	glBegin(GL_LINES);
+	for (float x = -1000; x < 1000; x += fStep)
+	{
+		glVertex3f(x, 0, -1000.0f);
+		glVertex3f(x, 0, 1000.0f);
+	}
+	for (float z = -1000; z < 1000; z += fStep)
+	{
+		glVertex3f(-1000, 0, z);
+		glVertex3f(1000, 0, z);
+	}
+
+	glEnd();
+}
+
+//Draw the position of the OpenGL origin
+void MODEL_VIEWER::DrawOrigin()
+{
+	ModelMatrix = glm::mat4(1.0f); //Reset all model matrix values
+	CloutShader->setMat4("model", ModelMatrix);
+
+	CloutShader->setFloat("Lighting_Ambient", 1.0f);
+
+	//Draw the cube (TODO: this may draw weird because the shader is expecting normals, which we're not providing right now
+	CloutShader->setVec3("objectColor", glm::vec3(1.0f, 0.0f, 0.0f));
+	glBegin(GL_POLYGON);
+	
+		// BACK
+			glVertex3f(5, -5, 5);
+			glVertex3f(5, 5, 5);
+			glVertex3f(-5, 5, 5);
+			glVertex3f(-5, -5, 5);
+		// RIGHT
+			glVertex3f(5, -5, -5);
+			glVertex3f(5, 5, -5);
+			glVertex3f(5, 5, 5);
+			glVertex3f(5, -5, 5);
+		//  LEFT
+			glVertex3f(-5, -5, 5);
+			glVertex3f(-5, 5, 5);
+			glVertex3f(-5, 5, -5);
+			glVertex3f(-5, -5, -5);
+		// TOP
+			glVertex3f(5, 5, 5);
+			glVertex3f(5, 5, -5);
+			glVertex3f(-5, 5, -5);
+			glVertex3f(-5, 5, 5);
+		// BOTTOM
+			glVertex3f(5, -5, -5);
+			glVertex3f(5, -5, 5);
+			glVertex3f(-5, -5, 5);
+			glVertex3f(-5, -5, -5);
+	glEnd();
+
+	//Axis directions
+		//Up (blue)
+			CloutShader->setVec3("objectColor", glm::vec3(0.0f, 0.0f, 1.0f));
+			glBegin(GL_LINES);
+				glVertex3f(0, 0, 0);
+				glVertex3f(0, 100, 0);
+			glEnd();
+
+		//Right (red)
+			CloutShader->setVec3("objectColor", glm::vec3(1.0f, 0.0f, 0.0f));
+			glBegin(GL_LINES);
+				glVertex3f(0, 0, 0);
+				glVertex3f(100, 0, 0);
+			glEnd();
+
+		//In (green)
+			CloutShader->setVec3("objectColor", glm::vec3(0.0f, 1.0f, 0.0f));
+			glBegin(GL_LINES);
+				glVertex3f(0, 0, 0);
+				glVertex3f(0, 0, 100);
+			glEnd();
+}
+
+//Draw a cube where the 3D light is positioned
+void MODEL_VIEWER::DrawLightSource()
+{
+	ModelMatrix = glm::mat4(1.0f); //Reset all model matrix values	
+
+	CloutShader->setFloat("Lighting_Ambient", 1.0f);
+	CloutShader->setFloat("Lighting_Specular", 0.0f);
+
+	//Move to the light position
+		ModelMatrix = glm::translate(ModelMatrix, lightPos);
+		CloutShader->setMat4("model", ModelMatrix);
+
+	//Draw the cube (TODO: this may draw weird because the shader is expecting normals, which we're not providing right now
+		CloutShader->setVec3("objectColor", glm::vec3(1.0f, 1.0f, 1.0f));
+		glBegin(GL_POLYGON);
+
+		const float fSize = 5.0f; //Actual size is twice this
+
+		// BACK
+		glVertex3f(fSize, -fSize, fSize);
+		glVertex3f(fSize, fSize, fSize);
+		glVertex3f(-fSize, fSize, fSize);
+		glVertex3f(-fSize, -fSize, fSize);
+		// RIGHT
+		glVertex3f(fSize, -fSize, -fSize);
+		glVertex3f(fSize, fSize, -fSize);
+		glVertex3f(fSize, fSize, fSize);
+		glVertex3f(fSize, -fSize, fSize);
+		//  LEFT
+		glVertex3f(-fSize, -fSize, fSize);
+		glVertex3f(-fSize, fSize, fSize);
+		glVertex3f(-fSize, fSize, -fSize);
+		glVertex3f(-fSize, -fSize, -fSize);
+		// TOP
+		glVertex3f(fSize, fSize, fSize);
+		glVertex3f(fSize, fSize, -fSize);
+		glVertex3f(-fSize, fSize, -fSize);
+		glVertex3f(-fSize, fSize, fSize);
+		// BOTTOM
+		glVertex3f(fSize, -fSize, -fSize);
+		glVertex3f(fSize, -fSize, fSize);
+		glVertex3f(-fSize, -fSize, fSize);
+		glVertex3f(-fSize, -fSize, -fSize);
+		
+		glEnd();
+}
+
+
+//Create new OpenGL target texture when the window is resized.
+void MODEL_VIEWER::ResizeWindow()
+{
+	if (NewWindowSize.x == 0 || NewWindowSize.y == 0)
+		return;
+
+	WindowSize = NewWindowSize;
+
+	glBindTexture(GL_TEXTURE_2D, renderedTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WindowSize.x, WindowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WindowSize.x, WindowSize.y);
+}
 
 void MODEL_VIEWER::Init()
 {	
@@ -67,68 +225,58 @@ void MODEL_VIEWER::Init()
 		glewExperimental = true;
 		glewInit();
 		glEnable(GL_DEPTH_TEST);
-
-	//Setup the 3D matrixes
-		ModelMatrix = glm::mat4(1.0f);
-		ModelMatrix = glm::rotate(ModelMatrix, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-		ViewMatrix = glm::mat4(1.0f);
-		ViewMatrix = glm::translate(ViewMatrix, glm::vec3(0.0f, 0.0f, -10.0f));
-
-		ProjectionMatrix = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
-	
+			
 	//Setup camera stuff
-		cameraPos = glm::vec3(0.0f, 0.0f, 10.0f);
+		cameraPos = glm::vec3(0.0f, 0.0f, -100.0f);
 		cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
 		cameraDirection = glm::normalize(cameraPos - cameraTarget);
-		cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-		up = glm::vec3(0.0f, 1.0f, 0.0f);
+		cameraFront = glm::vec3(0.0f, 0.0f, 1.0f);
+		up = glm::vec3(0.0f, -1.0f, 0.0f);
 		cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 		cameraUp = glm::cross(cameraDirection, cameraRight);
 
-		cameraPos.x = -1.7f;
-		cameraPos.y = -2.2f;
-		cameraPos.z = 7.0f;
+		cameraPos.x = 0.0f; //CAMERA_OFFSET_X
+		cameraPos.y = 0.0f; //CAMERA_OFFSET_Y
+		cameraPos.z = 0.0f; //CAMERA_OFFSET_Z
 		fCameraFOV = 45.0f;
 
-		fCameraPitch = 14.0f;
-		fCameraYaw = -90.0f;
+		fCameraPitch = -14.0f;
+		fCameraYaw = 0.0f; //CAMERA_OFFSET_YAW
 
 	//Lighting and colors
-		objectColor.r = 0.5f;
-		objectColor.g = 0.5f;
-		objectColor.b = 0.5f;
-
 		lightColor.r = 0.8f;
 		lightColor.g = 0.8f;
 		lightColor.b = 0.8f;
 
-		lightPos = glm::vec3(5.0f, 10.0f, 30.0f);
+		lightPos = glm::vec3(100.0f, 500.0f, -800.0f);
 
 		bg_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	//Models
 		BodyModel = new Model("./res/CarveraBody.stl");
-		CarriageModel = new Model("./res/CarveraCarriage.stl");
+		CarriageModel = new Model("./res/CarveraCarriage.3mf");
 		BedModel = new Model("./res/CarveraBed.stl");
+		SpindleModel = new Model("./res/CarveraSpindle.3mf");
 
 	//Shaders
-		BodyShader = new Shader("./res/vshader.glsl", "./res/fshader.glsl");
-
+		CloutShader = new Shader("./res/vshader.glsl", "./res/fshader.glsl");
 
 	//Render to texture
 		FramebufferName = 0;
-		glGenFramebuffers(1, &FramebufferName);
-		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+		glGenFramebuffers(1, &FramebufferName);	//Create a new framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName); //Bind the curent framebuffer to this new one
 
-		// The texture we're going to render to
+		glEnable(GL_CULL_FACE); //Enable culling of faces for better performance
+
+		// Generate the texture we're going to render to
 			glGenTextures(1, &renderedTexture);
-
-		// "Bind" the newly created texture : all future texture functions will modify this texture
 			glBindTexture(GL_TEXTURE_2D, renderedTexture);
 
+		//Get the current window size
+			WindowSize = ImVec2(640, 480); //The window isn't created yet, use a default size.  It'll get changed after the first pass through rendering.
+
 		// Give an empty image to OpenGL ( the last "0" )
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WindowSize.x, WindowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
 		// Poor filtering. Needed !
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -137,7 +285,7 @@ void MODEL_VIEWER::Init()
 		// The depth buffer
 			glGenRenderbuffers(1, &depthrenderbuffer);
 			glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 640, 480);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WindowSize.x, WindowSize.y);
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 		
 		// Set "renderedTexture" as our colour attachement #0
@@ -158,98 +306,109 @@ void MODEL_VIEWER::Destroy()
 		delete CarriageModel;
 	if (BedModel != 0)
 		delete BedModel;
-	if (BodyShader != 0)
-		delete BodyShader;
+	if (SpindleModel != 0)
+		delete SpindleModel;
+	if (CloutShader != 0)
+		delete CloutShader;
 }
 
 void MODEL_VIEWER::Draw()
 {
 	ImGuiIO& io = ImGui::GetIO();
 
-	
+	//Draw the 3D scene onto a texture
+		//Check if the window size has changed (NewWindowSize is updated down below, where the window is actually drawn)
+			if (WindowSize.x != NewWindowSize.x || WindowSize.y != NewWindowSize.y)
+				ResizeWindow();
 
-
-		//ImGui::IsMouseDragging(3) //Center button dragging
-		
-
-
-
-	//Draw the 3D scene on a texture
 		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-		glViewport(0, 0, 640, 480); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+		glViewport(0, 0, WindowSize.x, WindowSize.y); // Render on the whole framebuffer, complete from the lower left corner to the upper right
 		glClearColor(bg_color.x * bg_color.w, bg_color.y * bg_color.w, bg_color.z * bg_color.w, bg_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		ProjectionMatrix = glm::perspective(glm::radians(fCameraFOV), 640.0f / 480.0f, 0.1f, 100.0f);
+		ProjectionMatrix = glm::perspective(glm::radians(fCameraFOV), WindowSize.x / WindowSize.y, 10.0f, 10000.0f);
 
 		//Recalculate where the camera is looking
 			glm::vec3 direction;
-			direction.x = cos(glm::radians(fCameraYaw)) * cos(glm::radians(fCameraPitch));
+			direction.x = cos(glm::radians(-(fCameraYaw+ CAMERA_OFFSET_YAW))) * cos(glm::radians(fCameraPitch));
 			direction.y = sin(glm::radians(fCameraPitch));
-			direction.z = sin(glm::radians(fCameraYaw)) * cos(glm::radians(fCameraPitch));
+			direction.z = sin(glm::radians(-(fCameraYaw+ CAMERA_OFFSET_YAW))) * cos(glm::radians(fCameraPitch));
 			cameraFront = glm::normalize(direction);
 			
 		//Calculate the camera view matrix		
-			ViewMatrix = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+			ViewMatrix = glm::lookAt(glm::vec3(cameraPos.x+CAMERA_OFFSET_X, cameraPos.y + CAMERA_OFFSET_Y, cameraPos.z + CAMERA_OFFSET_Z), glm::vec3(cameraPos.x + CAMERA_OFFSET_X, cameraPos.y + CAMERA_OFFSET_Y, cameraPos.z + CAMERA_OFFSET_Z) + cameraFront, cameraUp);
+
+		//Calculate 3D origin offset
+				//TODO: This must be calibrated to MCS, which is not 0,0,0 at origin
+			OriginOffset = glm::vec3(MachineStatus.Coord.Machine.x, MachineStatus.Coord.Machine.y, MachineStatus.Coord.Machine.z + MachineStatus.fToolLengthOffset);
+
+			if (MachineStatus.Status == Carvera::Status::Homing) //The machine doesn't know where it is while homing, so don't show anything
+				OriginOffset.x = 0;
+
+			if (MachineStatus.Status == Carvera::Status::Homing) //The machine doesn't know where it is while homing, so don't show anything
+				OriginOffset.z = 200;
 
 		//Send data to the shaders
-			BodyShader->use();
-			BodyShader->setMat4("projection", ProjectionMatrix);
-			BodyShader->setMat4("view", ViewMatrix);
+			CloutShader->use();
+			CloutShader->setMat4("projection", ProjectionMatrix);
+			CloutShader->setMat4("view", ViewMatrix);
 
-			BodyShader->setVec3("lightPos", lightPos);
-			BodyShader->setVec3("lightColor", lightColor);
-			BodyShader->setVec3("viewPos", cameraPos);
+			CloutShader->setVec3("lightPos", lightPos);
+			CloutShader->setVec3("lightColor", lightColor);
+			CloutShader->setVec3("cameraPos", glm::vec3(cameraPos.x + CAMERA_OFFSET_X, cameraPos.y + CAMERA_OFFSET_Y, cameraPos.z + CAMERA_OFFSET_Z));
 
-		//Main body
+			CloutShader->setFloat("Lighting_Ambient", 0.2f);
+			CloutShader->setFloat("Lighting_Specular", 0.3f);
+
+		//Draw main Carvera body
 			ModelMatrix = glm::mat4(1.0f);
-			ModelMatrix = glm::rotate(ModelMatrix, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
-			ModelMatrix = glm::scale(ModelMatrix, glm::vec3(0.006f, 0.006f, 0.006f));	// it's a bit too big for our scene, so scale it down
-			BodyShader->setMat4("model", ModelMatrix);
+			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(-160.0f, -100.0f, 350.0f));
+			CloutShader->setMat4("model", ModelMatrix);
+			CloutShader->setVec3("objectColor", glm::vec3(0.6f, 0.6f, 0.6f));
+			BodyModel->Draw(*CloutShader);
 
-			objectColor = glm::vec3(0.6f, 0.6f, 0.6f);
-			BodyShader->setVec3("objectColor", objectColor);
-
-			BodyModel->Draw(*BodyShader);
-
-		//Carriage		
-			float xpos = MachineStatus.Coord.Machine.x;
-			if (MachineStatus.Status == Carvera::Status::Homing) //The machine doesn't know where it is while homing, so don't show anything
-				xpos = 0;
-			xpos = ((1.0f - (xpos / -360.0f)) * 2.0) + -3;  //2 units is full travel (-3 to -1)
-		
+		//Draw Carriage		
 			ModelMatrix = glm::mat4(1.0f);
-			ModelMatrix = glm::rotate(ModelMatrix, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(xpos, 1.4f, 0.3f)); //This is XZY?
-			ModelMatrix = glm::scale(ModelMatrix, glm::vec3(0.006f, 0.006f, 0.006f));	// it's a bit too big for our scene, so scale it down
-			BodyShader->setMat4("model", ModelMatrix);
+			ModelMatrix = glm::rotate(ModelMatrix, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(17, 80, -80));  //Put the model on the 3D origin
+			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(-OriginOffset.x, 0, 0));  //Move the carriage to its current position			
+			CloutShader->setMat4("model", ModelMatrix);
 
 			objectColor = glm::vec3(0.4f, 0.4f, 0.4f);
-			BodyShader->setVec3("objectColor", objectColor);
+			CloutShader->setVec3("objectColor", objectColor);
 
-			CarriageModel->Draw(*BodyShader);
+			CarriageModel->Draw(*CloutShader);
 
-		//Bed
-			//235mm?
-			float ypos = MachineStatus.Coord.Machine.y;
-			if (MachineStatus.Status == Carvera::Status::Homing) //The machine doesn't know where it is while homing, so don't show anything
-				ypos = 0;
-			ypos = ((1.0f-(ypos / -235.0f)) * 0.8f) + 1;
+		//Draw Spindle
+			ModelMatrix = glm::mat4(1.0f);
+			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(OriginOffset.x, OriginOffset.z, 0));  //Move the carriage to its current position
+			CloutShader->setMat4("model", ModelMatrix);
 
+			objectColor = glm::vec3(0.7f, 0.7f, 0.7f);
+			CloutShader->setVec3("objectColor", objectColor);
+
+			SpindleModel->Draw(*CloutShader);
+
+		//Draw Bed
 			ModelMatrix = glm::mat4(1.0f);
 			ModelMatrix = glm::rotate(ModelMatrix, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-			//ModelMatrix = glm::translate(ModelMatrix, glm::vec3(-2.6, 1.85f, 0.5f)); //This is XZY?
-			//ModelMatrix = glm::translate(ModelMatrix, glm::vec3(-2.6, 1.0f, 0.5f)); //This is XZY?
-			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(-2.6, ypos, 0.5f)); //This is XZY?
-			ModelMatrix = glm::scale(ModelMatrix, glm::vec3(0.006f, 0.006f, 0.006f));	// it's a bit too big for our scene, so scale it down
-			BodyShader->setMat4("model", ModelMatrix);
+
+			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(-15, -15, 31.6f)); //Translate down so 0,0,0 is at home position.   //TODO: Fix the model so 0,0,0 is at the right spot
+			ModelMatrix = glm::translate(ModelMatrix, glm::vec3(0, -OriginOffset.y, 0)); //Translate so the y axis moves relative to the origin, not the other way around 
+			CloutShader->setMat4("model", ModelMatrix);
 
 			objectColor = glm::vec3(0.2f, 0.2f, 0.2f);
-			BodyShader->setVec3("objectColor", objectColor);
+			CloutShader->setVec3("objectColor", objectColor);
 
-			BedModel->Draw(*BodyShader);
+			BedModel->Draw(*CloutShader);
 
+		//Draw debug stuff
+			if (bDrawDebugData)
+			{
+				DrawGrid();
+				DrawOrigin();
+				DrawLightSource();
+			}
 
 		// Disable to avoid OpenGL reading from arrays bound to an invalid ptr
 			glDisableVertexAttribArray(0);
@@ -258,64 +417,75 @@ void MODEL_VIEWER::Draw()
 	//Switch back to the GUI window
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		//The preview window itself
-			if (ImGui::Begin("Preview"))
-			{
-				ImGui::Image((void*)(intptr_t)renderedTexture, ImVec2(640, 480));
+	//The preview window itself
+		if (ImGui::Begin("Preview"))
+		{
+			//Save the window size for next time through.  We draw the texture before creating the window so we'll resize it next time around.
+				NewWindowSize = ImGui::GetContentRegionAvail();
+
+			ImGui::Image((void*)(intptr_t)renderedTexture, WindowSize);
 				
-				//Keyboard controls, only while mouse hovering for now
-					if (ImGui::IsItemHovered())
-					{
-						const float cameraSpeed = 0.005f; // adjust accordingly
-						if (ImGui::IsKeyDown((ImGuiKey)515)) //Up arrow
-							cameraPos += cameraSpeed * cameraFront;
-						else if (ImGui::IsKeyDown((ImGuiKey)516)) //Up arrow
-							cameraPos -= cameraSpeed * cameraFront;
-						if (ImGui::IsKeyDown((ImGuiKey)513)) //Left arrow
-							cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-						else if (ImGui::IsKeyDown((ImGuiKey)514)) //Right arrow
-							cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-					}
+			//Keyboard controls, only while mouse hovering for now
+				if (ImGui::IsItemHovered())
+				{
+					const float cameraSpeed = 10.0f; // adjust accordingly
+					if (ImGui::IsKeyDown((ImGuiKey)515)) //Up arrow
+						cameraPos += cameraSpeed * cameraFront;
+					else if (ImGui::IsKeyDown((ImGuiKey)516)) //Up arrow
+						cameraPos -= cameraSpeed * cameraFront;
+					if (ImGui::IsKeyDown((ImGuiKey)513)) //Left arrow
+						cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+					else if (ImGui::IsKeyDown((ImGuiKey)514)) //Right arrow
+						cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+				}
 
-				//Mouse viewing
-					if (ImGui::IsItemHovered() && ImGui::IsMouseDragging(ImGuiMouseButton_Right))
-					{
-						fCameraPitch += io.MouseDelta.y * 0.1f;
-						fCameraYaw += io.MouseDelta.x * 0.1f;
-					}
-			}
-			ImGui::End();
+			//Mouse viewing
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+				{
+					fCameraPitch += io.MouseDelta.y * 0.1f;
+					fCameraYaw += io.MouseDelta.x * 0.1f;
+				}
+		}
+		ImGui::End();
 		
-		//Preview controls
-			if (ImGui::Begin("Preview Controls")) 
-			{
+	//Preview controls
+		if (ImGui::Begin("Preview Controls")) 
+		{
+			ImGui::SameLine();
+			ImGui::ColorEdit4("Color", (float*)&bg_color);
+
+			//X
+				if (ImGui::Button("Reset##LeftRight"))
+					cameraPos.x = 0.0f;
 				ImGui::SameLine();
-				ImGui::ColorEdit4("Color", (float*)&bg_color);
+				ImGui::SliderFloat("Left/Right", &cameraPos.x, -200.0f, 200.0f);
 
-				//X
-					if (ImGui::Button("Reset##LeftRight"))
-						cameraPos.x = 0.0f;
-					ImGui::SameLine();
-					ImGui::SliderFloat("Left/Right", &cameraPos.x, -5.0f, 5.0f);
+			//Y
+				if (ImGui::Button("Reset##UpDown"))
+					cameraPos.y = 0.0f;
+				ImGui::SameLine();
+				ImGui::SliderFloat("Up/Down", &cameraPos.y, -300.0f, 300.0f);
 
-				//Y
-					if (ImGui::Button("Reset##UpDown"))
-						cameraPos.y = 0.0f;
-					ImGui::SameLine();
-					ImGui::SliderFloat("Up/Down", &cameraPos.y, -5.0f, 5.0f);
+			//Z
+				if (ImGui::Button("Reset##InOut"))
+					cameraPos.z = 0.0f;
+				ImGui::SameLine();
+				ImGui::SliderFloat("In/Out", &cameraPos.z, -500.0f, 500.0f);
 
-				//Z
-					if (ImGui::Button("Reset##InOut"))
-						cameraPos.z = 0.0f;
-					ImGui::SameLine();
-					ImGui::SliderFloat("In/Out", &cameraPos.z, 5.0f, 20.0f);
+			//Yaw
+				if (ImGui::Button("Reset##Yaw"))
+					fCameraYaw = 0.0f;
+				ImGui::SameLine();
+				ImGui::SliderFloat("Yaw", &fCameraYaw, -360.0f, 360);
 
-				//FOV
-					if (ImGui::Button("Reset"))
-						fCameraFOV = 45.0f;
-					ImGui::SameLine();
-					ImGui::SliderFloat("FOV", &fCameraFOV, 69.0f, 4.20f);
-			}
-			ImGui::End();
+			//FOV
+				if (ImGui::Button("Reset"))
+					fCameraFOV = 45.0f;
+				ImGui::SameLine();
+				ImGui::SliderFloat("FOV", &fCameraFOV, 69.0f, 4.20f);
+
+				ImGui::Checkbox("Debug Data", &bDrawDebugData);
+		}
+		ImGui::End();
 
 }

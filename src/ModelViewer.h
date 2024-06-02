@@ -332,7 +332,7 @@ private:
 	{
 		// read file via ASSIMP
 		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_ConvertToLeftHanded);
 		// check for errors
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
 		{
@@ -489,7 +489,7 @@ class MODEL_VIEWER
 {
 public:
 
-	MODEL_VIEWER(){BodyModel=0;BodyShader=0;};
+	MODEL_VIEWER() { BodyModel = 0; CarriageModel = 0; BedModel = 0; SpindleModel = 0; CloutShader = 0; };
 	~MODEL_VIEWER(){};
 
 	void Draw();
@@ -526,13 +526,26 @@ public:
 		Model *BodyModel;
 		Model* CarriageModel;
 		Model* BedModel;
+		Model* SpindleModel;
 	
 	//Shaders
-		Shader *BodyShader;
+		Shader *CloutShader;
 
 	//Render to texture
 		GLuint FramebufferName;
 		GLuint renderedTexture;
 		GLuint depthrenderbuffer;
+
+		ImVec2 WindowSize;		//Size of the texture/window as created
+		ImVec2 NewWindowSize;   //New size after resize but before next loop through
+
+	//Origin offset
+		glm::vec3 OriginOffset;
+
+	void ResizeWindow();
+	void DrawGrid();
+	void DrawOrigin();
+	void DrawLightSource();
+
 };
 extern MODEL_VIEWER ModelViewer;

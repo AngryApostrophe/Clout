@@ -11,7 +11,6 @@ using namespace std;
 #include "Probing.h"
 
 
-
 //Global vars
 	ImGuiIO* io = 0;
 	extern ImGuiID dockspace_id;	//winmain.cpp
@@ -35,10 +34,10 @@ void HelpMarker(const char *sString)
 }
 
 
-void Window_Utilities_Draw()
+void Window_Control_Draw()
 {
 	//Create the window
-		ImGui::Begin("Utilities");
+		ImGui::Begin("Control");
 
 	//General section
 		ImGui::SeparatorText("General");
@@ -84,6 +83,7 @@ void Clout_Init()
 		MachineStatus.FeedRates = { 0, 0, 0 };
 
 		MachineStatus.bCurrentTool = 0;
+		MachineStatus.fToolLengthOffset = 0;
 		MachineStatus.Positioning = Carvera::Positioning::Absolute;
 
 	//Initialize comms
@@ -106,8 +106,8 @@ void Clout_CreateDefaultLayout()
 	auto dock_id_status = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.3f, nullptr, &dockspace_id);
 	ImGui::DockBuilderDockWindow("Status", dock_id_status);
 
-	auto dock_id_utilities = ImGui::DockBuilderSplitNode(dock_id_status, ImGuiDir_Down, 0.4f, nullptr, &dockspace_id);
-	ImGui::DockBuilderDockWindow("Utilities", dock_id_utilities);
+	auto dock_id_control = ImGui::DockBuilderSplitNode(dock_id_status, ImGuiDir_Down, 0.4f, nullptr, &dockspace_id);
+	ImGui::DockBuilderDockWindow("Control", dock_id_control);
 
 	auto dock_id_console = ImGui::DockBuilderSplitNode(dock_id_preview, ImGuiDir_Down, 0.43f, nullptr, &dock_id_preview);
 	ImGui::DockBuilderDockWindow("Console", dock_id_console);
@@ -133,7 +133,7 @@ bool Clout_MainLoop()
 	//Draw the sub windows
 		ModelViewer.Draw();
 		Console.Draw();
-		Window_Utilities_Draw();
+		Window_Control_Draw();
 
 	//Status window
 		ImGui::Begin("Status", 0); //Create the status window

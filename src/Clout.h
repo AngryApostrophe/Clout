@@ -90,6 +90,7 @@ struct MACHINE_STATUS
 	Carvera::Plane::ePlane Plane;
 
 	BYTE bCurrentTool;
+	float fToolLengthOffset; //Length of the installed tool. 0 if none.
 };
 
 extern MACHINE_STATUS MachineStatus;
