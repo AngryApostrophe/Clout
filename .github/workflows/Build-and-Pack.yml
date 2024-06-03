@@ -30,7 +30,7 @@ jobs:
   # There's probably a better way to do this, but I'm not familiar enough with github
     - name: Retrieve Assimp SHA
       run: |
-        echo "ASSIMP_SHA=$(git ls-files -s src/external/assimp)" >> $GITHUB_OUTPUT
+        echo "ASSIMP_SHA=$(git ls-files -s ./src/external/assimp)" >> $GITHUB_OUTPUT
       id: AssimpSHA
 
     - name: Restore Assimp cache
