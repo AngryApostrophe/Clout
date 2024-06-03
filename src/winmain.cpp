@@ -64,6 +64,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			io = &ImGui::GetIO();
 			io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 			io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;		//Enable Docking
+			io->ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos; //Allow us to recenter the mouse when looking around in Model Viewer
 
 		//Main window flags
 			ImGuiWindowFlags window_flags = /*ImGuiWindowFlags_MenuBar |*/ ImGuiWindowFlags_NoDocking; // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into, because it would be confusing to have two docking targets within each others.

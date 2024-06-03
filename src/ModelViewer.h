@@ -60,15 +60,19 @@ public:
 		try
 		{
 			// open files
-			vShaderFile.open(vertexPath);
-			fShaderFile.open(fragmentPath);
+			if (vertexPath != 0)
+				vShaderFile.open(vertexPath);
+			if (fragmentPath != 0)
+				fShaderFile.open(fragmentPath);
 			std::stringstream vShaderStream, fShaderStream;
 			// read file's buffer contents into streams
 			vShaderStream << vShaderFile.rdbuf();
 			fShaderStream << fShaderFile.rdbuf();
 			// close file handlers
-			vShaderFile.close();
-			fShaderFile.close();
+			if (vShaderFile.is_open())
+				vShaderFile.close();
+			if (fShaderFile.is_open())
+				fShaderFile.close();
 			// convert stream into string
 			vertexCode = vShaderStream.str();
 			fragmentCode = fShaderStream.str();
@@ -180,7 +184,7 @@ private:
 			if (!success)
 			{
 				glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-				//std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Shader error of type %s: %s", type.c_str(), infoLog);
 			}
 		}
 		else
@@ -189,7 +193,7 @@ private:
 			if (!success)
 			{
 				glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-				//std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Shader error of type %s: %s", type.c_str(), infoLog);
 			}
 		}
 	}
@@ -332,7 +336,7 @@ private:
 	{
 		// read file via ASSIMP
 		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_ConvertToLeftHanded);
+		const aiScene* scene = importer.ReadFile(path, aiProcess_JoinIdenticalVertices | aiProcess_FixInfacingNormals | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_ConvertToLeftHanded);
 		// check for errors
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
 		{
@@ -489,7 +493,8 @@ class MODEL_VIEWER
 {
 public:
 
-	MODEL_VIEWER() { BodyModel = 0; CarriageModel = 0; BedModel = 0; SpindleModel = 0; CloutShader = 0; };
+	MODEL_VIEWER() {
+		BodyModel = 0; CarriageModel = 0; BedModel = 0; SpindleModel = 0; Shader_Main = 0; Shader_ShadowMap = 0; Shader_ShadowMapViewer = 0; };
 	~MODEL_VIEWER(){};
 
 	void Draw();
@@ -501,15 +506,20 @@ public:
 		glm::mat4 ModelMatrix;
 		glm::mat4 ProjectionMatrix;
 		glm::mat4 ViewMatrix;
+		glm::mat4 LightSpaceMatrix;
 
 	//Camera stuff
-		glm::vec3 cameraPos;
 		glm::vec3 cameraTarget;
 		glm::vec3 cameraDirection;
 		glm::vec3 cameraFront;
 		glm::vec3 up;
 		glm::vec3 cameraRight;
 		glm::vec3 cameraUp;
+
+		glm::vec3 View_MainCameraPos; //Position of the camera for the main view.  User coords, no offsets applied, so UI shows 0,0,0
+		//TODO: Add other view positions, like closeups of the bed, etc
+
+		glm::vec3 ActiveCameraPos; //The currently active camera, in OpenGL coords
 		
 		float fCameraFOV;
 		float fCameraPitch;
@@ -529,23 +539,66 @@ public:
 		Model* SpindleModel;
 	
 	//Shaders
-		Shader *CloutShader;
+		Shader *Shader_Main;
+		Shader *Shader_ShadowMap;
+		Shader *Shader_ShadowMapViewer;
 
 	//Render to texture
-		GLuint FramebufferName;
-		GLuint renderedTexture;
-		GLuint depthrenderbuffer;
+		GLuint Framebuffer;
+		GLuint RenderTargetTexture;
+		GLuint DepthBuffer;
 
+	//Shadow mapping
+		GLuint ShadowMapFramebuffer;
+		GLuint ShadowMapTexture;
+
+	//Window size
 		ImVec2 WindowSize;		//Size of the texture/window as created
 		ImVec2 NewWindowSize;   //New size after resize but before next loop through
 
 	//Origin offset
 		glm::vec3 OriginOffset;
 
+	//Mouse view
+		ImVec2 MouseStartPos; //Position of the mouse when the user started dragging
+
 	void ResizeWindow();
 	void DrawGrid();
 	void DrawOrigin();
 	void DrawLightSource();
+	void RenderScene(Shader* shader);
 
+
+	
+	
+	void renderQuad() //Render a simple quad poly on the full window.  Used for viewing things like shadow maps
+	{
+		static unsigned int quadVAO = 0;
+		static unsigned int quadVBO;
+		if (quadVAO == 0)
+		{
+			float quadVertices[] = {
+				// positions        // texture Coords
+				-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+				-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+				 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+				 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+			};
+			// setup plane VAO
+			glGenVertexArrays(1, &quadVAO);
+			glGenBuffers(1, &quadVBO);
+			glBindVertexArray(quadVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+		}
+		
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	}
 };
 extern MODEL_VIEWER ModelViewer;
