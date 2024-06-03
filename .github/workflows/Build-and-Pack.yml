@@ -39,12 +39,12 @@ jobs:
           ls-files -s src/external/assimp
 
     - if: ${{ steps.cache-assimp.outputs.cache-hit != 'false' }}
-    - name: Configure Assimp
+      name: Configure Assimp
       working-directory: ${{github.workspace}}/src/external/assimp
       run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - if: ${{ steps.cache-assimp.outputs.cache-hit != 'false' }}
-    - name: Build Assimp
+      name: Build Assimp
       working-directory: ${{github.workspace}}/src/external/assimp
       run: cmake --build . --config ${{env.BUILD_TYPE}}
       
