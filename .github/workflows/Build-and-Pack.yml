@@ -35,7 +35,7 @@ jobs:
           ${{github.workspace}}\src\external\assimp\lib\release\assimp-vc143-mt.lib
           ${{github.workspace}}\src\external\assimp\include\assimp\config.h
         #Use the currently active commit SHA as the key
-        key: ${{ runner.os }}-assimp-${{ github.sha }}
+        key: ${{ runner.os }}-assimp-${{ hashFiles('**/package-lock.json') }}
 
     - if: ${{ steps.cache-assimp.outputs.cache-hit != 'false' }}
       name: Configure Assimp
