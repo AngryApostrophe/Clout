@@ -33,6 +33,56 @@ void HelpMarker(const char *sString)
 	}
 }
 
+void Window_ChangeTool_Draw()
+{
+	//Create the window
+		if (!ImGui::BeginPopupModal("Change Tool", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+	//Description
+		ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
+
+	//New tool
+		static int iNewToolChoice = 2;
+		const char szToolChoices[][15] = { "Empty", "Wireless Probe", "1", "2", "3", "4", "5", "6" }; //TODO: Make this default to the current tool.
+		if (ImGui::BeginCombo("New Tool##ChangeTool", szToolChoices[iNewToolChoice]))
+		{
+			for (int x = 0; x < 8; x++)
+			{
+				//Add the item
+				const bool is_selected = (iNewToolChoice == x);
+				if (ImGui::Selectable(szToolChoices[x], is_selected))
+					iNewToolChoice = x;
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
+		}
+
+	if (ImGui::Button("Run##ChangeTool", ImVec2(120, 0)))
+	{
+		char szString[8];
+		sprintf_s(szString, 8, "M6 T%d", iNewToolChoice - 1);
+		Comms_SendString(szString);
+
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::SetItemDefaultFocus();
+	ImGui::SameLine();
+
+	if (ImGui::Button("Cancel##ChangeTool", ImVec2(120, 0)))
+	{
+		ImGui::CloseCurrentPopup();
+	}
+
+	//All done
+		ImGui::End();
+}
+
 
 void Window_Control_Draw()
 {
@@ -52,7 +102,14 @@ void Window_Control_Draw()
 
 	//Tool section
 		ImGui::SeparatorText("Tool");
-		ImGui::Button("ATC change tool");	ImGui::SameLine(); ImGui::Text("   "); ImGui::SameLine(); 		ImGui::Button("ATC drop tool");
+		if (ImGui::Button("ATC change tool"))
+			ImGui::OpenPopup("Change Tool");
+		Window_ChangeTool_Draw();
+		
+		ImGui::SameLine(); ImGui::Text("   "); ImGui::SameLine(); 		
+		
+		if (ImGui::Button("TLO Calibrate"))
+			Comms_SendString("M491");
 		
 		if (ImGui::Button("Open collet"))
 			Comms_SendString("M490.2");

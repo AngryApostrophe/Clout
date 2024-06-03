@@ -7,6 +7,7 @@ The **C**arvera **L**ean **O**pen source **UT**ility is a custom controller for 
 The following features are currently available:
 * Home XYZ
 * Go to clearance
+* ATC tool change and TLO calibration
 * Open/Close collet
 * Bore center probe
 * Single axis probe (X, Y, or Z)
