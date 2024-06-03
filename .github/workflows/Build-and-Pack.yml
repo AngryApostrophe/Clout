@@ -32,8 +32,8 @@ jobs:
       uses: actions/cache@v4
       with:
         path: |
-          ${{github.workspace}}/src/external/assimp/lib/release/assimp-vc143-mt.lib
-          ${{github.workspace}}/src/external/assimp/include/assimp/config.h
+          ${{github.workspace}}\src\external\assimp\lib\release\assimp-vc143-mt.lib
+          ${{github.workspace}}\src\external\assimp\include\assimp\config.h
         #Use the currently active commit SHA as the key
         key: ${{ runner.os }}-assimp-${{ github.sha }}
 
