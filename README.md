@@ -3,7 +3,28 @@ The **C**arvera **L**ean **O**pen source **UT**ility is a custom controller for 
 
 <img src="./images/Clout.png" width="800px">
 
-# Building
+# Features
+The following features are currently available:
+* Home XYZ
+* Go to clearance
+* Open/Close collet
+* Bore center probe
+* Single axis probe (X, Y, or Z)
+## Console
+Prefix command with > to send code to Carvera. Example:
+ ```bash
+>G38.3 X-20 F75
+```
+
+## Live 3D view
+Use keyboard arrow keys to move camera.  Right click and drag mouse to look around.
+ 
+
+# Installing
+* Latest build can be found as an artifact of the most recent workflow run at https://github.com/AngryApostrophe/Clout/actions
+* Currently available for Win x64.
+
+# Building from source
 
 * See https://github.com/AngryApostrophe/Clout/blob/main/build/BUILD.md
 
