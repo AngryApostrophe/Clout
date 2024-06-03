@@ -27,10 +27,23 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
+    - name: Restore Assimp cache
+      id: cache-assimp
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{github.workspace}}/src/external/assimp/lib/release/assimp-vc143-mt.lib
+          ${{github.workspace}}/src/external/assimp/include/assimp/config.h
+        #Use the currently active commit SHA as the key
+        restore-keys: |
+          ls-files -s src/external/assimp
+
+    - if: ${{ steps.cache-assimp.outputs.cache-hit != 'false' }}
     - name: Configure Assimp
       working-directory: ${{github.workspace}}/src/external/assimp
       run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
+    - if: ${{ steps.cache-assimp.outputs.cache-hit != 'false' }}
     - name: Build Assimp
       working-directory: ${{github.workspace}}/src/external/assimp
       run: cmake --build . --config ${{env.BUILD_TYPE}}
