@@ -22,29 +22,48 @@ jobs:
       with:
         submodules: recursive
 
+    # There's probably a better way to do this, but I'm not familiar enough with github
+    - name: Retrieve Assimp Hash
+      uses: theowenyoung/folder-hash@v3
+      with:
+        path: ${{github.workspace}}\src\external\assimp
+      id: AssimpHash
+
+    - name: Restore Assimp cache
+      id: cache-assimp
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{github.workspace}}\src\external\assimp\lib\release\assimp-vc143-mt.lib
+          ${{github.workspace}}\src\external\assimp\include\assimp\config.h
+        #Use the currently active Assimp commit folder hash as the key
+        key: ${{ steps.AssimpHash.outputs.hash }}
+
+    - if: ${{ steps.cache-assimp.outputs.cache-hit != 'true' }}
+      name: Configure Assimp
+      working-directory: ${{github.workspace}}\src\external\assimp
+      run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - if: ${{ steps.cache-assimp.outputs.cache-hit != 'true' }}
+      name: Build Assimp
+      working-directory: ${{github.workspace}}\src\external\assimp
+      run: cmake --build . --config ${{env.BUILD_TYPE}}
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-
-    - name: Configure Assimp
-      working-directory: ${{github.workspace}}/src/external/assimp
-      run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-
-    - name: Build Assimp
-      working-directory: ${{github.workspace}}/src/external/assimp
-      run: cmake --build . --config ${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
       
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
 
     - name: Snatch the result
-      run: copy ${{github.workspace}}/build/bin/Release/*.exe  ${{github.workspace}}/bin
+      run: copy ${{github.workspace}}\build\bin\Release\*.exe  ${{github.workspace}}\bin
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Clout-win-x64
-        path: ${{github.workspace}}/bin/*
+        path: ${{github.workspace}}\bin\*
 
