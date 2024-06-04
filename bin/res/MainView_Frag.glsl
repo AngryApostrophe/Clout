@@ -29,7 +29,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    	float bias = 0.003;
+    	float bias = 0.008;
 	float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 	
 	
@@ -51,6 +51,10 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 
     return shadow;
 } 
+
+float rand(vec2 co){
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
 
 void main()
@@ -76,4 +80,10 @@ void main()
       vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * objectColor;    
         
     FragColor = vec4(lighting, 1.0);
+    
+    
+    //Add random noise
+    	FragColor.r = FragColor.r + (rand(vec2(FragPos.x, FragColor.y))/50);
+    	FragColor.g = FragColor.g + (rand(vec2(FragPos.x, FragColor.y))/50);
+    	FragColor.b = FragColor.b + (rand(vec2(FragPos.x, FragColor.y))/50);
 }
