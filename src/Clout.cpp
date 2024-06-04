@@ -42,6 +42,8 @@ void Window_ChangeTool_Draw()
 	//Description
 		ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
 
+		ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the combo box
+
 	//New tool
 		static int iNewToolChoice = 2;
 		const char szToolChoices[][15] = { "Empty", "Wireless Probe", "1", "2", "3", "4", "5", "6" }; //TODO: Make this default to the current tool.
@@ -61,6 +63,8 @@ void Window_ChangeTool_Draw()
 
 			ImGui::EndCombo();
 		}
+
+	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
 	if (ImGui::Button("Run##ChangeTool", ImVec2(120, 0)))
 	{

@@ -78,6 +78,16 @@ bool bProbingPageInitialized = false;
 	float  fProbingPocketCenter_PocketWidth = 15.0f;	//Nominal total width of the Pocket
 	float  fProbingPocketCenter_Overtravel = 5.0f;		//How far beyond the nominal width we attempt to probe before failing
 
+//Web center
+	GLuint imgProbingWebCenter[2] = { 0,0 };			//One for X and Y
+	int	   iProbingWebCenter_AxisIndex = 0;				// Which axis to probe in.  0=X,  1=Y
+	float  fProbingWebCenter_WebWidth = 15.0f;			//Nominal total width of the feature
+	float  fProbingWebCenter_Clearance = 5.0f;			//How far outside of the nominal width should we go before we turn back in
+	float  fProbingWebCenter_Overtravel = 5.0f;			//How far inside the nominal width we attempt to probe before failing
+	float  fProbingWebCenter_ZDepth = -10.0f;			//How deep we should lower the probe when we're ready to measure on the way back in.  Negative numbers are lower.
+
+
+
 
 
 void ProbingLoadImage(GLuint *img, const char *szFilename)
@@ -102,6 +112,8 @@ void Probing_InitPage()
 	ProbingLoadImage(&imgProbingSingleAxis[2], "./res/ProbeSingleAxisZ.png");
 	ProbingLoadImage(&imgProbingPocketCenter[0], "./res/ProbePocketX.png");
 	ProbingLoadImage(&imgProbingPocketCenter[1], "./res/ProbePocketY.png");
+	ProbingLoadImage(&imgProbingWebCenter[0], "./res/ProbeWebX.png");
+	ProbingLoadImage(&imgProbingWebCenter[1], "./res/ProbeWebY.png");
 	
 	bProbingPageInitialized = TRUE;
 }
@@ -706,7 +718,7 @@ void Probing_BossCenterPopup()
 	//Clearance Distance
 		sprintf_s(sString, 10, "%%0.2f%s", sUnits);
 		ImGui::InputFloat("Clearance distance", &fProbingBossCenter_Clearance, 0.1f, 1.0f, sString);
-		ImGui::SameLine(); HelpMarker("Distance traveled outside the nominal diameter before probing back in.");
+		ImGui::SameLine(); HelpMarker("Distance traveled outside the nominal diameter before lowering and probing back in.");
 
 	//Overtravel Distance
 		sprintf_s(sString, 10, "%%0.2f%s", sUnits);
@@ -1403,6 +1415,141 @@ void Probing_SingleAxisPopup()
 }
 
 
+
+void Probing_WebCenterPopup()
+{
+	int x;
+	char sString[50]; //General purpose string
+	char sUnits[5] = "mm"; //Currently select machine units
+
+	if (MachineStatus.Units != Carvera::Units::mm)
+		strcat_s(sUnits, 5, "in"); //Inches
+
+	// Always center this window when appearing
+	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+	if (!ImGui::BeginPopupModal("Probe Web Center", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		return;
+
+
+	ImGui::Text("Probe outside a web feature to find the center");
+	ImGui::Text("Setup:");
+	ImGui::Text("	Probe already installed");
+	ImGui::Text("	Probe must be near center of feature at the clearance Z height");
+
+
+	ImGui::Image((void*)(intptr_t)imgProbingWebCenter[iProbingWebCenter_AxisIndex], ImVec2(450, 342));
+
+	//ImGui::Separator();
+
+	ImGui::SeparatorText("Setup");
+
+	//Web Diameter
+	sprintf_s(sString, 10, "%%0.3f%s", sUnits);
+	ImGui::InputFloat("Feature width##WebCenter", &fProbingWebCenter_WebWidth, 0.01f, 0.1f, sString);
+	ImGui::SameLine(); HelpMarker("Nominal width of the feature, in current machine units.");
+
+	//Clearance Distance
+	sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+	ImGui::InputFloat("Clearance distance##WebCenter", &fProbingWebCenter_Clearance, 0.1f, 1.0f, sString);
+	ImGui::SameLine(); HelpMarker("Distance traveled outside the nominal width before lowering and lowering and probing back in.");
+
+	//Overtravel Distance
+	sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+	ImGui::InputFloat("Overtravel distance##WebCenter", &fProbingWebCenter_Overtravel, 0.1f, 1.0f, sString);
+	ImGui::SameLine(); HelpMarker("Distance inside the nominal width to continue probing before failing.");
+
+	//Z Depth
+	sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+	ImGui::InputFloat("Z probing depth##WebCenter", &fProbingWebCenter_ZDepth, 0.1f, 1.0f, sString);
+	ImGui::SameLine(); HelpMarker("How far to lower the probe when we start measuring.\nNote: Negative numbers are lower.");
+
+	//Feed rate
+	ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
+	ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
+	ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
+	ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
+
+	ImGui::SeparatorText("Completion");
+
+	//Zero WCS?
+	ImGui::Checkbox("Zero WCS", &bProbing_ZeroWCS);
+	ImGui::SameLine();
+
+	//Disable the combo if the option isn't selected
+	if (!bProbing_ZeroWCS)
+		ImGui::BeginDisabled();
+
+	//The combo box
+	x = MachineStatus.WCS;
+	if (x < Carvera::CoordSystem::G54)
+		x = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
+
+	if (ImGui::BeginCombo("##ProbingWebCenter_WCS", szWCSChoices[x]))
+	{
+		x = Carvera::CoordSystem::G54;
+		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+		{
+			//Add the item
+			const bool is_selected = (ibProbing_WCSIndex == x);
+			if (ImGui::Selectable(szWCSChoices[x], is_selected))
+				ibProbing_WCSIndex = x;
+
+			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+			x++;
+		}
+
+		ImGui::EndCombo();
+	}
+
+	if (!bProbing_ZeroWCS)
+		ImGui::EndDisabled();
+
+	ImGui::SameLine();
+	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
+
+	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
+
+	if (ImGui::Button("Run", ImVec2(120, 0)))
+	{
+		//bProbingState = PROBE_STATE_BOSSCENTER_START;
+	}
+
+	ImGui::SetItemDefaultFocus();
+	ImGui::SameLine();
+
+	if (ImGui::Button("Cancel", ImVec2(120, 0)))
+	{
+		if (bProbingState != PROBE_STATE_IDLE)
+		{
+
+			sString[0] = 0x18; //Abort command
+			sString[1] = 0x0;
+			Comms_SendString(sString);
+		}
+
+		ImGui::CloseCurrentPopup();
+
+		//TODO: If running, ask if they want to cancel the op before closing
+	}
+
+
+	//Close the window once we're done
+	if (bProbingState == PROBE_STATE_COMPLETE)
+	{
+		bProbingState = PROBE_STATE_IDLE;
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::EndPopup();
+
+	//Probing_WebCenter_StateMachine(); //Run the state machine if an operation is going
+}
+
+
 void Probing_Draw() //This is called from inside the main draw code
 {
 	if (!bProbingPageInitialized)
@@ -1413,42 +1560,52 @@ void Probing_Draw() //This is called from inside the main draw code
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 
-		if (ImGui::Button(" Bore Center "))
-			ImGui::OpenPopup("Probe Bore Center");
+		if (ImGui::Button("Pocket center"))
+			ImGui::OpenPopup("Probe Pocket Center");
+
+		ImVec2 sizeLeftButtons = ImGui::GetItemRectSize();
 
 		ImGui::TableSetColumnIndex(1);
 
 		if (ImGui::Button("Single Axis"))
 			ImGui::OpenPopup("Probe Single Axis");
 
-		ImVec2 size = ImGui::GetItemRectSize();
+		ImVec2 sizeRightButtons = ImGui::GetItemRectSize();
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 
-		if (ImGui::Button(" Boss center "))
+		if (ImGui::Button("Boss center", sizeLeftButtons))
 			ImGui::OpenPopup("Probe Boss Center");
 
 		ImGui::TableSetColumnIndex(1);
 
-		ImGui::Button("Int Corner", size);
+		ImGui::Button("Int Corner", sizeRightButtons);
 
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 
-		if (ImGui::Button("Pocket center"))
-			ImGui::OpenPopup("Probe Pocket Center");
+		if (ImGui::Button("Bore Center", sizeLeftButtons))
+			ImGui::OpenPopup("Probe Bore Center");
 
 		ImGui::TableSetColumnIndex(1);
 
-		ImGui::Button("Ext Corner", size);
+		ImGui::Button("Ext Corner", sizeRightButtons);
+		
+		
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+
+		if (ImGui::Button("Web center", sizeLeftButtons))
+			ImGui::OpenPopup("Probe Web Center");
 
 		//These have to go inside the Table.  If it's called after EndTable() they won't appear
 			Probing_BoreCenterPopup();
 			Probing_BossCenterPopup();
 			Probing_PocketCenterPopup();
 			Probing_SingleAxisPopup();
+			Probing_WebCenterPopup();
 
 		ImGui::EndTable();
 	}
