@@ -226,15 +226,15 @@ void MODEL_VIEWER::ResizeWindow()
 
 	//Resize the render target texture
 		glBindTexture(GL_TEXTURE_2D, RenderTargetTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WindowSize.x, WindowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)WindowSize.x, (GLsizei)WindowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
 	//Resize the depth buffer
 		glBindRenderbuffer(GL_RENDERBUFFER, DepthBuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WindowSize.x, WindowSize.y);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)WindowSize.x, (GLsizei)WindowSize.y);
 
 	//Resize the shadow map
 		glBindTexture(GL_TEXTURE_2D, ShadowMapTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, WindowSize.x * SHADOW_MAP_SIZE_FACTOR, WindowSize.y * SHADOW_MAP_SIZE_FACTOR, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, (GLsizei)(WindowSize.x * SHADOW_MAP_SIZE_FACTOR), (GLsizei)(WindowSize.y * SHADOW_MAP_SIZE_FACTOR), 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 }
 
 void MODEL_VIEWER::Init()
@@ -293,7 +293,7 @@ void MODEL_VIEWER::Init()
 			WindowSize = ImVec2(640, 480); //The window isn't created yet, use a default size.  It'll get changed after the first pass through rendering.
 
 		// Give an empty image to OpenGL ( the last "0" )
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WindowSize.x, WindowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)WindowSize.x, (GLsizei)WindowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
 		// Poor filtering. Needed !
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -305,7 +305,7 @@ void MODEL_VIEWER::Init()
 		// Create the depth buffer
 			glGenRenderbuffers(1, &DepthBuffer);
 			glBindRenderbuffer(GL_RENDERBUFFER, DepthBuffer);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WindowSize.x, WindowSize.y);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)WindowSize.x, (GLsizei)WindowSize.y);
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, DepthBuffer);
 		
 		// Set "RenderTargetTexture" as our colour attachement #0
@@ -323,7 +323,7 @@ void MODEL_VIEWER::Init()
 			//Generate the depthmap texture
 				glGenTextures(1, &ShadowMapTexture);
 				glBindTexture(GL_TEXTURE_2D, ShadowMapTexture);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, WindowSize.x * SHADOW_MAP_SIZE_FACTOR, WindowSize.y * SHADOW_MAP_SIZE_FACTOR, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL); //This 640x480 is just a placeholder.  It gets resized later.
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, (GLsizei)(WindowSize.x * SHADOW_MAP_SIZE_FACTOR), (GLsizei)(WindowSize.y * SHADOW_MAP_SIZE_FACTOR), 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL); //This 640x480 is just a placeholder.  It gets resized later.
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -440,7 +440,7 @@ void MODEL_VIEWER::Draw()
 				glCullFace(GL_FRONT); //Fix peter-panning
 
 			//Setup the viewport
-				glViewport(0, 0, WindowSize.x * SHADOW_MAP_SIZE_FACTOR, WindowSize.y * SHADOW_MAP_SIZE_FACTOR);
+				glViewport(0, 0, (GLsizei)(WindowSize.x * SHADOW_MAP_SIZE_FACTOR), (GLsizei)(WindowSize.y * SHADOW_MAP_SIZE_FACTOR));
 
 			//Calculate the view matrixes
 				glm::mat4 lightProjection = glm::ortho( - 500.0f, 500.0f, -500.0f, 500.0f, CLIP_PLANE_NEAR, CLIP_PLANE_FAR);
@@ -478,7 +478,7 @@ void MODEL_VIEWER::Draw()
 				
 		//Switch to the main framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, Framebuffer); //Render to our texture framebuffer
-			glViewport(0, 0, WindowSize.x, WindowSize.y); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+			glViewport(0, 0, (GLsizei)WindowSize.x, (GLsizei)WindowSize.y); // Render on the whole framebuffer, complete from the lower left corner to the upper right
 			glClearColor(bg_color.x * bg_color.w, bg_color.y * bg_color.w, bg_color.z * bg_color.w, bg_color.w);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -500,7 +500,7 @@ void MODEL_VIEWER::Draw()
 		//Draw the depth buffer from the light's view if requested
 			if (bDebug_DrawShadowMap)
 			{
-				glViewport(0, 0, WindowSize.x, WindowSize.y);
+				glViewport(0, 0, (GLsizei)WindowSize.x, (GLsizei)WindowSize.y);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 				Shader_ShadowMapViewer->use();

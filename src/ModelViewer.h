@@ -49,6 +49,12 @@ public:
 	// ------------------------------------------------------------------------
 	Shader(const char* vertexPath, const char* fragmentPath)
 	{
+		if (vertexPath != 0)
+			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Loading vertex shader %s", vertexPath);
+
+		if (fragmentPath != 0)
+			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Loading fragment shader %s", fragmentPath);
+
 		// 1. retrieve the vertex/fragment source code from filePath
 		std::string vertexCode;
 		std::string fragmentCode;
@@ -334,6 +340,8 @@ private:
 	// loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
 	void loadModel(string const& path)
 	{
+		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Loading model %s", path.c_str());
+
 		// read file via ASSIMP
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, aiProcess_JoinIdenticalVertices | aiProcess_FixInfacingNormals | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_ConvertToLeftHanded);

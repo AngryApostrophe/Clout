@@ -27,6 +27,9 @@ bool bProbingPageInitialized = false;
 	DOUBLE_XYZ ProbePos1, ProbePos2, ProbePos3, ProbePos4; //General purpose use, depending on which operation we're running. 
 	DOUBLE_XYZ ProbeEndPos; //Final position we'll tell the user.
 
+	bool bProbing_ZeroWCS = false;
+	int ibProbing_WCSIndex = 0;
+
 
 	#define PROBE_STATE_IDLE			0	//Not currently running
 	#define PROBE_STATE_COMPLETE		255	//All done, close the window
@@ -48,10 +51,8 @@ bool bProbingPageInitialized = false;
 	#define PROBE_STATE_BORECENTER_FINISH			14	//Update any WCS offsets, inform user, etc.
 
 	GLuint imgProbingBoreCenter = 0;
-	bool bProbingBoreCenter_ZeroWCS = false; //TODO: Should thid be shared between all types, or different for each?
-	int ibProbingBoreCenter_WCSIndex = 0;
-	float fProbingBoreCenter_BoreDiameter = 25.0f;
-	float fProbingBoreCenter_Overtravel = 5.0f;
+	float  fProbingBoreCenter_BoreDiameter = 25.0f;
+	float  fProbingBoreCenter_Overtravel = 5.0f;
 
 //Single Axis
 	#define PROBE_STATE_SINGLEAXIS_START			15	//User just clicked ok
@@ -60,20 +61,22 @@ bool bProbingPageInitialized = false;
 	#define PROBE_STATE_SINGLEAXIS_GETCOORDS		18	//Ask for updated coordinates.  Otherwise we may be too quick and could use coords from 1/3 sec ago.
 	#define PROBE_STATE_SINGLEAXIS_FINISH			19	//Update any WCS offsets, inform user, etc.
 
-	GLuint imgProbingSingleAxis[3] = {0,0,0}; //One for each axis
-	int iProbingSingleAxis_AxisDirectionIndex = 0;  //0 = x-,  1 = x+,  2 = y+,  3 = y-,  4 = z-
-	bool bProbingSingleAxis_ZeroWCS = false;
-	int ibProbingSingleAxis_WCSIndex = 0;
-	float fProbingSingleAxis_Travel = 5.0f; //How far to travel while looking for the edge
+	GLuint imgProbingSingleAxis[3] = {0,0,0};			//One for each axis
+	int    iProbingSingleAxis_AxisDirectionIndex = 0;	//0 = x-,  1 = x+,  2 = y+,  3 = y-,  4 = z-
+	float  fProbingSingleAxis_Travel = 5.0f;			//How far to travel while looking for the edge
 
 //Boss center
 	GLuint imgProbingBossCenter = 0;
-	bool bProbingBossCenter_ZeroWCS = false; //TODO: Should thid be shared between all types, or different for each?
-	int ibProbingBossCenter_WCSIndex = 0;
-	float fProbingBossCenter_BossDiameter = 25.0f;	//Nominal diameter of the boss feater
-	float fProbingBossCenter_Clearance = 5.0f;		//How far outside of the nominal diameter should we go before we turn back in
-	float fProbingBossCenter_Overtravel = 5.0f;		//How far inside the nominal diameter we attempt to probe before failing
-	float fProbingBossCenter_ZDepth = -10.0f;		//How deep we should lower the probe when we're ready to measure on the way back in.  Negative numbers are lower.
+	float  fProbingBossCenter_BossDiameter = 25.0f;		//Nominal diameter of the boss feater
+	float  fProbingBossCenter_Clearance = 5.0f;			//How far outside of the nominal diameter should we go before we turn back in
+	float  fProbingBossCenter_Overtravel = 5.0f;		//How far inside the nominal diameter we attempt to probe before failing
+	float  fProbingBossCenter_ZDepth = -10.0f;			//How deep we should lower the probe when we're ready to measure on the way back in.  Negative numbers are lower.
+
+//Pocket center
+	GLuint imgProbingPocketCenter[2] = { 0,0 };			//One for X and Y
+	int	   iProbingPocketCenter_AxisIndex = 0;			// Which axis to probe in.  0=X,  1=Y
+	float  fProbingPocketCenter_PocketWidth = 15.0f;	//Nominal total width of the Pocket
+	float  fProbingPocketCenter_Overtravel = 5.0f;		//How far beyond the nominal width we attempt to probe before failing
 
 
 
@@ -81,9 +84,10 @@ void ProbingLoadImage(GLuint *img, const char *szFilename)
 {
 	if (img != 0 && *img == 0) //Make sure there's nothing already there
 	{
+		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Loading image %s", szFilename);
 		if (LoadTextureFromFile(szFilename, img) == 0)
 		{
-			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error loading image: %s", szFilename);
+			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "^Error loading image!");
 		}
 	}
 }
@@ -96,7 +100,9 @@ void Probing_InitPage()
 	ProbingLoadImage(&imgProbingSingleAxis[0], "./res/ProbeSingleAxisX.png");
 	ProbingLoadImage(&imgProbingSingleAxis[1], "./res/ProbeSingleAxisY.png");
 	ProbingLoadImage(&imgProbingSingleAxis[2], "./res/ProbeSingleAxisZ.png");
-
+	ProbingLoadImage(&imgProbingPocketCenter[0], "./res/ProbePocketX.png");
+	ProbingLoadImage(&imgProbingPocketCenter[1], "./res/ProbePocketY.png");
+	
 	bProbingPageInitialized = TRUE;
 }
 
@@ -585,11 +591,11 @@ void Probing_BoreCenterPopup()
 	ImGui::SeparatorText("Completion");
 	
 		//Zero WCS?
-			ImGui::Checkbox("Zero WCS", &bProbingBoreCenter_ZeroWCS);
+			ImGui::Checkbox("Zero WCS", &bProbing_ZeroWCS);
 			ImGui::SameLine();
 
 			//Disable the combo if the option isn't selected
-			if (!bProbingBoreCenter_ZeroWCS)
+			if (!bProbing_ZeroWCS)
 				ImGui::BeginDisabled();
 			
 			//The combo box
@@ -603,9 +609,9 @@ void Probing_BoreCenterPopup()
 					while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
 					{
 						//Add the item
-							const bool is_selected = (ibProbingBoreCenter_WCSIndex == x);				
+							const bool is_selected = (ibProbing_WCSIndex == x);				
 							if (ImGui::Selectable(szWCSChoices[x], is_selected))
-								ibProbingBoreCenter_WCSIndex = x;
+								ibProbing_WCSIndex = x;
 
 						// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 							if (is_selected)
@@ -616,52 +622,12 @@ void Probing_BoreCenterPopup()
 					ImGui::EndCombo();
 				}
 
-				if (!bProbingBoreCenter_ZeroWCS)
+				if (!bProbing_ZeroWCS)
 					ImGui::EndDisabled();
 
 				ImGui::SameLine();
 				HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 
-	/*if (ImGui::BeginTable("table_borecenter", 3, ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersH | ImGuiTableFlags_SizingStretchSame))
-	{
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("1");
-
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("2");
-
-		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("3");
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("1");
-
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("2");
-
-		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("3"); 
-		
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("1");
-
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("2");
-
-		ImGui::TableSetColumnIndex(2);
-		ImGui::Text("3");
-
-		ImGui::EndTable();
-	}*/
-
-
-	/*static bool dont_ask_me_next_time = false;
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-	ImGui::Checkbox("Don't ask me next time", &dont_ask_me_next_time);
-	ImGui::PopStyleVar();*/
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
@@ -761,11 +727,11 @@ void Probing_BossCenterPopup()
 	ImGui::SeparatorText("Completion");
 
 	//Zero WCS?
-	ImGui::Checkbox("Zero WCS", &bProbingBossCenter_ZeroWCS);
+	ImGui::Checkbox("Zero WCS", &bProbing_ZeroWCS);
 	ImGui::SameLine();
 
 	//Disable the combo if the option isn't selected
-	if (!bProbingBossCenter_ZeroWCS)
+	if (!bProbing_ZeroWCS)
 		ImGui::BeginDisabled();
 
 	//The combo box
@@ -779,9 +745,9 @@ void Probing_BossCenterPopup()
 		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
 		{
 			//Add the item
-			const bool is_selected = (ibProbingBossCenter_WCSIndex == x);
+			const bool is_selected = (ibProbing_WCSIndex == x);
 			if (ImGui::Selectable(szWCSChoices[x], is_selected))
-				ibProbingBossCenter_WCSIndex = x;
+				ibProbing_WCSIndex = x;
 
 			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 			if (is_selected)
@@ -792,7 +758,7 @@ void Probing_BossCenterPopup()
 		ImGui::EndCombo();
 	}
 
-	if (!bProbingBossCenter_ZeroWCS)
+	if (!bProbing_ZeroWCS)
 		ImGui::EndDisabled();
 
 	ImGui::SameLine();
@@ -834,6 +800,166 @@ void Probing_BossCenterPopup()
 	ImGui::EndPopup();
 
 	//Probing_BossCenter_StateMachine(); //Run the state machine if an operation is going
+}
+
+
+
+void Probing_PocketCenter_StateMachine()
+{
+	char sCmd[50];
+
+	switch (bProbingState)
+	{
+	case PROBE_STATE_IDLE:
+		bOperationRunning = false;
+		break;
+
+	}
+}
+
+void Probing_PocketCenterPopup()
+{
+	int x;
+	char sString[50]; //General purpose string
+	
+	char sUnits[5] = "mm"; //Currently select machine units
+	if (MachineStatus.Units != Carvera::Units::mm)
+		strcat_s(sUnits, 5, "in"); //Inches
+
+	// Always center this window when appearing
+	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+	if (!ImGui::BeginPopupModal("Probe Pocket Center", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		return;
+
+
+	ImGui::Text("Probe inside a pocket to find the center");
+	ImGui::Text("Setup:");
+	ImGui::Text("	Probe already installed");
+	ImGui::Text("	Probe must be near center of pocket at the desired Z height");
+
+
+	ImGui::Image((void*)(intptr_t)imgProbingPocketCenter[iProbingPocketCenter_AxisIndex], ImVec2(450, 342));
+
+	//ImGui::Separator();
+
+	ImGui::SeparatorText("Setup");
+
+	const char szAxisChoices[][2] = { "X", "Y" };
+	if (ImGui::BeginCombo("Probe Axis##PocketCenter", szAxisChoices[iProbingPocketCenter_AxisIndex]))
+	{
+		for (int x = 0; x < 2; x++)
+		{
+			//Add the item
+			const bool is_selected = (iProbingPocketCenter_AxisIndex == x);
+			if (ImGui::Selectable(szAxisChoices[x], is_selected))
+				iProbingPocketCenter_AxisIndex = x;
+
+			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine(); HelpMarker("Axis in which to probe.");
+
+	//Pocket width
+	sprintf_s(sString, 10, "%%0.3f%s", sUnits);
+	ImGui::InputFloat("Pocket width", &fProbingPocketCenter_PocketWidth, 0.01f, 0.1f, sString);
+	ImGui::SameLine(); HelpMarker("Nominal total width of the pocket, in current machine units.");
+
+	//Overtravel Distance
+	sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+	ImGui::InputFloat("Overtravel distance", &fProbingPocketCenter_Overtravel, 0.1f, 1.0f, sString);
+	ImGui::SameLine(); HelpMarker("Distance beyond the nominal pocket width to continue probing before failing.");
+
+	//Feed rate
+	ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
+	ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
+	ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
+	ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
+
+
+	ImGui::SeparatorText("Completion");
+
+	//Zero WCS?
+	ImGui::Checkbox("Zero WCS", &bProbing_ZeroWCS);
+	ImGui::SameLine();
+
+	//Disable the combo if the option isn't selected
+	if (!bProbing_ZeroWCS)
+		ImGui::BeginDisabled();
+
+	//The combo box
+	x = MachineStatus.WCS;
+	if (x < Carvera::CoordSystem::G54)
+		x = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
+
+	if (ImGui::BeginCombo("##ProbingPocketCenter_WCS", szWCSChoices[x]))
+	{
+		x = Carvera::CoordSystem::G54;
+		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+		{
+			//Add the item
+			const bool is_selected = (ibProbing_WCSIndex == x);
+			if (ImGui::Selectable(szWCSChoices[x], is_selected))
+				ibProbing_WCSIndex = x;
+
+			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+			x++;
+		}
+
+		ImGui::EndCombo();
+	}
+
+	if (!bProbing_ZeroWCS)
+		ImGui::EndDisabled();
+
+	ImGui::SameLine();
+	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
+
+
+	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
+
+	if (ImGui::Button("Run", ImVec2(120, 0)))
+	{
+		//ImGui::CloseCurrentPopup();
+		//bProbingState = PROBE_STATE_BORECENTER_START;
+	}
+
+	ImGui::SetItemDefaultFocus();
+	ImGui::SameLine();
+
+	if (ImGui::Button("Cancel", ImVec2(120, 0)))
+	{
+		if (bProbingState != PROBE_STATE_IDLE)
+		{
+
+			sString[0] = 0x18; //Abort command
+			sString[1] = 0x0;
+			Comms_SendString(sString);
+		}
+
+		ImGui::CloseCurrentPopup();
+
+		//TODO: If running, ask if they want to cancel the op before closing
+	}
+
+
+	//Close the window once we're done
+	if (bProbingState == PROBE_STATE_COMPLETE)
+	{
+		bProbingState = PROBE_STATE_IDLE;
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::EndPopup();
+
+	Probing_PocketCenter_StateMachine(); //Run the state machine if an operation is going
 }
 
 
@@ -1200,11 +1326,11 @@ void Probing_SingleAxisPopup()
 	ImGui::SeparatorText("Completion");
 
 	//Zero WCS?
-	ImGui::Checkbox("Zero WCS", &bProbingSingleAxis_ZeroWCS);
+	ImGui::Checkbox("Zero WCS", &bProbing_ZeroWCS);
 	ImGui::SameLine();
 
 	//Disable the combo if the option isn't selected
-	if (!bProbingSingleAxis_ZeroWCS)
+	if (!bProbing_ZeroWCS)
 		ImGui::BeginDisabled();
 
 	//The combo box
@@ -1218,9 +1344,9 @@ void Probing_SingleAxisPopup()
 		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
 		{
 			//Add the item
-			const bool is_selected = (ibProbingSingleAxis_WCSIndex == x);
+			const bool is_selected = (ibProbing_WCSIndex == x);
 			if (ImGui::Selectable(szWCSChoices[x], is_selected))
-				ibProbingSingleAxis_WCSIndex = x;
+				ibProbing_WCSIndex = x;
 
 			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 			if (is_selected)
@@ -1231,7 +1357,7 @@ void Probing_SingleAxisPopup()
 		ImGui::EndCombo();
 	}
 
-	if (!bProbingSingleAxis_ZeroWCS)
+	if (!bProbing_ZeroWCS)
 		ImGui::EndDisabled();
 
 	ImGui::SameLine();
@@ -1282,25 +1408,48 @@ void Probing_Draw() //This is called from inside the main draw code
 	if (!bProbingPageInitialized)
 		Probing_InitPage();
 
-	ImGui::Button("Z probe");
-	
-	if (ImGui::Button("Bore Center"))
-		ImGui::OpenPopup("Probe Bore Center");
+	if (ImGui::BeginTable("table_probing_ops", 2))// , ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersH))
+	{
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
-	ImGui::SameLine(); ImGui::Text("       "); ImGui::SameLine();		
+		if (ImGui::Button(" Bore Center "))
+			ImGui::OpenPopup("Probe Bore Center");
 
-	if (ImGui::Button("Single Axis"))
-		ImGui::OpenPopup("Probe Single Axis");
+		ImGui::TableSetColumnIndex(1);
 
-	if (ImGui::Button("Boss center"))
-		ImGui::OpenPopup("Probe Boss Center");
-	
-	
-	ImGui::SameLine(); ImGui::Text("       "); ImGui::SameLine();		ImGui::Button("Interior Corner");
-	ImGui::Button("Slot center");		ImGui::SameLine(); ImGui::Text("       "); ImGui::SameLine();		ImGui::Button("Exterior Corner");
+		if (ImGui::Button("Single Axis"))
+			ImGui::OpenPopup("Probe Single Axis");
+
+		ImVec2 size = ImGui::GetItemRectSize();
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+
+		if (ImGui::Button(" Boss center "))
+			ImGui::OpenPopup("Probe Boss Center");
+
+		ImGui::TableSetColumnIndex(1);
+
+		ImGui::Button("Int Corner", size);
 
 
-	Probing_BoreCenterPopup();
-	Probing_BossCenterPopup();
-	Probing_SingleAxisPopup();
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+
+		if (ImGui::Button("Pocket center"))
+			ImGui::OpenPopup("Probe Pocket Center");
+
+		ImGui::TableSetColumnIndex(1);
+
+		ImGui::Button("Ext Corner", size);
+
+		//These have to go inside the Table.  If it's called after EndTable() they won't appear
+			Probing_BoreCenterPopup();
+			Probing_BossCenterPopup();
+			Probing_PocketCenterPopup();
+			Probing_SingleAxisPopup();
+
+		ImGui::EndTable();
+	}
 }
