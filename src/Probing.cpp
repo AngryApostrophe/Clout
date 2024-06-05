@@ -61,26 +61,26 @@ bool bProbingPageInitialized = false;
 	#define PROBE_STATE_SINGLEAXIS_GETCOORDS		18	//Ask for updated coordinates.  Otherwise we may be too quick and could use coords from 1/3 sec ago.
 	#define PROBE_STATE_SINGLEAXIS_FINISH			19	//Update any WCS offsets, inform user, etc.
 
-	GLuint imgProbingSingleAxis[3] = {0,0,0};			//One for each axis
-	int    iProbingSingleAxis_AxisDirectionIndex = 0;	//0 = x-,  1 = x+,  2 = y+,  3 = y-,  4 = z-
+	GLuint imgProbingSingleAxis[5] = {0,0,0,0,0};		//One for each axis and direction
+	int    iProbingSingleAxis_AxisDirectionIndex = 0;		//0 = x-,  1 = x+,  2 = y+,  3 = y-,  4 = z-
 	float  fProbingSingleAxis_Travel = 5.0f;			//How far to travel while looking for the edge
 
 //Boss center
 	GLuint imgProbingBossCenter = 0;
 	float  fProbingBossCenter_BossDiameter = 25.0f;		//Nominal diameter of the boss feater
 	float  fProbingBossCenter_Clearance = 5.0f;			//How far outside of the nominal diameter should we go before we turn back in
-	float  fProbingBossCenter_Overtravel = 5.0f;		//How far inside the nominal diameter we attempt to probe before failing
+	float  fProbingBossCenter_Overtravel = 5.0f;			//How far inside the nominal diameter we attempt to probe before failing
 	float  fProbingBossCenter_ZDepth = -10.0f;			//How deep we should lower the probe when we're ready to measure on the way back in.  Negative numbers are lower.
 
 //Pocket center
 	GLuint imgProbingPocketCenter[2] = { 0,0 };			//One for X and Y
-	int	   iProbingPocketCenter_AxisIndex = 0;			// Which axis to probe in.  0=X,  1=Y
-	float  fProbingPocketCenter_PocketWidth = 15.0f;	//Nominal total width of the Pocket
+	int	  iProbingPocketCenter_AxisIndex = 0;			// Which axis to probe in.  0=X,  1=Y
+	float  fProbingPocketCenter_PocketWidth = 15.0f;		//Nominal total width of the Pocket
 	float  fProbingPocketCenter_Overtravel = 5.0f;		//How far beyond the nominal width we attempt to probe before failing
 
 //Web center
 	GLuint imgProbingWebCenter[2] = { 0,0 };			//One for X and Y
-	int	   iProbingWebCenter_AxisIndex = 0;				// Which axis to probe in.  0=X,  1=Y
+	int	  iProbingWebCenter_AxisIndex = 0;				// Which axis to probe in.  0=X,  1=Y
 	float  fProbingWebCenter_WebWidth = 15.0f;			//Nominal total width of the feature
 	float  fProbingWebCenter_Clearance = 5.0f;			//How far outside of the nominal width should we go before we turn back in
 	float  fProbingWebCenter_Overtravel = 5.0f;			//How far inside the nominal width we attempt to probe before failing
@@ -107,9 +107,13 @@ void Probing_InitPage()
 {
 	ProbingLoadImage(&imgProbingBoreCenter, "./res/ProbeBore.png");
 	ProbingLoadImage(&imgProbingBossCenter, "./res/ProbeBoss.png");
-	ProbingLoadImage(&imgProbingSingleAxis[0], "./res/ProbeSingleAxisX.png");
-	ProbingLoadImage(&imgProbingSingleAxis[1], "./res/ProbeSingleAxisY.png");
-	ProbingLoadImage(&imgProbingSingleAxis[2], "./res/ProbeSingleAxisZ.png");
+	
+	ProbingLoadImage(&imgProbingSingleAxis[0], "./res/ProbeSingleAxisX0.png");
+	ProbingLoadImage(&imgProbingSingleAxis[1], "./res/ProbeSingleAxisX1.png");
+	ProbingLoadImage(&imgProbingSingleAxis[2], "./res/ProbeSingleAxisY2.png");
+	ProbingLoadImage(&imgProbingSingleAxis[3], "./res/ProbeSingleAxisY3.png");
+	ProbingLoadImage(&imgProbingSingleAxis[4], "./res/ProbeSingleAxisZ4.png");
+
 	ProbingLoadImage(&imgProbingPocketCenter[0], "./res/ProbePocketX.png");
 	ProbingLoadImage(&imgProbingPocketCenter[1], "./res/ProbePocketY.png");
 	ProbingLoadImage(&imgProbingWebCenter[0], "./res/ProbeWebX.png");
@@ -1184,13 +1188,7 @@ void Probing_SingleAxisPopup()
 	ImGui::Text("	Probe must be at start position to move in one axis only");
 
 
-	GLuint *img = &imgProbingSingleAxis[0]; //X
-	if (iProbingSingleAxis_AxisDirectionIndex == 2 || iProbingSingleAxis_AxisDirectionIndex == 3)
-		img = &imgProbingSingleAxis[1]; //y
-	else if (iProbingSingleAxis_AxisDirectionIndex == 4 || iProbingSingleAxis_AxisDirectionIndex == 5)
-		img = &imgProbingSingleAxis[2]; //z
-
-	ImGui::Image((void*)(intptr_t)*img, ImVec2(450, 342));
+	ImGui::Image((void*)(intptr_t)imgProbingSingleAxis[iProbingSingleAxis_AxisDirectionIndex], ImVec2(450, 342));
 
 	//ImGui::Separator();
 
@@ -1198,6 +1196,9 @@ void Probing_SingleAxisPopup()
 	ImGui::Dummy(ImVec2(0.0f, 5)); //Extra empty space
 
 	//Which Axis
+		//ImGui::Text("Probe direction:");
+		ImGui::SeparatorText("Probe direction");
+
 		if (ImGui::BeginTable("table_singleaxis_axis", 4 /*, ImGuiTableFlags_Borders*/))
 		{
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 140);
@@ -1373,7 +1374,7 @@ void Probing_SingleAxisPopup()
 		ImGui::EndDisabled();
 
 	ImGui::SameLine();
-	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
+	HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
@@ -1444,6 +1445,26 @@ void Probing_WebCenterPopup()
 	//ImGui::Separator();
 
 	ImGui::SeparatorText("Setup");
+
+	//Axis
+	const char szAxisChoices[][2] = { "X", "Y" };
+	if (ImGui::BeginCombo("Probe Axis##WebCenter", szAxisChoices[iProbingWebCenter_AxisIndex]))
+	{
+		for (int x = 0; x < 2; x++)
+		{
+			//Add the item
+			const bool is_selected = (iProbingWebCenter_AxisIndex == x);
+			if (ImGui::Selectable(szAxisChoices[x], is_selected))
+				iProbingWebCenter_AxisIndex = x;
+
+			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine(); HelpMarker("Axis in which to probe.");
 
 	//Web Diameter
 	sprintf_s(sString, 10, "%%0.3f%s", sUnits);
