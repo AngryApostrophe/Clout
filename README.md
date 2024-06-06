@@ -39,3 +39,4 @@ Clout uses the following libraries:
 * [GLM](https://github.com/g-truc/glm) - OpenGL mathematics
 * [stb](https://github.com/nothings/stb/) - Image handling
 * [nlohmann/JSON](https://github.com/nlohmann/json) - JSON data handling
+* [ImGuiFileDialog](https://github.com/aiekick/ImGuiFileDialog) - Gui File Dialog
