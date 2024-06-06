@@ -565,6 +565,9 @@ void Probing_BoreCenter_StateMachine()
 			ProbeEndPos.x = MachineStatus.Coord.Working.x;
 			ProbeEndPos.y = MachineStatus.Coord.Working.y;
 
+			sprintf_s(sCmd, 50, "G0 F%f", ProbingStartFeedrate.x); //Restore the feedrate to what it was
+			Comms_SendString(sCmd);
+
 			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Bore center: (%0.03f, %0.03f)", ProbeEndPos.x, ProbeEndPos.y);
 			bProbingState = PROBE_STATE_COMPLETE;
 		break;
@@ -847,14 +850,14 @@ void Probing_PocketCenter_StateMachine()
 
 	case PROBE_STATE_POCKETCENTER_START:
 		//Save the feedrates for later
-		ProbingStartFeedrate.x = MachineStatus.FeedRates.x;
-		ProbingStartFeedrate.y = MachineStatus.FeedRates.y;
-		ProbingStartFeedrate.z = MachineStatus.FeedRates.z;
+			ProbingStartFeedrate.x = MachineStatus.FeedRates.x;
+			ProbingStartFeedrate.y = MachineStatus.FeedRates.y;
+			ProbingStartFeedrate.z = MachineStatus.FeedRates.z;
 
 		//Save the starting position
-		ProbeStartPos.x = MachineStatus.Coord.Working.x;
-		ProbeStartPos.y = MachineStatus.Coord.Working.y;
-		ProbeStartPos.z = MachineStatus.Coord.Working.z;
+			ProbeStartPos.x = MachineStatus.Coord.Working.x;
+			ProbeStartPos.y = MachineStatus.Coord.Working.y;
+			ProbeStartPos.z = MachineStatus.Coord.Working.z;
 
 		bOperationRunning = true; //Limit what we show on the console (from comms module)
 
@@ -1222,6 +1225,9 @@ void Probing_PocketCenter_StateMachine()
 		break;
 
 	case PROBE_STATE_POCKETCENTER_FINISH:
+		sprintf_s(sCmd, 50, "G0 F%f", ProbingStartFeedrate.x); //Restore the feedrate to what it was
+		Comms_SendString(sCmd);
+
 		if (iProbingPocketCenter_AxisIndex == 0) //X axis
 		{
 			ProbeEndPos.x = MachineStatus.Coord.Working.x;
@@ -1544,6 +1550,9 @@ void Probing_SingleAxis_StateMachine()
 		break;
 
 	case PROBE_STATE_SINGLEAXIS_FINISH:
+		sprintf_s(sCmd, 50, "G0 F%f", ProbingStartFeedrate.x); //Restore the feedrate to what it was
+		Comms_SendString(sCmd);
+
 		//Get the end position in WCS
 			ProbeEndPos.x = MachineStatus.Coord.Working.x;
 			ProbeEndPos.y = MachineStatus.Coord.Working.y;
