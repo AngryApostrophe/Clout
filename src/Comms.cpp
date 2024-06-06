@@ -433,6 +433,9 @@ BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, BOOL bShowOnLog)
 			{
 				c += 2; //The start of X feed rate
 				CommaStringTo3Doubles(c, &MachineStatus.FeedRates.x, &MachineStatus.FeedRates.y, &MachineStatus.FeedRates.z);
+
+				//Actually the first one isn't X feedrate.  Y feedrate is shared with X.  The first value always seems to be 0?
+				MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
 			}
 	}
 	else if (strncmp(sRecv, "[PRB:", 5) == 0) //Response to a probing operation	eg: [PRB:-227.990, -1.000, -1.000 : 1]
