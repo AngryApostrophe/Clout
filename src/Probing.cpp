@@ -15,10 +15,10 @@
 bool bProbingPageInitialized = false;
 
 //Common settings
-	int iProbingSpeedFast = 50;
+	int iProbingSpeedFast = 300;
 	int iProbingSpeedSlow = 10;
 	
-	BYTE bProbingState = 0; //Idle
+	int iProbingState = 0; //Idle
 	bool bProbingStepIsRunning = false; //True if we have sent this step to the machine, and are just waiting for it to complete.
 
 	DOUBLE_XYZ ProbingStartFeedrate; //What was the feed rate before we started?  We'll restore this when we're done
@@ -35,7 +35,7 @@ bool bProbingPageInitialized = false;
 	#define PROBE_STATE_COMPLETE		255	//All done, close the window
 	
 //Bore Center
-	#define PROBE_STATE_BORECENTER_START			1	//User just clicked ok
+	#define PROBE_STATE_BORECENTER_START			1	//User just clicked Run
 	#define PROBE_STATE_BORECENTER_PROBE_MIN_X_FAST	2	//Probing left until we find the minimum x
 	#define PROBE_STATE_BORECENTER_PROBE_MIN_X_SLOW	3	//Moving slowly to the right until we de-trigger
 	#define PROBE_STATE_BORECENTER_START_X			4	//Moving to start x
@@ -55,43 +55,74 @@ bool bProbingPageInitialized = false;
 	float  fProbingBoreCenter_Overtravel = 5.0f;
 
 //Single Axis
-	#define PROBE_STATE_SINGLEAXIS_START			15	//User just clicked ok
-	#define PROBE_STATE_SINGLEAXIS_PROBE_FAST		16	//Probing in desired direction
-	#define PROBE_STATE_SINGLEAXIS_PROBE_SLOW		17	//Probing away from the detected edge
-	#define PROBE_STATE_SINGLEAXIS_GETCOORDS		18	//Ask for updated coordinates.  Otherwise we may be too quick and could use coords from 1/3 sec ago.
-	#define PROBE_STATE_SINGLEAXIS_FINISH			19	//Update any WCS offsets, inform user, etc.
+	#define PROBE_STATE_SINGLEAXIS_START			100	//User just clicked Run
+	#define PROBE_STATE_SINGLEAXIS_PROBE_FAST		101	//Probing in desired direction
+	#define PROBE_STATE_SINGLEAXIS_PROBE_SLOW		102	//Probing away from the detected edge
+	#define PROBE_STATE_SINGLEAXIS_GETCOORDS		103	//Ask for updated coordinates.  Otherwise we may be too quick and could use coords from 1/3 sec ago.
+	#define PROBE_STATE_SINGLEAXIS_FINISH			104	//Update any WCS offsets, inform user, etc.
 
 	GLuint imgProbingSingleAxis[5] = {0,0,0,0,0};		//One for each axis and direction
 	int    iProbingSingleAxis_AxisDirectionIndex = 0;		//0 = x-,  1 = x+,  2 = y+,  3 = y-,  4 = z-
 	float  fProbingSingleAxis_Travel = 5.0f;			//How far to travel while looking for the edge
 
-//Boss center
-	GLuint imgProbingBossCenter = 0;
-	float  fProbingBossCenter_BossDiameter = 25.0f;		//Nominal diameter of the boss feater
-	float  fProbingBossCenter_Clearance = 5.0f;			//How far outside of the nominal diameter should we go before we turn back in
-	float  fProbingBossCenter_Overtravel = 5.0f;			//How far inside the nominal diameter we attempt to probe before failing
-	float  fProbingBossCenter_ZDepth = -10.0f;			//How deep we should lower the probe when we're ready to measure on the way back in.  Negative numbers are lower.
-
 //Pocket center
-	#define PROBE_STATE_POCKETCENTER_START			1	//User just clicked ok.  May jump to either PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST or PROBE_STATE_POCKETCENTER_START_Y depending on what we've selected
-	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST	2	//Probing left until we find the minimum x
-	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_X_SLOW	3	//Moving slowly to the right until we de-trigger
-	#define PROBE_STATE_POCKETCENTER_START_X		4	//Moving to start x
-	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_X_FAST	5	//Probing right until we find the maximum x
-	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_X_SLOW	6	//Moving slowly to the left until we de-trigger
-	#define PROBE_STATE_POCKETCENTER_CENTER_X		7	//Move to center x, done proving
-	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST	8	//Probing back until we find the minimum y
-	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_SLOW	9	//Moving forward slowly until we de-trigger
-	#define PROBE_STATE_POCKETCENTER_START_Y		10	//Moving to start y
-	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_FAST	11	//Probing forward until we find the maximum y
-	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_SLOW	12	//Moving slowly back until we de-trigger
-	#define PROBE_STATE_POCKETCENTER_CENTER_Y		13	//Move to center y, done probing
-	#define PROBE_STATE_POCKETCENTER_FINISH			14	//Update any WCS offsets, inform user, etc.
+	#define PROBE_STATE_POCKETCENTER_START			200	//User just clicked Run.  May jump to either PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST or PROBE_STATE_POCKETCENTER_START_Y depending on what we've selected
+	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST	201	//Probing left until we find the minimum x
+	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_X_SLOW	202	//Moving slowly to the right until we de-trigger
+	#define PROBE_STATE_POCKETCENTER_START_X		203	//Moving to start x
+	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_X_FAST	204	//Probing right until we find the maximum x
+	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_X_SLOW	205	//Moving slowly to the left until we de-trigger
+	#define PROBE_STATE_POCKETCENTER_CENTER_X		206	//Move to center x, done proving
+	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST	207	//Probing back until we find the minimum y
+	#define PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_SLOW	208	//Moving forward slowly until we de-trigger
+	#define PROBE_STATE_POCKETCENTER_START_Y		209	//Moving to start y
+	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_FAST	210	//Probing forward until we find the maximum y
+	#define PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_SLOW	211	//Moving slowly back until we de-trigger
+	#define PROBE_STATE_POCKETCENTER_CENTER_Y		212	//Move to center y, done probing
+	#define PROBE_STATE_POCKETCENTER_FINISH			213	//Update any WCS offsets, inform user, etc.
 
 	GLuint imgProbingPocketCenter[2] = { 0,0 };			//One for X and Y
 	int	  iProbingPocketCenter_AxisIndex = 0;			//Which axis to probe in.  0=X,  1=Y
 	float  fProbingPocketCenter_PocketWidth = 15.0f;		//Nominal total width of the Pocket
 	float  fProbingPocketCenter_Overtravel = 5.0f;		//How far beyond the nominal width we attempt to probe before failing
+
+//Boss center
+	#define PROBE_STATE_BOSSCENTER_START			300	//User just clicked Run
+	#define PROBE_STATE_BOSSCENTER_TO_MIN_X			301	//Travel to the min X (still at clearance height)
+	#define PROBE_STATE_BOSSCENTER_LOWER_MIN_X		302	//Lower to probing height
+	#define PROBE_STATE_BOSSCENTER_PROBE_MIN_X_FAST	303	//Probing right until we find the minimum x
+	#define PROBE_STATE_BOSSCENTER_PROBE_MIN_X_SLOW	304	//Moving slowly to the left until we de-trigger
+	#define PROBE_STATE_BOSSCENTER_CLEAR_MIN_X		305	//Moving further away before we raise up
+	#define PROBE_STATE_BOSSCENTER_RAISE_MIN_X		306	//Raise back up to clearance height
+	#define PROBE_STATE_BOSSCENTER_START_X			307	//Move back to starting point
+	#define PROBE_STATE_BOSSCENTER_TO_MAX_X			308	//Travel to the max X (still at clearance height)
+	#define PROBE_STATE_BOSSCENTER_LOWER_MAX_X		309	//Lower to probing height
+	#define PROBE_STATE_BOSSCENTER_PROBE_MAX_X_FAST	310	//Probing left until we find the maximum x
+	#define PROBE_STATE_BOSSCENTER_PROBE_MAX_X_SLOW	311	//Moving slowly to the right until we de-trigger
+	#define PROBE_STATE_BOSSCENTER_CLEAR_MAX_X		312	//Moving further away before we raise up
+	#define PROBE_STATE_BOSSCENTER_RAISE_MAX_X		313	//Raise back up to clearance height
+	#define PROBE_STATE_BOSSCENTER_CENTER_X			314	//Move to center x
+	#define PROBE_STATE_BOSSCENTER_TO_MIN_Y			315	//Travel to the min Y (still at clearance height)
+	#define PROBE_STATE_BOSSCENTER_LOWER_MIN_Y		316	//Lower to probing height
+	#define PROBE_STATE_BOSSCENTER_PROBE_MIN_Y_FAST	317	//Probing forward until we find the minimum y
+	#define PROBE_STATE_BOSSCENTER_PROBE_MIN_Y_SLOW	318	//Moving back slowly until we de-trigger
+	#define PROBE_STATE_BOSSCENTER_CLEAR_MIN_Y		319	//Moving further away before we raise up
+	#define PROBE_STATE_BOSSCENTER_RAISE_MIN_Y		320	//Raise back up to clearance height
+	#define PROBE_STATE_BOSSCENTER_START_Y			321	//Moving to start y
+	#define PROBE_STATE_BOSSCENTER_TO_MAX_Y			322	//Travel to the max Y (still at clearance height)
+	#define PROBE_STATE_BOSSCENTER_LOWER_MAX_Y		323	//Lower to probing height
+	#define PROBE_STATE_BOSSCENTER_PROBE_MAX_Y_FAST	324	//Probing back until we find the maximum y
+	#define PROBE_STATE_BOSSCENTER_PROBE_MAX_Y_SLOW	325	//Moving slowly foward until we de-trigger
+	#define PROBE_STATE_BOSSCENTER_CLEAR_MAX_Y		326	//Moving further away before we raise up
+	#define PROBE_STATE_BOSSCENTER_RAISE_MAX_Y		327	//Raise back up to clearance height
+	#define PROBE_STATE_BOSSCENTER_CENTER			328	//Moving to the center, done probing
+	#define PROBE_STATE_BOSSCENTER_FINISH			329	//Update any WCS offsets, inform user, etc.
+
+	GLuint imgProbingBossCenter = 0;
+	float  fProbingBossCenter_BossDiameter = 25.0f;		//Nominal diameter of the boss feater
+	float  fProbingBossCenter_Clearance = 5.0f;			//How far outside of the nominal diameter should we go before we turn back in
+	float  fProbingBossCenter_Overtravel = 5.0f;			//How far inside the nominal diameter we attempt to probe before failing
+	float  fProbingBossCenter_ZDepth = -10.0f;			//How deep we should lower the probe when we're ready to measure on the way back in.  Negative numbers are lower.
 
 //Web center
 	GLuint imgProbingWebCenter[2] = { 0,0 };			//One for X and Y
@@ -139,16 +170,16 @@ void Probing_InitPage()
 
 
 
-bool Probing_SuccessOrFail(char* s, DOUBLE_XYZ* xyz)
+int Probing_SuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOnFail)
 {
-	bool bResult = false;
+	int iResult = 0;
 	//Make sure we got something
 		if (s == 0)
 		{
 			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error reading response.  Aborted.");
-			bProbingState = PROBE_STATE_IDLE;
+			iProbingState = PROBE_STATE_IDLE;
 			
-			return false; //Abort
+			return -1; //Abort
 		}
 
 	//Get the result
@@ -158,9 +189,9 @@ bool Probing_SuccessOrFail(char* s, DOUBLE_XYZ* xyz)
 			free(sProbeReplyMessage);
 			sProbeReplyMessage = 0;
 			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unexpected response from Carvera.  Aborted.");
-			bProbingState = PROBE_STATE_IDLE;
+			iProbingState = PROBE_STATE_IDLE;
 			
-			return false;
+			return -1;
 		}
 		c--; //Move to the digit before
 
@@ -171,26 +202,31 @@ bool Probing_SuccessOrFail(char* s, DOUBLE_XYZ* xyz)
 				if (xyz != 0)
 					CommaStringTo3Doubles(sProbeReplyMessage + 5, &xyz->x, &xyz->y, &xyz->z);
 
-			bResult = true;
+			iResult = 1;
 		}
 	//Failed to find the edge
 		else
 		{
-			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Failed to find the edge.  Aborted.");
-			bProbingState = PROBE_STATE_IDLE;
+			//Sometimes we're hoping to NOT find an edge.  This is a safety feature
+
+			if (bAbortOnFail)
+			{
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Failed to find the edge.  Aborted.");
+				iProbingState = PROBE_STATE_IDLE;
+			}
 		}
 
 	free(sProbeReplyMessage);
 	sProbeReplyMessage = 0;
 
-	return bResult;
+	return iResult;
 }
 
 void Probing_BoreCenter_StateMachine()
 {
 	char sCmd[50];
 
-	switch (bProbingState)
+	switch (iProbingState)
 	{
 		case PROBE_STATE_IDLE:
 			bOperationRunning = false;
@@ -210,7 +246,7 @@ void Probing_BoreCenter_StateMachine()
 			bOperationRunning = true; //Limit what we show on the console (from comms module)
 
 			bProbingStepIsRunning = false;
-			bProbingState++;			
+			iProbingState++;			
 		break;
 
 		case PROBE_STATE_BORECENTER_PROBE_MIN_X_FAST:
@@ -230,7 +266,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -241,7 +277,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -263,7 +299,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos1))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -274,7 +310,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -294,7 +330,7 @@ void Probing_BoreCenter_StateMachine()
 				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.x - ProbeStartPos.x) < 0.1)
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 		break;
@@ -316,7 +352,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -327,7 +363,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -349,7 +385,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos2))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -360,7 +396,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -379,11 +415,10 @@ void Probing_BoreCenter_StateMachine()
 				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.x - ProbeStartPos.x) < 0.1)
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			break;
-		break;
 
 
 		case PROBE_STATE_BORECENTER_PROBE_MIN_Y_FAST:
@@ -403,7 +438,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -414,7 +449,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 			break;
@@ -436,7 +471,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos3))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -447,7 +482,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 			break;
@@ -467,7 +502,7 @@ void Probing_BoreCenter_StateMachine()
 				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.y - ProbeStartPos.y) < 0.1)
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			break;
@@ -489,7 +524,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -500,7 +535,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -522,7 +557,7 @@ void Probing_BoreCenter_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos4))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -533,7 +568,7 @@ void Probing_BoreCenter_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -556,7 +591,7 @@ void Probing_BoreCenter_StateMachine()
 				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Machine.y - ProbeEndPos.y) < 0.1) //We only need to monitor Y here, since that's what we last moved
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 		break;
@@ -569,7 +604,7 @@ void Probing_BoreCenter_StateMachine()
 			Comms_SendString(sCmd);
 
 			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Bore center: (%0.03f, %0.03f)", ProbeEndPos.x, ProbeEndPos.y);
-			bProbingState = PROBE_STATE_COMPLETE;
+			iProbingState = PROBE_STATE_COMPLETE;
 		break;
 	}
 }
@@ -665,18 +700,18 @@ void Probing_BoreCenterPopup()
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
-	if (ImGui::Button("Run", ImVec2(120, 0)))
+	if (ImGui::Button("Run##BoreCenter", ImVec2(120, 0)))
 	{
 		//ImGui::CloseCurrentPopup();
-		bProbingState = PROBE_STATE_BORECENTER_START;
+		iProbingState = PROBE_STATE_BORECENTER_START;
 	}
 	
 	ImGui::SetItemDefaultFocus();
 	ImGui::SameLine();
 
-	if (ImGui::Button("Cancel", ImVec2(120, 0))) 
+	if (ImGui::Button("Cancel##BoreCenter", ImVec2(120, 0))) 
 	{ 
-		if (bProbingState != PROBE_STATE_IDLE)
+		if (iProbingState != PROBE_STATE_IDLE)
 		{
 
 			sString[0] = 0x18; //Abort command
@@ -691,15 +726,951 @@ void Probing_BoreCenterPopup()
 	
 
 	//Close the window once we're done
-		if (bProbingState == PROBE_STATE_COMPLETE)
+		if (iProbingState == PROBE_STATE_COMPLETE)
 		{
-			bProbingState = PROBE_STATE_IDLE;
+			iProbingState = PROBE_STATE_IDLE;
 			ImGui::CloseCurrentPopup();
 		}
 
 	ImGui::EndPopup();
 
 	Probing_BoreCenter_StateMachine(); //Run the state machine if an operation is going
+}
+
+void Probing_BossCenter_StateMachine()
+{
+	char sCmd[50];
+
+	switch (iProbingState)
+	{
+	case PROBE_STATE_IDLE:
+		bOperationRunning = false;
+		break;
+
+	case PROBE_STATE_BOSSCENTER_START:
+		//Save the feedrates for later
+			ProbingStartFeedrate.x = MachineStatus.FeedRates.x;
+			ProbingStartFeedrate.y = MachineStatus.FeedRates.y;
+			ProbingStartFeedrate.z = MachineStatus.FeedRates.z;
+
+		//Save the starting position
+			ProbeStartPos.x = MachineStatus.Coord.Working.x;
+			ProbeStartPos.y = MachineStatus.Coord.Working.y;
+			ProbeStartPos.z = MachineStatus.Coord.Working.z;
+
+		bOperationRunning = true; //Limit what we show on the console (from comms module)
+
+		bProbingStepIsRunning = false;
+		iProbingState = PROBE_STATE_BOSSCENTER_TO_MIN_X;
+		break;
+
+	case PROBE_STATE_BOSSCENTER_TO_MIN_X:
+		if (!bProbingStepIsRunning)
+		{
+			sprintf_s(sCmd, 50, "G38.3 X-%0.2f F%d", (fProbingBossCenter_BossDiameter / 2.0f) + fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to the min x.  Treat it as a probe just in case we hit something we shouldn't
+			Comms_SendString(sCmd);
+
+			bProbingStepIsRunning = TRUE;
+		}
+		else //Step is running.  Monitor for completion
+		{
+			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			{
+				if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState = PROBE_STATE_BOSSCENTER_LOWER_MIN_X;
+				}
+				else
+				{
+					//We hit something when we shouldn't have, abort
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			{
+				//Abort anything going on, just in case it's running away
+				sCmd[0] = 0x18; //Abort command
+				sCmd[1] = 0x0;
+				Comms_SendString(sCmd);
+
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+				iProbingState = PROBE_STATE_IDLE;
+			}
+		}
+		break;
+
+	case PROBE_STATE_BOSSCENTER_LOWER_MIN_X:
+		if (!bProbingStepIsRunning)
+		{
+			sprintf_s(sCmd, 50, "G38.3 Z%0.2f F%d", fProbingBossCenter_ZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+			Comms_SendString(sCmd);
+
+			bProbingStepIsRunning = TRUE;
+		}
+		else //Step is running.  Monitor for completion
+		{
+			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			{
+				if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+				else
+				{
+					//We hit something when we shouldn't have, abort
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			{
+				//Abort anything going on, just in case it's running away
+				sCmd[0] = 0x18; //Abort command
+				sCmd[1] = 0x0;
+				Comms_SendString(sCmd);
+
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+				iProbingState = PROBE_STATE_IDLE;
+			}
+		}
+		break;
+
+	case PROBE_STATE_BOSSCENTER_PROBE_MIN_X_FAST:
+		if (!bProbingStepIsRunning)
+		{
+			sprintf_s(sCmd, 50, "G38.3 X%0.2f F%d", fProbingBossCenter_Clearance + fProbingBossCenter_Overtravel, iProbingSpeedFast); //Probe in towards the center
+			Comms_SendString(sCmd);
+
+			bProbingStepIsRunning = TRUE;
+		}
+		else //Step is running.  Monitor for completion
+		{
+			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			{
+				if (Probing_SuccessOrFail(sProbeReplyMessage))
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			{
+				//Abort anything going on, just in case it's running away
+				sCmd[0] = 0x18; //Abort command
+				sCmd[1] = 0x0;
+				Comms_SendString(sCmd);
+
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+				iProbingState = PROBE_STATE_IDLE;
+			}
+		}
+		break;
+
+	case PROBE_STATE_BOSSCENTER_PROBE_MIN_X_SLOW:
+		if (!bProbingStepIsRunning)
+		{
+			sprintf_s(sCmd, 50, "G38.5 X-%0.2f F%d", fProbingBossCenter_Overtravel, iProbingSpeedSlow); //Back off to the left, at slow speed
+			Comms_SendString(sCmd);
+
+			bProbingStepIsRunning = TRUE;
+		}
+		else //Step is running.  Monitor for completion
+		{
+			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			{
+				if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos1))
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			{
+				//Abort anything going on, just in case it's running away
+				sCmd[0] = 0x18; //Abort command
+				sCmd[1] = 0x0;
+				Comms_SendString(sCmd);
+
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+				iProbingState = PROBE_STATE_IDLE;
+			}
+		}
+		break;
+
+		case PROBE_STATE_BOSSCENTER_CLEAR_MIN_X:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 X-%0.2f F%d", fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to clearance x pos
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+		break;
+
+		case PROBE_STATE_BOSSCENTER_RAISE_MIN_X:
+			if (!bProbingStepIsRunning)
+			{
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
+
+				sprintf_s(sCmd, 50, "G0 Z%0.2f F%d", ProbeStartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.z - ProbeStartPos.z) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_START_X:
+			if (!bProbingStepIsRunning)
+			{
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
+
+				sprintf_s(sCmd, 50, "G0 X%0.2f F%d", ProbeStartPos.x, iProbingSpeedFast); //All the way back to center
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.x - ProbeStartPos.x) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_TO_MAX_X:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 X%0.2f F%d", (fProbingBossCenter_BossDiameter / 2.0f) + fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to the max x.  Treat it as a probe just in case we hit something we shouldn't
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_LOWER_MAX_X:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Z%0.2f F%d", fProbingBossCenter_ZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+
+		case PROBE_STATE_BOSSCENTER_PROBE_MAX_X_FAST:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 X-%0.2f F%d", fProbingBossCenter_Clearance + fProbingBossCenter_Overtravel, iProbingSpeedFast); //Probe in towards the center
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage))
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_PROBE_MAX_X_SLOW:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.5 X%0.2f F%d", fProbingBossCenter_Overtravel, iProbingSpeedSlow); //Back off to the right, at slow speed
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos2))
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_CLEAR_MAX_X:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 X%0.2f F%d", fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to clearance x pos
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_RAISE_MAX_X:
+			if (!bProbingStepIsRunning)
+			{
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
+
+				sprintf_s(sCmd, 50, "G0 Z%0.2f F%d", ProbeStartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.z - ProbeStartPos.z) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_CENTER_X:
+			if (!bProbingStepIsRunning)
+			{
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
+				sprintf_s(sCmd, 50, "G0 X%0.2f F%d", ProbeStartPos.x, iProbingSpeedFast); //All the way back to center
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.x - ProbeStartPos.x) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_TO_MIN_Y:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Y-%0.2f F%d", (fProbingBossCenter_BossDiameter / 2.0f) + fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to the min y.  Treat it as a probe just in case we hit something we shouldn't
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_LOWER_MIN_Y:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Z%0.2f F%d", fProbingBossCenter_ZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_PROBE_MIN_Y_FAST:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Y%0.2f F%d", fProbingBossCenter_Clearance + fProbingBossCenter_Overtravel, iProbingSpeedFast); //Probe forward towards the center
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage))
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_PROBE_MIN_Y_SLOW:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.5 Y-%0.2f F%d", fProbingBossCenter_Overtravel, iProbingSpeedSlow); //Back off to the rear, at slow speed
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos3))
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_CLEAR_MIN_Y:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Y-%0.2f F%d", fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to clearance y pos
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_RAISE_MIN_Y:
+			if (!bProbingStepIsRunning)
+			{
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
+
+				sprintf_s(sCmd, 50, "G0 Z%0.2f F%d", ProbeStartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.z - ProbeStartPos.z) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_START_Y:
+			if (!bProbingStepIsRunning)
+			{
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
+
+				sprintf_s(sCmd, 50, "G0 Y%0.2f F%d", ProbeStartPos.y, iProbingSpeedFast); //All the way back to center
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.y - ProbeStartPos.y) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_TO_MAX_Y:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Y%0.2f F%d", (fProbingBossCenter_BossDiameter / 2.0f) + fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to the max y.  Treat it as a probe just in case we hit something we shouldn't
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_LOWER_MAX_Y:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Z%0.2f F%d", fProbingBossCenter_ZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+
+		case PROBE_STATE_BOSSCENTER_PROBE_MAX_Y_FAST:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Y-%0.2f F%d", fProbingBossCenter_Clearance + fProbingBossCenter_Overtravel, iProbingSpeedFast); //Probe rearwards towards the center
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage))
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_PROBE_MAX_Y_SLOW:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.5 Y%0.2f F%d", fProbingBossCenter_Overtravel, iProbingSpeedSlow); //Back off forward, at slow speed
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos4))
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_CLEAR_MAX_Y:
+			if (!bProbingStepIsRunning)
+			{
+				sprintf_s(sCmd, 50, "G38.3 Y%0.2f F%d", fProbingBossCenter_Clearance, iProbingSpeedFast); //Move to clearance y pos
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+
+				if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+				{
+					if (Probing_SuccessOrFail(sProbeReplyMessage, 0, false) == 0) //Make sure we didn't hit something
+					{
+						bProbingStepIsRunning = 0;
+						iProbingState++;
+					}
+					else
+					{
+						//We hit something when we shouldn't have, abort
+						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+						iProbingState = PROBE_STATE_IDLE;
+					}
+				}
+				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+				{
+					//Abort anything going on, just in case it's running away
+					sCmd[0] = 0x18; //Abort command
+					sCmd[1] = 0x0;
+					Comms_SendString(sCmd);
+
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+					iProbingState = PROBE_STATE_IDLE;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_RAISE_MAX_Y:
+			if (!bProbingStepIsRunning)
+			{
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
+
+				sprintf_s(sCmd, 50, "G0 Z%0.2f F%d", ProbeStartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.z - ProbeStartPos.z) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_CENTER:
+			if (!bProbingStepIsRunning)
+			{
+				//Calculate center in Machine coords
+					ProbeEndPos.x = (ProbePos1.x + ProbePos2.x) / 2.0;
+					ProbeEndPos.y = (ProbePos3.y + ProbePos4.y) / 2.0;
+
+				Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning. 
+				sprintf_s(sCmd, 50, "G53 G0 X%0.2f Y%0.2f F%d", ProbeEndPos.x, ProbeEndPos.y, iProbingSpeedFast); //All the way back to center, in MCS
+				Comms_SendString(sCmd);
+
+				bProbingStepIsRunning = TRUE;
+			}
+			else //Step is running.  Monitor for completion
+			{
+				if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Machine.y - ProbeEndPos.y) < 0.1 && fabs(MachineStatus.Coord.Machine.x - ProbeEndPos.x) < 0.1)
+				{
+					bProbingStepIsRunning = 0;
+					iProbingState++;
+				}
+			}
+			break;
+
+		case PROBE_STATE_BOSSCENTER_FINISH:
+			ProbeEndPos.x = MachineStatus.Coord.Working.x;
+			ProbeEndPos.y = MachineStatus.Coord.Working.y;
+
+			sprintf_s(sCmd, 50, "G0 F%f", ProbingStartFeedrate.x); //Restore the feedrate to what it was
+			Comms_SendString(sCmd);
+
+			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Boss center: (%0.03f, %0.03f)", ProbeEndPos.x, ProbeEndPos.y);
+			iProbingState = PROBE_STATE_COMPLETE;
+			break;
+	}
 }
 
 
@@ -800,17 +1771,17 @@ void Probing_BossCenterPopup()
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
-	if (ImGui::Button("Run", ImVec2(120, 0)))
+	if (ImGui::Button("Run##BossCenter", ImVec2(120, 0)))
 	{
-		//bProbingState = PROBE_STATE_BOSSCENTER_START;
+		iProbingState = PROBE_STATE_BOSSCENTER_START;
 	}
 
 	ImGui::SetItemDefaultFocus();
 	ImGui::SameLine();
 
-	if (ImGui::Button("Cancel", ImVec2(120, 0)))
+	if (ImGui::Button("Cancel##BossCenter", ImVec2(120, 0)))
 	{
-		if (bProbingState != PROBE_STATE_IDLE)
+		if (iProbingState != PROBE_STATE_IDLE)
 		{
 
 			sString[0] = 0x18; //Abort command
@@ -825,15 +1796,15 @@ void Probing_BossCenterPopup()
 
 
 	//Close the window once we're done
-	if (bProbingState == PROBE_STATE_COMPLETE)
+	if (iProbingState == PROBE_STATE_COMPLETE)
 	{
-		bProbingState = PROBE_STATE_IDLE;
+		iProbingState = PROBE_STATE_IDLE;
 		ImGui::CloseCurrentPopup();
 	}
 
 	ImGui::EndPopup();
 
-	//Probing_BossCenter_StateMachine(); //Run the state machine if an operation is going
+	Probing_BossCenter_StateMachine(); //Run the state machine if an operation is going
 }
 
 
@@ -842,7 +1813,7 @@ void Probing_PocketCenter_StateMachine()
 {
 	char sCmd[50];
 
-	switch (bProbingState)
+	switch (iProbingState)
 	{
 	case PROBE_STATE_IDLE:
 		bOperationRunning = false;
@@ -864,13 +1835,13 @@ void Probing_PocketCenter_StateMachine()
 		bProbingStepIsRunning = false;
 
 		if (iProbingPocketCenter_AxisIndex == 0) //X axis
-			bProbingState = PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST;
+			iProbingState = PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST;
 		else if (iProbingPocketCenter_AxisIndex == 1) //Y axis
-			bProbingState = PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST;
+			iProbingState = PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST;
 		else
 		{
 			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unexpected axis selected.  Aborted.");
-			bProbingState = PROBE_STATE_IDLE;
+			iProbingState = PROBE_STATE_IDLE;
 		}
 		break;
 
@@ -891,7 +1862,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -902,7 +1873,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -924,7 +1895,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos1))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -935,7 +1906,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -955,7 +1926,7 @@ void Probing_PocketCenter_StateMachine()
 			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.x - ProbeStartPos.x) < 0.1)
 			{
 				bProbingStepIsRunning = 0;
-				bProbingState++;
+				iProbingState++;
 			}
 		}
 		break;
@@ -977,7 +1948,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -988,7 +1959,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -1010,7 +1981,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos2))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -1021,7 +1992,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -1043,7 +2014,7 @@ void Probing_PocketCenter_StateMachine()
 			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Machine.x - ProbeEndPos.x) < 0.1) //Wait until we get to the center X position
 			{
 				bProbingStepIsRunning = 0;
-				bProbingState = PROBE_STATE_POCKETCENTER_FINISH;
+				iProbingState = PROBE_STATE_POCKETCENTER_FINISH;
 			}
 		}
 		break;
@@ -1067,7 +2038,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -1078,7 +2049,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -1100,7 +2071,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos3))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -1111,7 +2082,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -1131,7 +2102,7 @@ void Probing_PocketCenter_StateMachine()
 			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.y - ProbeStartPos.y) < 0.1)
 			{
 				bProbingStepIsRunning = 0;
-				bProbingState++;
+				iProbingState++;
 			}
 		}
 		break;
@@ -1153,7 +2124,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -1164,7 +2135,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -1186,7 +2157,7 @@ void Probing_PocketCenter_StateMachine()
 				if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbePos4))
 				{
 					bProbingStepIsRunning = 0;
-					bProbingState++;
+					iProbingState++;
 				}
 			}
 			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -1197,7 +2168,7 @@ void Probing_PocketCenter_StateMachine()
 				Comms_SendString(sCmd);
 
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				bProbingState = PROBE_STATE_IDLE;
+				iProbingState = PROBE_STATE_IDLE;
 			}
 		}
 		break;
@@ -1219,7 +2190,7 @@ void Probing_PocketCenter_StateMachine()
 			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Machine.y - ProbeEndPos.y) < 0.1) //Wait to get to the target position
 			{
 				bProbingStepIsRunning = 0;
-				bProbingState = PROBE_STATE_POCKETCENTER_FINISH;
+				iProbingState = PROBE_STATE_POCKETCENTER_FINISH;
 			}
 		}
 		break;
@@ -1239,7 +2210,7 @@ void Probing_PocketCenter_StateMachine()
 			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Pocket center Y: %0.03f", ProbeEndPos.y);
 		}
 
-		bProbingState = PROBE_STATE_COMPLETE;
+		iProbingState = PROBE_STATE_COMPLETE;
 		break;
 	}
 }
@@ -1352,18 +2323,18 @@ void Probing_PocketCenterPopup()
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
-	if (ImGui::Button("Run", ImVec2(120, 0)))
+	if (ImGui::Button("Run##PocketCenter", ImVec2(120, 0)))
 	{
 		//ImGui::CloseCurrentPopup();
-		bProbingState = PROBE_STATE_POCKETCENTER_START;
+		iProbingState = PROBE_STATE_POCKETCENTER_START;
 	}
 
 	ImGui::SetItemDefaultFocus();
 	ImGui::SameLine();
 
-	if (ImGui::Button("Cancel", ImVec2(120, 0)))
+	if (ImGui::Button("Cancel##PocketCenter", ImVec2(120, 0)))
 	{
-		if (bProbingState != PROBE_STATE_IDLE)
+		if (iProbingState != PROBE_STATE_IDLE)
 		{
 
 			sString[0] = 0x18; //Abort command
@@ -1378,9 +2349,9 @@ void Probing_PocketCenterPopup()
 
 
 	//Close the window once we're done
-	if (bProbingState == PROBE_STATE_COMPLETE)
+	if (iProbingState == PROBE_STATE_COMPLETE)
 	{
-		bProbingState = PROBE_STATE_IDLE;
+		iProbingState = PROBE_STATE_IDLE;
 		ImGui::CloseCurrentPopup();
 	}
 
@@ -1395,7 +2366,7 @@ void Probing_SingleAxis_StateMachine()
 {
 	char sCmd[50];
 
-	switch (bProbingState)
+	switch (iProbingState)
 	{
 		case PROBE_STATE_IDLE:
 			bOperationRunning = false;
@@ -1415,7 +2386,7 @@ void Probing_SingleAxis_StateMachine()
 			bOperationRunning = true; //Limit what we show on the console (from comms module)
 
 			bProbingStepIsRunning = false;
-			bProbingState++;
+			iProbingState++;
 		break;
 
 		case PROBE_STATE_SINGLEAXIS_PROBE_FAST:
@@ -1437,7 +2408,7 @@ void Probing_SingleAxis_StateMachine()
 					else
 					{
 						Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unknown probe direction.  Aborted.");
-						bProbingState = PROBE_STATE_IDLE;
+						iProbingState = PROBE_STATE_IDLE;
 						break;
 					}
 
@@ -1464,7 +2435,7 @@ void Probing_SingleAxis_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -1475,7 +2446,7 @@ void Probing_SingleAxis_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -1499,7 +2470,7 @@ void Probing_SingleAxis_StateMachine()
 				else
 				{
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unknown probe direction.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 					break;
 				}
 
@@ -1526,7 +2497,7 @@ void Probing_SingleAxis_StateMachine()
 					if (Probing_SuccessOrFail(sProbeReplyMessage, &ProbeEndPos))
 					{
 						bProbingStepIsRunning = 0;
-						bProbingState++;
+						iProbingState++;
 					}
 				}
 				else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
@@ -1537,7 +2508,7 @@ void Probing_SingleAxis_StateMachine()
 					Comms_SendString(sCmd);
 
 					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-					bProbingState = PROBE_STATE_IDLE;
+					iProbingState = PROBE_STATE_IDLE;
 				}
 			}
 		break;
@@ -1545,7 +2516,7 @@ void Probing_SingleAxis_StateMachine()
 	case PROBE_STATE_SINGLEAXIS_GETCOORDS:
 		if (MachineStatus.Status == Carvera::Status::Idle && (fabs(MachineStatus.Coord.Machine.y - ProbeEndPos.y) < 0.1) && (fabs(MachineStatus.Coord.Machine.x - ProbeEndPos.x) < 0.1) && (fabs(MachineStatus.Coord.Machine.z - ProbeEndPos.z) < 0.1)) //Wait for the MachineStatus coords to catch up to the probe results
 		{
-			bProbingState = PROBE_STATE_SINGLEAXIS_FINISH;
+			iProbingState = PROBE_STATE_SINGLEAXIS_FINISH;
 		}
 		break;
 
@@ -1568,7 +2539,7 @@ void Probing_SingleAxis_StateMachine()
 			sprintf_s(sCmd, 50, "Bottom at Z: %0.03f", ProbeEndPos.z);
 		
 		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  %s", sCmd);
-		bProbingState = PROBE_STATE_COMPLETE;
+		iProbingState = PROBE_STATE_COMPLETE;
 		break;
 	}
 }
@@ -1792,18 +2763,18 @@ void Probing_SingleAxisPopup()
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
-	if (ImGui::Button("Run", ImVec2(120, 0)))
+	if (ImGui::Button("Run##SingleAxis", ImVec2(120, 0)))
 	{
 		//ImGui::CloseCurrentPopup();
-		bProbingState = PROBE_STATE_SINGLEAXIS_START;
+		iProbingState = PROBE_STATE_SINGLEAXIS_START;
 	}
 
 	ImGui::SetItemDefaultFocus();
 	ImGui::SameLine();
 
-	if (ImGui::Button("Cancel", ImVec2(120, 0)))
+	if (ImGui::Button("Cancel##SingleAxis", ImVec2(120, 0)))
 	{
-		if (bProbingState != PROBE_STATE_IDLE)
+		if (iProbingState != PROBE_STATE_IDLE)
 		{
 
 			sString[0] = 0x18; //Abort command
@@ -1818,9 +2789,9 @@ void Probing_SingleAxisPopup()
 
 
 	//Close the window once we're done
-		if (bProbingState == PROBE_STATE_COMPLETE)
+		if (iProbingState == PROBE_STATE_COMPLETE)
 		{
-			bProbingState = PROBE_STATE_IDLE;
+			iProbingState = PROBE_STATE_IDLE;
 			ImGui::CloseCurrentPopup();
 		}
 
@@ -1950,7 +2921,7 @@ void Probing_WebCenterPopup()
 
 	if (ImGui::Button("Run", ImVec2(120, 0)))
 	{
-		//bProbingState = PROBE_STATE_BOSSCENTER_START;
+		//iProbingState = PROBE_STATE_BOSSCENTER_START;
 	}
 
 	ImGui::SetItemDefaultFocus();
@@ -1958,7 +2929,7 @@ void Probing_WebCenterPopup()
 
 	if (ImGui::Button("Cancel", ImVec2(120, 0)))
 	{
-		if (bProbingState != PROBE_STATE_IDLE)
+		if (iProbingState != PROBE_STATE_IDLE)
 		{
 
 			sString[0] = 0x18; //Abort command
@@ -1973,9 +2944,9 @@ void Probing_WebCenterPopup()
 
 
 	//Close the window once we're done
-	if (bProbingState == PROBE_STATE_COMPLETE)
+	if (iProbingState == PROBE_STATE_COMPLETE)
 	{
-		bProbingState = PROBE_STATE_IDLE;
+		iProbingState = PROBE_STATE_IDLE;
 		ImGui::CloseCurrentPopup();
 	}
 

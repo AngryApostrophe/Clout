@@ -5,11 +5,12 @@ The **C**arvera **L**ean **O**pen source **UT**ility is a custom controller for 
 
 # Features
 The following features are currently available:
-* Home XYZ
+* Home XY
 * Go to clearance
 * ATC tool change and TLO calibration
 * Open/Close collet
-* Bore center probe
+* Bore & Boss center probe
+* Pocket center probe
 * Single axis probe (X, Y, or Z)
 ## Console
 Prefix command with > to send code to Carvera. Example:
