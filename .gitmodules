@@ -14,3 +14,9 @@
 [submodule "json"]
 	path = src/external/json
 	url = https://github.com/nlohmann/json
+[submodule "ImGuiFileDialog"]
+	path = src/external/ImGuiFileDialog
+	url = https://github.com/aiekick
+[submodule "src/external/ImGuiFileDialog"]
+	path = src/external/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog.git
