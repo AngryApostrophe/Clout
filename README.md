@@ -38,3 +38,4 @@ Clout uses the following libraries:
 * [GLEW](https://github.com/nigels-com/glew) - OpenGL extensions
 * [GLM](https://github.com/g-truc/glm) - OpenGL mathematics
 * [stb](https://github.com/nothings/stb/) - Image handling
+* [nlohmann/JSON](https://github.com/nlohmann/json) - JSON data handling

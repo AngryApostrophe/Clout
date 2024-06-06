@@ -11,6 +11,6 @@
 [submodule "stb"]
 	path = src/external/stb
 	url = https://github.com/nothings/stb/
-[submodule "src/external/json"]
+[submodule "json"]
 	path = src/external/json
 	url = https://github.com/nlohmann/json

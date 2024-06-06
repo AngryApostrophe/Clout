@@ -5,6 +5,7 @@ include_directories ("${PROJECT_SOURCE_DIR}/src/external/imgui"
 "${PROJECT_SOURCE_DIR}/src/external/stb"
 "${PROJECT_SOURCE_DIR}/src/external/glm/glm"
 "${PROJECT_SOURCE_DIR}/src/external/glew/include"
+"${PROJECT_SOURCE_DIR}/src/external/json/single_include/nlohmann"
 )
 
 set  (IMGUI_SOURCES
@@ -33,6 +34,8 @@ set  (CLOUT_SOURCES
 	"${PROJECT_SOURCE_DIR}/src/Helpers.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Console.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Comms.cpp"
+	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.cpp"
+	"${PROJECT_SOURCE_DIR}/src/CloutProgram.cpp"
 	)
 	
 set  (CLOUT_HEADERS
@@ -42,6 +45,8 @@ set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/Helpers.h"
 	"${PROJECT_SOURCE_DIR}/src/Console.h"
 	"${PROJECT_SOURCE_DIR}/src/Comms.h"
+	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.h"
+	"${PROJECT_SOURCE_DIR}/src/CloutProgram.h"
 	)
 
 source_group("ImgUi" FILES ${IMGUI_SOURCES})
@@ -62,6 +67,9 @@ target_link_libraries (Clout
 # Creates a folder "executables" and adds target 
 # project (Clout.vcproj) under it
 # set_property(TARGET Clout PROPERTY FOLDER "Clout")
+
+# Set C++ version
+set_property(TARGET Clout PROPERTY CXX_STANDARD 17)
 
 # Properties->General->Output Directory
 set_target_properties(Clout PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)

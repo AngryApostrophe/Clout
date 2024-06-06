@@ -9,6 +9,8 @@ using namespace std;
 #include "Console.h"
 #include "ModelViewer.h"
 #include "Probing.h"
+#include "CloutProgram.h"
+#include "ProgramEditor.h"
 
 
 //Global vars
@@ -512,8 +514,16 @@ bool Clout_MainLoop()
 			{
 				Comms_SendString("$X");
 			}
+
+
+			if (ImGui::Button("Program Editor"))
+				ImGui::OpenPopup("Program Editor");
+			ProgramEditor_Draw();
+
 		
 		ImGui::End(); //End Status window
+
+
 
      return false;
 }
