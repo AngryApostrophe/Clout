@@ -364,7 +364,8 @@ void MODEL_VIEWER::RenderScene(Shader* shader)
 {
 	//Calculate 3D origin offset
 		//TODO: This must be calibrated to MCS, which is not 0,0,0 at origin
-		OriginOffset = glm::vec3(MachineStatus.Coord.Machine.x, MachineStatus.Coord.Machine.y, MachineStatus.Coord.Machine.z + MachineStatus.fToolLengthOffset);
+		//OriginOffset = glm::vec3(MachineStatus.Coord.Machine.x, MachineStatus.Coord.Machine.y, MachineStatus.Coord.Machine.z + MachineStatus.fToolLengthOffset);
+	OriginOffset = glm::vec3(MachineStatus.Coord.Working.x, MachineStatus.Coord.Working.y, MachineStatus.Coord.Working.z + MachineStatus.fToolLengthOffset);
 
 		if (MachineStatus.Status == Carvera::Status::Homing) //The machine doesn't know where it is while homing, so don't show anything
 			OriginOffset.x = 0;
