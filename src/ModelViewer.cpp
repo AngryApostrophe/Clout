@@ -32,6 +32,11 @@ MODEL_VIEWER ModelViewer;
 #define CAMERA_OFFSET_YAW	-90
 #define CAMERA_OFFSET_PITCH	-14
 
+//MCS offsets
+#define MCS_OFFSET_X	-360.275
+#define MCS_OFFSET_Y	-235.745
+#define MCS_OFFSET_Z	-157.875	//This one isn't 100% accurate.  Machine goes down to -139.335 and leaves approx 18.54 above the bed
+
 //Debug stuff
 int iDebug_SelectedView = 0;	//Which view is selected for viewing.  0=Free cam, 1=Light source
 bool bDebug_DrawDebugData = false;
@@ -364,8 +369,7 @@ void MODEL_VIEWER::RenderScene(Shader* shader)
 {
 	//Calculate 3D origin offset
 		//TODO: This must be calibrated to MCS, which is not 0,0,0 at origin
-		//OriginOffset = glm::vec3(MachineStatus.Coord.Machine.x, MachineStatus.Coord.Machine.y, MachineStatus.Coord.Machine.z + MachineStatus.fToolLengthOffset);
-	OriginOffset = glm::vec3(MachineStatus.Coord.Working.x, MachineStatus.Coord.Working.y, MachineStatus.Coord.Working.z + MachineStatus.fToolLengthOffset);
+		OriginOffset = glm::vec3(MachineStatus.Coord.Machine.x - MCS_OFFSET_X, MachineStatus.Coord.Machine.y - MCS_OFFSET_Y, MachineStatus.Coord.Machine.z - MCS_OFFSET_Z + MachineStatus.fToolLengthOffset);
 
 		if (MachineStatus.Status == Carvera::Status::Homing) //The machine doesn't know where it is while homing, so don't show anything
 			OriginOffset.x = 0;
