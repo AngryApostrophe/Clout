@@ -28,7 +28,7 @@ bool bProbingPageInitialized = false;
 	DOUBLE_XYZ ProbeEndPos; //Final position we'll tell the user.
 
 	bool bProbing_ZeroWCS = false;
-	int ibProbing_WCSIndex = 0;
+	int iProbing_WCSIndex = 0;
 
 
 	#define PROBE_STATE_IDLE			0	//Not currently running
@@ -168,6 +168,47 @@ void Probing_InitPage()
 	bProbingPageInitialized = TRUE;
 }
 
+
+void Probing_ZeroWCS(bool x, bool y, bool z, float x_val = -10000.0f, float y_val = -10000.0f, float z_val = -10000.0f)
+{
+	char szCmd[50];
+	char szTemp[10];
+
+	sprintf_s(szCmd, 50, "G10 L20 P%d", iProbing_WCSIndex-1);
+
+	if (x)
+	{
+		szTemp[0] = 0x0;
+
+		if (x_val < -500.0f) //Random, but it's clearly still the default value
+			strcpy_s(szTemp, 10, " X0");
+		else
+			sprintf_s(szTemp, 10, " X%0.1f", x_val);
+		strcat_s(szCmd, 50, szTemp);
+	}
+	if (y)
+	{
+		szTemp[0] = 0x0;
+
+		if (y_val < -500.0f) //Random, but it's clearly still the default value
+			strcpy_s(szTemp, 10, " Y0");
+		else
+			sprintf_s(szTemp, 10, " Y%0.1f", y_val);
+		strcat_s(szCmd, 50, szTemp);
+	}
+	if (z)
+	{
+		szTemp[0] = 0x0;
+
+		if (z_val < -500.0f) //Random, but it's clearly still the default value
+			strcpy_s(szTemp, 10, " Z0");
+		else
+			sprintf_s(szTemp, 10, " Z%0.1f", z_val);
+		strcat_s(szCmd, 50, szTemp);
+	}
+
+	Comms_SendString(szCmd);
+}
 
 
 int Probing_SuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOnFail)
@@ -600,6 +641,10 @@ void Probing_BoreCenter_StateMachine()
 			ProbeEndPos.x = MachineStatus.Coord.Working.x;
 			ProbeEndPos.y = MachineStatus.Coord.Working.y;
 
+			//Zero the WCS if requested
+				if (bProbing_ZeroWCS)
+					Probing_ZeroWCS(true, true, false);	//Set this location to 0,0
+
 			sprintf_s(sCmd, 50, "G0 F%f", ProbingStartFeedrate.x); //Restore the feedrate to what it was
 			Comms_SendString(sCmd);
 
@@ -668,19 +713,19 @@ void Probing_BoreCenterPopup()
 				ImGui::BeginDisabled();
 			
 			//The combo box
-				x = MachineStatus.WCS;
-				if (x < Carvera::CoordSystem::G54)
-					x = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
+				//iProbing_WCSIndex = MachineStatus.WCS;					//TODO: Default to the current mode
+				if (iProbing_WCSIndex < Carvera::CoordSystem::G54)
+					iProbing_WCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-				if (ImGui::BeginCombo("##ProbingBoreCenter_WCS", szWCSChoices[x]))
+				if (ImGui::BeginCombo("##ProbingBoreCenter_WCS", szWCSChoices[iProbing_WCSIndex]))
 				{
 					x = Carvera::CoordSystem::G54;
 					while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
 					{
 						//Add the item
-							const bool is_selected = (ibProbing_WCSIndex == x);				
+							const bool is_selected = (iProbing_WCSIndex == (x));
 							if (ImGui::Selectable(szWCSChoices[x], is_selected))
-								ibProbing_WCSIndex = x;
+								iProbing_WCSIndex = (x);
 
 						// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 							if (is_selected)
@@ -1664,6 +1709,10 @@ void Probing_BossCenter_StateMachine()
 			ProbeEndPos.x = MachineStatus.Coord.Working.x;
 			ProbeEndPos.y = MachineStatus.Coord.Working.y;
 
+			//Zero the WCS if requested
+				if (bProbing_ZeroWCS)
+					Probing_ZeroWCS(true, true, false);	//Set this location to 0,0
+
 			sprintf_s(sCmd, 50, "G0 F%f", ProbingStartFeedrate.x); //Restore the feedrate to what it was
 			Comms_SendString(sCmd);
 
@@ -1744,30 +1793,35 @@ void Probing_BossCenterPopup()
 	if (x < Carvera::CoordSystem::G54)
 		x = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-	if (ImGui::BeginCombo("##ProbingBossCenter_WCS", szWCSChoices[x]))
-	{
-		x = Carvera::CoordSystem::G54;
-		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
-		{
-			//Add the item
-			const bool is_selected = (ibProbing_WCSIndex == x);
-			if (ImGui::Selectable(szWCSChoices[x], is_selected))
-				ibProbing_WCSIndex = x;
+	//The combo box
+				//iProbing_WCSIndex = MachineStatus.WCS;					//TODO: Default to the current mode
+		if (iProbing_WCSIndex < Carvera::CoordSystem::G54)
+			iProbing_WCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();
-			x++;
+		if (ImGui::BeginCombo("##ProbingBossCenter_WCS", szWCSChoices[iProbing_WCSIndex]))
+		{
+			x = Carvera::CoordSystem::G54;
+			while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+			{
+				//Add the item
+				const bool is_selected = (iProbing_WCSIndex == (x));
+				if (ImGui::Selectable(szWCSChoices[x], is_selected))
+					iProbing_WCSIndex = (x);
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+				x++;
+			}
+
+			ImGui::EndCombo();
 		}
 
-		ImGui::EndCombo();
-	}
+		if (!bProbing_ZeroWCS)
+			ImGui::EndDisabled();
 
-	if (!bProbing_ZeroWCS)
-		ImGui::EndDisabled();
-
-	ImGui::SameLine();
-	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
+		ImGui::SameLine();
+		HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
@@ -2201,11 +2255,19 @@ void Probing_PocketCenter_StateMachine()
 
 		if (iProbingPocketCenter_AxisIndex == 0) //X axis
 		{
+			//Zero the WCS if requested
+				if (bProbing_ZeroWCS)
+					Probing_ZeroWCS(true, false, false);	//Set this location to X0
+
 			ProbeEndPos.x = MachineStatus.Coord.Working.x;
 			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Pocket center X: %0.03f", ProbeEndPos.x);
 		}
 		else if (iProbingPocketCenter_AxisIndex == 1) //Y axis
 		{
+			//Zero the WCS if requested
+				if (bProbing_ZeroWCS)
+					Probing_ZeroWCS(false, true, false);	//Set this location to X0
+
 			ProbeEndPos.y = MachineStatus.Coord.Working.y;
 			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Pocket center Y: %0.03f", ProbeEndPos.y);
 		}
@@ -2291,34 +2353,34 @@ void Probing_PocketCenterPopup()
 		ImGui::BeginDisabled();
 
 	//The combo box
-	x = MachineStatus.WCS;
-	if (x < Carvera::CoordSystem::G54)
-		x = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
+				//iProbing_WCSIndex = MachineStatus.WCS;					//TODO: Default to the current mode
+		if (iProbing_WCSIndex < Carvera::CoordSystem::G54)
+			iProbing_WCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-	if (ImGui::BeginCombo("##ProbingPocketCenter_WCS", szWCSChoices[x]))
-	{
-		x = Carvera::CoordSystem::G54;
-		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+		if (ImGui::BeginCombo("##ProbingPocketCenter_WCS", szWCSChoices[iProbing_WCSIndex]))
 		{
-			//Add the item
-			const bool is_selected = (ibProbing_WCSIndex == x);
-			if (ImGui::Selectable(szWCSChoices[x], is_selected))
-				ibProbing_WCSIndex = x;
+			x = Carvera::CoordSystem::G54;
+			while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+			{
+				//Add the item
+				const bool is_selected = (iProbing_WCSIndex == (x));
+				if (ImGui::Selectable(szWCSChoices[x], is_selected))
+					iProbing_WCSIndex = (x);
 
-			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();
-			x++;
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+				x++;
+			}
+
+			ImGui::EndCombo();
 		}
 
-		ImGui::EndCombo();
-	}
+		if (!bProbing_ZeroWCS)
+			ImGui::EndDisabled();
 
-	if (!bProbing_ZeroWCS)
-		ImGui::EndDisabled();
-
-	ImGui::SameLine();
-	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
+		ImGui::SameLine();
+		HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
@@ -2724,7 +2786,10 @@ void Probing_SingleAxisPopup()
 	ImGui::SeparatorText("Completion");
 
 	//Zero WCS?
+	ImGui::BeginDisabled(); //TODO: Need to know probe size so we can accurately set 0
 	ImGui::Checkbox("Zero WCS", &bProbing_ZeroWCS);
+	ImGui::EndDisabled();
+	
 	ImGui::SameLine();
 
 	//Disable the combo if the option isn't selected
@@ -2732,34 +2797,34 @@ void Probing_SingleAxisPopup()
 		ImGui::BeginDisabled();
 
 	//The combo box
-	x = MachineStatus.WCS;
-	if (x < Carvera::CoordSystem::G54)
-		x = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
+				//iProbing_WCSIndex = MachineStatus.WCS;					//TODO: Default to the current mode
+		if (iProbing_WCSIndex < Carvera::CoordSystem::G54)
+			iProbing_WCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-	if (ImGui::BeginCombo("##ProbingSingleAxis_WCS", szWCSChoices[x]))
-	{
-		x = Carvera::CoordSystem::G54;
-		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+		if (ImGui::BeginCombo("##ProbingSingleAxis_WCS", szWCSChoices[iProbing_WCSIndex]))
 		{
-			//Add the item
-			const bool is_selected = (ibProbing_WCSIndex == x);
-			if (ImGui::Selectable(szWCSChoices[x], is_selected))
-				ibProbing_WCSIndex = x;
+			x = Carvera::CoordSystem::G54;
+			while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+			{
+				//Add the item
+				const bool is_selected = (iProbing_WCSIndex == (x));
+				if (ImGui::Selectable(szWCSChoices[x], is_selected))
+					iProbing_WCSIndex = (x);
 
-			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();
-			x++;
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+				x++;
+			}
+
+			ImGui::EndCombo();
 		}
 
-		ImGui::EndCombo();
-	}
+		if (!bProbing_ZeroWCS)
+			ImGui::EndDisabled();
 
-	if (!bProbing_ZeroWCS)
-		ImGui::EndDisabled();
-
-	ImGui::SameLine();
-	HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
+		ImGui::SameLine();
+		HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
@@ -2888,34 +2953,34 @@ void Probing_WebCenterPopup()
 		ImGui::BeginDisabled();
 
 	//The combo box
-	x = MachineStatus.WCS;
-	if (x < Carvera::CoordSystem::G54)
-		x = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
+				//iProbing_WCSIndex = MachineStatus.WCS;					//TODO: Default to the current mode
+		if (iProbing_WCSIndex < Carvera::CoordSystem::G54)
+			iProbing_WCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-	if (ImGui::BeginCombo("##ProbingWebCenter_WCS", szWCSChoices[x]))
-	{
-		x = Carvera::CoordSystem::G54;
-		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+		if (ImGui::BeginCombo("##ProbingWebCenter_WCS", szWCSChoices[iProbing_WCSIndex]))
 		{
-			//Add the item
-			const bool is_selected = (ibProbing_WCSIndex == x);
-			if (ImGui::Selectable(szWCSChoices[x], is_selected))
-				ibProbing_WCSIndex = x;
+			x = Carvera::CoordSystem::G54;
+			while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+			{
+				//Add the item
+				const bool is_selected = (iProbing_WCSIndex == (x));
+				if (ImGui::Selectable(szWCSChoices[x], is_selected))
+					iProbing_WCSIndex = (x);
 
-			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();
-			x++;
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+				x++;
+			}
+
+			ImGui::EndCombo();
 		}
 
-		ImGui::EndCombo();
-	}
+		if (!bProbing_ZeroWCS)
+			ImGui::EndDisabled();
 
-	if (!bProbing_ZeroWCS)
-		ImGui::EndDisabled();
-
-	ImGui::SameLine();
-	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
+		ImGui::SameLine();
+		HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
