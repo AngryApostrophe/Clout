@@ -2919,10 +2919,12 @@ void Probing_WebCenterPopup()
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
+	ImGui::BeginDisabled();
 	if (ImGui::Button("Run", ImVec2(120, 0)))
 	{
 		//iProbingState = PROBE_STATE_BOSSCENTER_START;
 	}
+	ImGui::EndDisabled();
 
 	ImGui::SetItemDefaultFocus();
 	ImGui::SameLine();
@@ -2986,7 +2988,9 @@ void Probing_Draw() //This is called from inside the main draw code
 
 		ImGui::TableSetColumnIndex(1);
 
+		ImGui::BeginDisabled();
 		ImGui::Button("Int Corner", sizeRightButtons);
+		ImGui::EndDisabled();
 
 
 		ImGui::TableNextRow();
@@ -2997,7 +3001,9 @@ void Probing_Draw() //This is called from inside the main draw code
 
 		ImGui::TableSetColumnIndex(1);
 
+		ImGui::BeginDisabled();
 		ImGui::Button("Ext Corner", sizeRightButtons);
+		ImGui::EndDisabled();
 		
 		
 		ImGui::TableNextRow();
