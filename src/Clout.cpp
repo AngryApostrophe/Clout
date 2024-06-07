@@ -25,6 +25,7 @@ using namespace std;
 //Show the tooltip Help marker
 void HelpMarker(const char *sString)
 {
+	ImGui::SameLine();
 	ImGui::TextDisabled("[?]");
 	if (ImGui::BeginItemTooltip())
 	{

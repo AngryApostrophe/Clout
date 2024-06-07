@@ -6,6 +6,7 @@ include_directories ("${PROJECT_SOURCE_DIR}/src/external/imgui"
 "${PROJECT_SOURCE_DIR}/src/external/glm/glm"
 "${PROJECT_SOURCE_DIR}/src/external/glew/include"
 "${PROJECT_SOURCE_DIR}/src/external/json/single_include/nlohmann"
+"${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog"
 )
 
 set  (IMGUI_SOURCES
@@ -15,6 +16,7 @@ set  (IMGUI_SOURCES
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imgui_widgets.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_opengl3.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_win32.cpp"
+	"${PROJECT_SOURCE_DIR}/src/external/imgui/misc/cpp/imgui_stdlib.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imconfig.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imgui.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_opengl3.h"
@@ -24,6 +26,13 @@ set  (IMGUI_SOURCES
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imstb_rectpack.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imstb_textedit.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imstb_truetype.h"
+	"${PROJECT_SOURCE_DIR}/src/external/imgui/misc/cpp/imgui_stdlib.h"
+	)
+	
+set  (MISC_LIB_SOURCES
+      "${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog/ImGuiFileDialog.cpp"
+	"${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog/ImGuiFileDialog.h"
+	"${PROJECT_SOURCE_DIR}/src/ImGuiFileDialogConfig.h"
 	)
 
 set  (CLOUT_SOURCES
@@ -50,13 +59,14 @@ set  (CLOUT_HEADERS
 	)
 
 source_group("ImgUi" FILES ${IMGUI_SOURCES})
+source_group("Misc Libraries" FILES ${MISC_LIB_SOURCES})
 source_group("Header Files" FILES ${CLOUT_HEADERS})
 source_group("Source Files" FILES ${CLOUT_SOURCES})
 
 # Set Properties->General->Configuration Type to Application(.exe)
 # Creates app.exe with the listed sources (main.cxx)
 # Adds sources to the Solution Explorer
-add_executable (Clout WIN32 ${CLOUT_SOURCES} ${IMGUI_SOURCES} ${CLOUT_HEADERS})
+add_executable (Clout WIN32 ${CLOUT_SOURCES} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS})
 
 # Properties->Linker->Input->Additional Dependencies
 target_link_libraries (Clout
@@ -83,3 +93,5 @@ set_property(TARGET Clout PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOUR
 #Set the Visual Studio startup project, so we can run and debug the app
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Clout)
 
+#Tell ImGuiFileDialog where to get the config
+add_compile_definitions(CUSTOM_IMGUIFILEDIALOG_CONFIG="${PROJECT_SOURCE_DIR}/src/ImGuiFileDialogConfig.h")

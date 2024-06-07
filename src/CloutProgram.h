@@ -5,7 +5,7 @@
 using json = nlohmann::json;
 
 #define MAX_OPERATIONS			255
-#define MAX_GCODE_LENGTH			10000
+#define MAX_GCODE_LINES			50000
 
 #define CLOUT_OP_NULL			0
 #define CLOUT_OP_ATC_TOOL_CHANGE	1	//Use the ATC to change to a new tool (or drop current tool and not replace it)
@@ -22,23 +22,43 @@ extern const char* szOperationName[];	//Array of strings describing the above
 
 struct CloutProgram_Op_ATC_Tool_Change
 {
-	int iNewTool;	//Index of the tool to change to. -1=None,  0=Wireless Probe, 1-6,    -99=Not defined, error.
+	int iNewTool;			//Index of the tool to change to. -1=None,  0=Wireless Probe, 1-6,    -99=Not defined, error.
 };
 
-struct CloutProgram_Op_Rapid_To
+
+struct CloutProgram_Op_InstallTouchProbe
 {
-	DOUBLE_XYZ Coords;	//New coords to rapid to.  <-9999999 if the field is not used
-	float fFeedrate;	//Feedrate to use. <0 if not used
+	bool bConfirmFunction;	//True if we wish to confirm that the touch probe is working before moving on
+};
+
+struct CloutProgram_Op_RapidTo
+{
+	bool bUseAxis[3];					//True if we are changing each of the axes
+	DOUBLE_XYZ Coords;					//New coords to rapid to.  <-9999999 if the field is not used
+	
+	bool bUseFeedrate;					//True if we're supplying a new feedrate
+	float fFeedrate;					//Feedrate to use.
+	
+	bool bUseWCS;						//True if we're changing WCS
+	Carvera::CoordSystem::eCoordSystem WCS;	//If using WCS, which one?
 };
 
 struct CloutProgram_Op_Custom_GCode
 {
-	char szGCode[MAX_GCODE_LENGTH];
+	char szGCode[MAX_GCODE_LINES];
 };
 
-struct CloutProgram_Op_Run_GCode_File
+class CloutProgram_Op_Run_GCode_File
 {
+public:
+	CloutProgram_Op_Run_GCode_File(){ iLineCount=0;};
+	~CloutProgram_Op_Run_GCode_File() {};
+
 	std::string sFilename;
+	
+	int iLineCount;
+	std::vector<std::string> sGCode_Line;
+	
 	int iStartLineNum;	//Line number that we will begin executing at
 	int iLastLineNum;	//Final line number we will execute
 };

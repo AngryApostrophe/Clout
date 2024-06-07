@@ -308,7 +308,7 @@ BOOL SendCommand(const char *c, BOOL bShowOnLog)
 	//Make sure it's got the terminator or Carvera won't recognize it
 		char s[500];
 		strcpy_s(s, 500, c);
-		int x = strlen(s);
+		int x = (int)strlen(s);
 		if (x > 1)
 		{					
 			if (s[x] != '\n')
@@ -382,10 +382,8 @@ BOOL SendCommandAndWait(const char* c, BOOL bShowOnLog)
 
 BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, BOOL bShowOnLog)
 {
-	char sTemp[100];
 	char *c;
 	BYTE bRetVal = 1;
-	int x;
 
 	if (strncmp(sRecv, "ok", 2) == 0)
 	{

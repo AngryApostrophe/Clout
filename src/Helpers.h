@@ -3,6 +3,10 @@
 #include <GL/glew.h>
 #include <GL/GL.h>
 
+
+
+#define GuiFileDialog	ImGuiFileDialog::Instance()
+
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture);
 void CommaStringTo3Doubles(char* str, double* d1, double* d2, double* d3);
 

@@ -34,16 +34,42 @@ void from_json(const json& j, CloutProgram_Op& Op)
 		Data.iStartLineNum = j.value("Start", -1);
 		Data.iLastLineNum = j.value("End", -1);
 		Data.sFilename = j.value("Filename", "");
+		Data.iLineCount = 0;
 
 		Op.Data = Data;
 	}
 	else if (Op.iType == CLOUT_OP_RAPID_TO)
 	{
-		CloutProgram_Op_Rapid_To Data;
-		Data.Coords.x = j.value("X", -99999999999);
-		Data.Coords.y = j.value("Y", -99999999999);
-		Data.Coords.z = j.value("Z", -99999999999);
-		Data.fFeedrate = j.value("Feedrate", -9999999999);
+		CloutProgram_Op_RapidTo Data;
+		Data.Coords.x = j.value("X", 0.0f);
+		Data.Coords.y = j.value("Y", 0.0f);
+		Data.Coords.z = j.value("Z", 0.0f);
+
+		Data.bUseAxis[0] = j.value("Use_X", false);
+		Data.bUseAxis[1] = j.value("Use_Y", false);
+		Data.bUseAxis[2] = j.value("Use_Z", false);
+
+		Data.bUseFeedrate = j.value("Supply_Feedrate", false);
+		Data.fFeedrate = j.value("Feedrate", 300.0f);
+
+		Data.bUseWCS = j.value("Supply_WCS", false);
+		
+		std::string WCS = j.value("WCS", "G54");
+
+		if (WCS == "G53")
+			Data.WCS = Carvera::CoordSystem::G53;
+		else if (WCS == "G54")
+			Data.WCS = Carvera::CoordSystem::G54;
+		else if (WCS == "G55")
+			Data.WCS = Carvera::CoordSystem::G55;
+		else if (WCS == "G56")
+			Data.WCS = Carvera::CoordSystem::G56;
+		else if (WCS == "G57")
+			Data.WCS = Carvera::CoordSystem::G57;
+		else if (WCS == "G58")
+			Data.WCS = Carvera::CoordSystem::G58;
+		else if (WCS == "G59")
+			Data.WCS = Carvera::CoordSystem::G59;
 
 		Op.Data = Data;
 	}
@@ -51,6 +77,13 @@ void from_json(const json& j, CloutProgram_Op& Op)
 	{
 		CloutProgram_Op_ATC_Tool_Change Data;
 		Data.iNewTool = j.value("Tool", -99);
+
+		Op.Data = Data;
+	}
+	else if (Op.iType == CLOUT_OP_INSTALL_PROBE)
+	{
+		CloutProgram_Op_InstallTouchProbe Data;
+		Data.bConfirmFunction = j.value("Confirm_Function", true);
 
 		Op.Data = Data;
 	}
@@ -93,7 +126,7 @@ CloutProgram::CloutProgram()
 		{ {"Type", CLOUT_OP_RUN_GCODE_FILE},  {"End", 69}, {"Start", 3}, {"Filename", ".\\test.nc"} },
 		{ {"Type", CLOUT_OP_ATC_TOOL_CHANGE}, {"Tool", -1} },
 		{ {"Type", CLOUT_OP_INSTALL_PROBE} },
-		{ {"Type", CLOUT_OP_RAPID_TO}, {"X", 40.0f}, {"Y", 140.0f}, {"Z", 10.0f} },
+		{ {"Type", CLOUT_OP_RAPID_TO}, {"X", 40.0f}, {"Y", 140.0f}, {"Z", 10.0f}, {"Use_X", true}, {"Use_Y", true}, {"Use_Z", true} },
 		{ {"Type", CLOUT_OP_PROBE_OP} , {"Probe Type", "Bore Center"}, {"Bore Diameter", 23.0f} }
 	};
 };
