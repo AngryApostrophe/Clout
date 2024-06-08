@@ -15,7 +15,7 @@ ProbeOperation_BoreCenter::ProbeOperation_BoreCenter()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
 
-	bType = PROBE_OP_TYPE_BORE;
+	bProbingType = PROBE_OP_TYPE_BORE;
 
 	szWindowIdent = "BoreCenter";
 
@@ -466,6 +466,7 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 		ImGui::Checkbox("Zero WCS", &bZeroWCS);
 		ImGui::SameLine();
 
+
 		//Disable the combo if the option isn't selected
 			if (!bZeroWCS)
 				ImGui::BeginDisabled();
@@ -475,6 +476,7 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 			if (iWCSIndex < Carvera::CoordSystem::G54)
 				iWCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
+			sprintf_s(sString, "iWCSIndex: %d", iWCSIndex);
 			if (ImGui::BeginCombo("##ProbingBoreCenter_WCS", szWCSChoices[iWCSIndex]))
 			{
 				x = Carvera::CoordSystem::G54;
@@ -500,7 +502,7 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 }
-
+/*
 bool ProbeOperation_BoreCenter::DrawPopup()
 {
 	bool bRetVal = TRUE;	//The operation continues to run
@@ -514,4 +516,4 @@ bool ProbeOperation_BoreCenter::DrawPopup()
 	StateMachine(); //Run the state machine if an operation is going
 
 	return bRetVal;
-}
+}*/

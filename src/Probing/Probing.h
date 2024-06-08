@@ -1,16 +1,20 @@
 #pragma once
 
 #include <vector>
+#include <memory> //shared_ptr
 
 //Foward declare
 class ProbeOperation;
+class ProbeOperation_BoreCenter;
+class ProbeOperation_SingleAxis;
+class ProbeOperation_PocketCenter;
+class ProbeOperation_BossCenter;
+class ProbeOperation_WebCenter;
 
 //Exported functions
 void Probing_InitPage();
 void Probing_Draw();
-ProbeOperation* Probing_InstantiateNewOp(int iOpType);	//Create a new Probing operation of type iOpType;
-
-
+void Probing_InstantiateNewOp(std::shared_ptr<ProbeOperation>& Op, int iOpType);	//Create a new Probing operation of type iOpType;
 
 //Define probe operation types
 #define PROBE_OP_TYPE_BOSS		0
@@ -18,21 +22,17 @@ ProbeOperation* Probing_InstantiateNewOp(int iOpType);	//Create a new Probing op
 #define PROBE_OP_TYPE_POCKET		2
 #define PROBE_OP_TYPE_WEB		3
 #define PROBE_OP_TYPE_SINGLEAXIS	4
-extern const std::vector<const char*> szProbeOpTypes;
-
-
-
+extern const std::vector<const char*> szProbeOpNames;	//GUI names of each of the above
 
 //Common settings
 extern int iProbingSpeedFast;
 extern int iProbingSpeedSlow;
 
-
 class ProbeOperation
 {
 public:
-	ProbeOperation() { iState=0; bStepIsRunning=false; szWindowIdent=0;};
-	~ProbeOperation(){};
+	ProbeOperation() { iState=0; bStepIsRunning=false; szWindowIdent=0; bZeroWCS=true; iWCSIndex=0;};
+	virtual ~ProbeOperation(){};
 
 	void LoadPreviewImage(GLuint* img, const char* szFilename);
 	void ZeroWCS(bool x, bool y, bool z, float x_val = -10000.0f, float y_val = -10000.0f, float z_val = -10000.0f);
@@ -41,13 +41,11 @@ public:
 	//void Init();
 	virtual void StateMachine(){};
 	virtual void DrawSubwindow(){};
-	virtual bool DrawPopup(){return 0;};				//Returns FALSE if this operation has completed and can be deleted
-	void BeginPopup();
-	bool EndPopup();
+	bool DrawPopup();								//Returns FALSE if this operation has completed and can be deleted
+
+	BYTE bProbingType;								//What type of probing operation is this?
 
 protected:
-	BYTE bType;									//What type of probing operation is this?
-
 	char *szWindowIdent;							//Identifier of the window for ImGui
 
 	GLuint imgPreview;								//Image to preview the operation
@@ -85,15 +83,13 @@ protected:
 #define PROBE_STATE_BORECENTER_CENTER			13	//Moving to the center, done probing
 #define PROBE_STATE_BORECENTER_FINISH			14	//Update any WCS offsets, inform user, etc.
 
-class ProbeOperation_BoreCenter : ProbeOperation
+class ProbeOperation_BoreCenter : public ProbeOperation
 {
 public:
 	ProbeOperation_BoreCenter();
-	~ProbeOperation_BoreCenter();
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
-	virtual bool DrawPopup();
 
 	float  fBoreDiameter;
 	float  fOvertravel;
@@ -105,15 +101,13 @@ public:
 #define PROBE_STATE_SINGLEAXIS_GETCOORDS		4	//Ask for updated coordinates.  Otherwise we may be too quick and could use coords from 1/3 sec ago.
 #define PROBE_STATE_SINGLEAXIS_FINISH			5	//Update any WCS offsets, inform user, etc.
 
-class ProbeOperation_SingleAxis : ProbeOperation
+class ProbeOperation_SingleAxis : public ProbeOperation
 {
 public:
 	ProbeOperation_SingleAxis();
-	~ProbeOperation_SingleAxis();
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
-	virtual bool DrawPopup();
 
 	GLuint imgPreview[5] = { 0,0,0,0,0 };		//One for each axis and direction
 
@@ -137,15 +131,13 @@ public:
 #define PROBE_STATE_POCKETCENTER_CENTER_Y		13	//Move to center y, done probing
 #define PROBE_STATE_POCKETCENTER_FINISH			14	//Update any WCS offsets, inform user, etc.
 
-class ProbeOperation_PocketCenter : ProbeOperation
+class ProbeOperation_PocketCenter : public ProbeOperation
 {
 public:
 	ProbeOperation_PocketCenter();
-	~ProbeOperation_PocketCenter();
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
-	virtual bool DrawPopup();
 
 	GLuint imgPreview[2] = { 0,0 };	//One for X and Y
 
@@ -185,15 +177,13 @@ public:
 #define PROBE_STATE_BOSSCENTER_CENTER			29	//Moving to the center, done probing
 #define PROBE_STATE_BOSSCENTER_FINISH			30	//Update any WCS offsets, inform user, etc.
 
-class ProbeOperation_BossCenter : ProbeOperation
+class ProbeOperation_BossCenter : public ProbeOperation
 {
 public:
 	ProbeOperation_BossCenter();
-	~ProbeOperation_BossCenter(){};
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
-	virtual bool DrawPopup();
 
 	float  fBossDiameter = 25.0f;		//Nominal diameter of the boss feater
 	float  fClearance = 5.0f;		//How far outside of the nominal diameter should we go before we turn back in
@@ -202,15 +192,13 @@ public:
 };
 
 //Web center
-class ProbeOperation_WebCenter : ProbeOperation
+class ProbeOperation_WebCenter : public ProbeOperation
 {
 public:
 	ProbeOperation_WebCenter();
-	~ProbeOperation_WebCenter();
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
-	virtual bool DrawPopup();
 
 	GLuint imgPreview[2] = { 0,0 };	//One for X and Y
 

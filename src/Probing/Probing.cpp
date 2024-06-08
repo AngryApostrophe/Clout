@@ -1,7 +1,8 @@
 #include <Windows.h>
 #include <math.h>
 #include <typeinfo>
-#include <any>
+#include <any>		//std::any
+#include <memory>	//std::unique_ptr
 
 #include <imgui.h>
 
@@ -17,9 +18,9 @@
 bool bProbingPageInitialized = false;
 
 //Probe Op types
-const std::vector<const char*> szProbeOpTypes = { "Boss Center", "Bore Center", "Pocket Center", "Web Center", "Single Axis" };
+const std::vector<const char*> szProbeOpNames = { "Boss Center", "Bore Center", "Pocket Center", "Web Center", "Single Axis" };
 
-ProbeOperation	*Probing_ManualOp = 0;	//For manual operations (from the utilies menu), this is the one we're currently viewing/doing
+std::shared_ptr<ProbeOperation> Probing_ManualOp;	//For manual operations (from the utilies menu), this is the one we're currently viewing/doing
 
 //Common settings
 	int iProbingSpeedFast = 300;
@@ -28,45 +29,33 @@ ProbeOperation	*Probing_ManualOp = 0;	//For manual operations (from the utilies 
 
 //Start a new manual probing operation from the utility menu.  This deletes any previous op and creates a new one
 template <typename ProbeClass>	//This will carry the datatype of the new class we're going to create
-ProbeClass* Probing_StartManualOp()
+void Probing_StartManualOp()
 {
-	if (Probing_ManualOp != 0)
-	{
-		delete Probing_ManualOp;
-		Probing_ManualOp = 0;
-	}
-
-	Probing_ManualOp = (ProbeOperation*) new ProbeClass();
-
-	return (ProbeClass*)Probing_ManualOp;
+	Probing_ManualOp.reset();	//Delete the previous one
+	Probing_ManualOp = std::shared_ptr<ProbeClass>(new ProbeClass);	//Create a new one
 }
 void ProbingEndManualOp()
 {
-	if (Probing_ManualOp != 0)
-	{
-		delete Probing_ManualOp;
-		Probing_ManualOp = 0;
-	}
+	Probing_ManualOp.reset();
 }
 
-//This simply creates a new probing operation, depending on type
-ProbeOperation* Probing_InstantiateNewOp(int iOpType)
+//Create a new probe operation, deleting the old one if it exists
+void Probing_InstantiateNewOp(std::shared_ptr<ProbeOperation> &Op, int iOpType)
 {
-	ProbeOperation *Op = 0;
+	Op.reset();	//Delete what was there
 
 	if (iOpType == PROBE_OP_TYPE_BOSS)
-		Op = (ProbeOperation*) new ProbeOperation_BossCenter();
+		Op = std::shared_ptr<ProbeOperation_BossCenter>(new ProbeOperation_BossCenter);
 	else if (iOpType == PROBE_OP_TYPE_BORE)
-		Op = (ProbeOperation*) new ProbeOperation_BoreCenter();
+		Op = std::shared_ptr<ProbeOperation_BoreCenter>(new ProbeOperation_BoreCenter);
 	else if (iOpType == PROBE_OP_TYPE_WEB)
-		Op = (ProbeOperation*) new ProbeOperation_WebCenter();
+		Op = std::shared_ptr<ProbeOperation_WebCenter>(new ProbeOperation_WebCenter);
 	else if (iOpType == PROBE_OP_TYPE_POCKET)
-		Op = (ProbeOperation*) new ProbeOperation_PocketCenter();
+		Op = std::shared_ptr<ProbeOperation_PocketCenter>(new ProbeOperation_PocketCenter);
 	else if (iOpType == PROBE_OP_TYPE_SINGLEAXIS)
-		Op = (ProbeOperation*) new ProbeOperation_SingleAxis();
-
-	return Op;
+		Op = std::shared_ptr<ProbeOperation_SingleAxis>(new ProbeOperation_SingleAxis);
 }
+
 
 void ProbeOperation::LoadPreviewImage(GLuint *img, const char *szFilename)
 {
@@ -172,23 +161,22 @@ int ProbeOperation::ProbingSuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOn
 	return iResult;
 }
 
-void ProbeOperation::BeginPopup()
+bool ProbeOperation::DrawPopup()
 {
-	char sString[50]; //General purpose string
+	bool bRetVal = TRUE;	//The operation continues to run
+
+	char szString[50]; //General purpose string
 
 	// Always center this window when appearing
-	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 	//Create the modal popup
-		sprintf_s(sString, "Probe %s", szProbeOpTypes[bType]);
-		ImGui::BeginPopupModal(sString, NULL, ImGuiWindowFlags_AlwaysAutoResize);
-}
+		sprintf_s(szString, "Probe %s", szProbeOpNames[bProbingType]);
+		ImGui::BeginPopupModal(szString, NULL, ImGuiWindowFlags_AlwaysAutoResize);
 
-bool ProbeOperation::EndPopup()
-{
-	bool bRetVal = TRUE;
-	char szString[50];
+	//Draw the derived class's subwindow page
+		DrawSubwindow();
 
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
@@ -200,8 +188,8 @@ bool ProbeOperation::EndPopup()
 			iState = PROBE_STATE_START;
 		}
 
-	ImGui::SetItemDefaultFocus();
-	ImGui::SameLine();
+		ImGui::SetItemDefaultFocus();
+		ImGui::SameLine();
 
 	//Cancel button
 		sprintf_s(szString, "Cancel##%s", szWindowIdent);
@@ -223,30 +211,27 @@ bool ProbeOperation::EndPopup()
 
 
 	//Close the window once we're done
-	if (iState == PROBE_STATE_COMPLETE)
-	{
-		iState = PROBE_STATE_IDLE;
-		ImGui::CloseCurrentPopup();
+		if (iState == PROBE_STATE_COMPLETE)
+		{
+			iState = PROBE_STATE_IDLE;
+			ImGui::CloseCurrentPopup();
 
-		bRetVal = false;	//The operation is done
-	}
+			bRetVal = false;	//The operation is done
+		}
 
-	ImGui::EndPopup();
+		ImGui::EndPopup();
+
+
+	StateMachine(); //Run the state machine
 
 	return bRetVal;
 }
-
-
 
 //Load the required images
 void Probing_InitPage()
 {	
 	bProbingPageInitialized = TRUE;
 }
-
-
-
-
 
 void Probing_Draw() //This is called from inside the main draw code
 {
@@ -318,7 +303,7 @@ void Probing_Draw() //This is called from inside the main draw code
 		}
 
 		//These have to go inside the Table.  If it's called after EndTable() they won't appear
-		if (Probing_ManualOp != 0)	//Do we have an popup operation running?
+		if (Probing_ManualOp != nullptr)	//Do we have an popup operation running?
 		{
 			if (Probing_ManualOp->DrawPopup() == 0)	//Draw the popup.  If it's completed, delete the op
 				ProbingEndManualOp();

@@ -14,7 +14,7 @@ ProbeOperation_WebCenter::ProbeOperation_WebCenter()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
 
-	bType = PROBE_OP_TYPE_WEB;
+	bProbingType = PROBE_OP_TYPE_WEB;
 
 	szWindowIdent = "WebCenter";
 
@@ -147,7 +147,7 @@ void ProbeOperation_WebCenter::DrawSubwindow()
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 }
-
+/*
 bool ProbeOperation_WebCenter::DrawPopup()
 {
 	bool bRetVal = TRUE;	//The operation continues to run
@@ -162,3 +162,4 @@ bool ProbeOperation_WebCenter::DrawPopup()
 
 	return bRetVal;
 }
+*/

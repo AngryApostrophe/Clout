@@ -14,7 +14,7 @@ ProbeOperation_PocketCenter::ProbeOperation_PocketCenter()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
 
-	bType = PROBE_OP_TYPE_POCKET;
+	bProbingType = PROBE_OP_TYPE_POCKET;
 
 	szWindowIdent = "PocketCenter";
 
@@ -545,7 +545,7 @@ void ProbeOperation_PocketCenter::DrawSubwindow()
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 }
-
+/*
 bool ProbeOperation_PocketCenter::DrawPopup()
 {
 	bool bRetVal = TRUE;	//The operation continues to run
@@ -559,4 +559,4 @@ bool ProbeOperation_PocketCenter::DrawPopup()
 	StateMachine(); //Run the state machine if an operation is going
 
 	return bRetVal;
-}
+}*/

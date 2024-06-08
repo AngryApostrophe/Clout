@@ -31,17 +31,17 @@ void from_json(const json& j, CloutProgram_Op& Op)
 {
 	if (Op.iType == CLOUT_OP_RUN_GCODE_FILE)
 	{
-		CloutProgram_Op_Run_GCode_File Data;
+		CloutProgram_OpData_Run_GCode_File Data;
 		Data.iStartLineNum = j.value("Start", -1);
 		Data.iLastLineNum = j.value("End", -1);
 		Data.sFilename = j.value("Filename", "");
-		Data.iLineCount = 0;
+		Data.sGCode_Line.clear();
 
 		Op.Data = Data;
 	}
 	else if (Op.iType == CLOUT_OP_RAPID_TO)
 	{
-		CloutProgram_Op_RapidTo Data;
+		CloutProgram_OpData_RapidTo Data;
 		Data.Coords.x = j.value("X", 0.0f);
 		Data.Coords.y = j.value("Y", 0.0f);
 		Data.Coords.z = j.value("Z", 0.0f);
@@ -76,36 +76,45 @@ void from_json(const json& j, CloutProgram_Op& Op)
 	}
 	else if (Op.iType == CLOUT_OP_ATC_TOOL_CHANGE)
 	{
-		CloutProgram_Op_ATC_Tool_Change Data;
+		CloutProgram_OpData_ATC_Tool_Change Data;
 		Data.iNewTool = j.value("Tool", -99);
 
 		Op.Data = Data;
 	}
 	else if (Op.iType == CLOUT_OP_INSTALL_PROBE)
 	{
-		CloutProgram_Op_InstallTouchProbe Data;
+		CloutProgram_OpData_InstallTouchProbe Data;
 		Data.bConfirmFunction = j.value("Confirm_Function", true);
 
 		Op.Data = Data;
 	}
 	else if (Op.iType == CLOUT_OP_PROBE_OP)
 	{
-		CloutProgram_Op_ProbeOp Data;
+		CloutProgram_OpData_ProbeOp Data;
 
-		Data.ProbeOp = 0;
+		Data.ProbeOp.reset();
 		
-		Data.iProbeOpType = 0;
-		std::string ProbeOpType = j.value("Probe Op Type", "Boss Center");
-		while (Data.iProbeOpType < szProbeOpTypes.size())	//Loop through all the available types and find this one
-		{
-			if (_stricmp(ProbeOpType.c_str(), szProbeOpTypes[Data.iProbeOpType]) == 0)
-				break;
-			Data.iProbeOpType++;
-		}
-		if (Data.iProbeOpType >= szProbeOpTypes.size())	//If we didn't find it, default back to 0
-			Data.iProbeOpType = 0;
+		//Read the operation type
+			int iProbeOpType = 0;
+			std::string ProbeOpType = j.value("Probe Op Type", "");
 
-		Data.ProbeOp = Probing_InstantiateNewOp(Data.iProbeOpType);
+		//Make sure it's in our list
+			while (iProbeOpType < szProbeOpNames.size())	//Loop through all the available types and find this one
+			{
+				if (_stricmp(ProbeOpType.c_str(), szProbeOpNames[iProbeOpType]) == 0)
+					break;
+				iProbeOpType++;
+			}
+			if (iProbeOpType >= szProbeOpNames.size())	//If we didn't find it, default back to -1
+			{
+				iProbeOpType = -1;
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Read invalid probe operation of type: %s", ProbeOpType.c_str());
+			}
+
+		//TODO: If not found, abort this operation and alert user
+
+		//Create the ProbeOp object that has all the data
+			Probing_InstantiateNewOp(Data.ProbeOp, iProbeOpType);
 
 		Op.Data = Data;
 	}
@@ -116,11 +125,11 @@ void to_json(json& j, const CloutProgram& C) {
 }
 void from_json(const json& j, CloutProgram& Prog)
 {	
-	Prog.iOpsCount = 0;
+	Prog.Ops.clear();
 
 	for (auto& jOp : Prog.jData["Operations"]) //Loop through all the operations in the JSON
 	{
-		CloutProgram_Op &Op = Prog.Ops[Prog.iOpsCount]; //Reference to the current Op in our storage
+		CloutProgram_Op Op; //The new op
 
 		//Read the operation type
 			jOp.at("Type").get_to(Op.iType);
@@ -128,16 +137,16 @@ void from_json(const json& j, CloutProgram& Prog)
 		//Read the data
 			jOp.get_to(Op);
 
-		Prog.iOpsCount++;
+		//Add it to the program;
+			Prog.AddOperation(Op);
 	}
 }
 
 
 
-
 CloutProgram::CloutProgram()
 {
-	iOpsCount = 0;
+	Ops.clear();
 
 	//Sample data
 	jData["Name"] = "My Test Program";
@@ -153,10 +162,9 @@ CloutProgram::CloutProgram()
 	};
 };
 
-void CloutProgram::AddOperation(CloutProgram_Op* NewOp)
+void CloutProgram::AddOperation(CloutProgram_Op NewOp)
 {
-	//Operations[iOperationsCount] = NewOp;
-	//iOperationsCount++;
+	Ops.push_back(NewOp);
 }
 
 void CloutProgram::MoveOperationUp(int iIdx)
@@ -170,5 +178,9 @@ void CloutProgram::MoveOperationUp(int iIdx)
 }
 
 void CloutProgram::LoadFromFile(const char *szFilename)
+{
+}
+
+void CloutProgram::Erase()
 {
 }

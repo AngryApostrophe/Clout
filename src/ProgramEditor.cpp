@@ -19,26 +19,19 @@ CloutProgram prog;	//Simple program for testing purposes only
 #define OP_TITLE_PADDING	7.0f
 
 
-void ProgramEditor_Change_ProbeOp_Type(CloutProgram_Op_ProbeOp& Data, int iNewType)
+void ProgramEditor_Change_ProbeOp_Type(CloutProgram_OpData_ProbeOp *Data, int iNewType)
 {
-	if (Data.ProbeOp != 0)
-	{
-		delete Data.ProbeOp;
-		Data.ProbeOp = 0;
-	}
-
-	Data.iProbeOpType = iNewType;
-	Data.ProbeOp = Probing_InstantiateNewOp(iNewType);
+	Probing_InstantiateNewOp(Data->ProbeOp, iNewType);
 }
 
 
-void ProgramEditor_DrawTab_Empty(CloutProgram_Op &Op)
+void ProgramEditor_DrawTab_Empty(CloutProgram_Op *Op)
 {
 }
 
-void ProgramEditor_DrawTab_ATCToolChange(CloutProgram_Op& Op)
+void ProgramEditor_DrawTab_ATCToolChange(CloutProgram_Op *Op)
 {
-	CloutProgram_Op_ATC_Tool_Change& Data = std::any_cast<CloutProgram_Op_ATC_Tool_Change>(Op.Data);
+	CloutProgram_OpData_ATC_Tool_Change& Data = std::any_cast<CloutProgram_OpData_ATC_Tool_Change>(Op->Data);
 
 	//Description
 		ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
@@ -65,12 +58,12 @@ void ProgramEditor_DrawTab_ATCToolChange(CloutProgram_Op& Op)
 		}
 		HelpMarker("Select the new tool to change to.");
 
-	Op.Data = Data;
+	Op->Data = Data;
 }
 
-void ProgramEditor_DrawTab_InstallTouchProbe(CloutProgram_Op& Op)
+void ProgramEditor_DrawTab_InstallTouchProbe(CloutProgram_Op *Op)
 {
-	CloutProgram_Op_InstallTouchProbe& Data = std::any_cast<CloutProgram_Op_InstallTouchProbe>(Op.Data);
+	CloutProgram_OpData_InstallTouchProbe& Data = std::any_cast<CloutProgram_OpData_InstallTouchProbe>(Op->Data);
 
 	//Description
 	ImGui::Text("Work with the user to install a touch probe");
@@ -80,12 +73,12 @@ void ProgramEditor_DrawTab_InstallTouchProbe(CloutProgram_Op& Op)
 	ImGui::Checkbox("Confirm function##DrawTab_InstallTouchProbe", &Data.bConfirmFunction);
 	HelpMarker("If selected, after installation of the probe you will be asked to touch the probe to confirm it works.");
 
-	Op.Data = Data;
+	Op->Data = Data;
 }
 
-void ProgramEditor_DrawTab_RapidTo(CloutProgram_Op& Op)
+void ProgramEditor_DrawTab_RapidTo(CloutProgram_Op *Op)
 {
-	CloutProgram_Op_RapidTo& Data = std::any_cast<CloutProgram_Op_RapidTo>(Op.Data);
+	CloutProgram_OpData_RapidTo& Data = std::any_cast<CloutProgram_OpData_RapidTo>(Op->Data);
 
 	//Description
 	ImGui::Text("G0 - Rapid move to a new location");
@@ -179,16 +172,13 @@ void ProgramEditor_DrawTab_RapidTo(CloutProgram_Op& Op)
 			ImGui::EndDisabled();
 		HelpMarker("(optional) Which coordinate system to reference.");
 
-
-
-
-	Op.Data = Data;
+	Op->Data = Data;
 }
-void ProgramEditor_DrawTab_RunGCodeFile(CloutProgram_Op& Op)
+void ProgramEditor_DrawTab_RunGCodeFile(CloutProgram_Op *Op)
 {
 	int x;
 
-	CloutProgram_Op_Run_GCode_File& Data = std::any_cast<CloutProgram_Op_Run_GCode_File>(Op.Data);
+	CloutProgram_OpData_Run_GCode_File& Data = std::any_cast<CloutProgram_OpData_Run_GCode_File>(Op->Data);
 
 	//Description
 	ImGui::Text("Run all, or a portion, of an existing G Code file");
@@ -265,12 +255,17 @@ void ProgramEditor_DrawTab_RunGCodeFile(CloutProgram_Op& Op)
 		ImGui::EndTable();
 	}
 
-	Op.Data = Data; //Update it
+	Op->Data = Data; //Update it
 }
 
-void ProgramEditor_DrawTab_ProbeOp(CloutProgram_Op& Op)
+void ProgramEditor_DrawTab_ProbeOp(CloutProgram_Op *Op)
 {
-	CloutProgram_Op_ProbeOp& Data = std::any_cast<CloutProgram_Op_ProbeOp>(Op.Data);
+	int iNewProbeOpType = -1;
+
+	CloutProgram_OpData_ProbeOp &Data = std::any_cast<CloutProgram_OpData_ProbeOp>(Op->Data);
+
+	if (Data.ProbeOp == 0)
+		return;
 
 	//Description
 	ImGui::Text("Run a probe operation");
@@ -278,19 +273,16 @@ void ProgramEditor_DrawTab_ProbeOp(CloutProgram_Op& Op)
 	ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the setup
 
 	//Probe op type
-		if (ImGui::BeginCombo("Op Type##ProbeOp", szProbeOpTypes[Data.iProbeOpType]))
+		if (ImGui::BeginCombo("Op Type##ProbeOp", szProbeOpNames[Data.ProbeOp->bProbingType]))
 		{
-			for (int x = 0; x < szProbeOpTypes.size(); x++)
+			for (int x = 0; x < szProbeOpNames.size(); x++)
 			{
 				//Add the item
-				const bool is_selected = ((Data.iProbeOpType) == x);
-				if (ImGui::Selectable(szProbeOpTypes[x], is_selected))
+				const bool is_selected = ((Data.ProbeOp->bProbingType) == x);
+				if (ImGui::Selectable(szProbeOpNames[x], is_selected))
 				{
-					if (Data.iProbeOpType != x)
-					{
-						Data.iProbeOpType = x;
-						ProgramEditor_Change_ProbeOp_Type(Data, x);
-					}
+					if (Data.ProbeOp->bProbingType != x)
+						iNewProbeOpType = x;
 				}
 
 				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -305,17 +297,20 @@ void ProgramEditor_DrawTab_ProbeOp(CloutProgram_Op& Op)
 	ImGui::Separator();
 
 	//Draw the subwindow for this probe op
-		if (Data.ProbeOp != 0)
-			Data.ProbeOp->DrawSubwindow();
+	Data.ProbeOp->DrawSubwindow();
 
-	Op.Data = Data;
+	//Change this probe operation if requested
+		if (iNewProbeOpType != -1)
+			ProgramEditor_Change_ProbeOp_Type(&Data, iNewProbeOpType);
+	
+	Op->Data = Data;
 }
 
 
 
 
 
-void (*funcEditorDrawTabs[])(CloutProgram_Op&) = {
+void (*funcEditorDrawTabs[])(CloutProgram_Op*) = {
 ProgramEditor_DrawTab_Empty,				//CLOUT_OP_NULL			0
 ProgramEditor_DrawTab_ATCToolChange,		//CLOUT_OP_ATC_TOOL_CHANGE	1
 ProgramEditor_DrawTab_RapidTo,			//CLOUT_OP_RAPID_TO			2
@@ -360,7 +355,7 @@ void ProgramEditor_Draw()
 
 				if (prog.Ops[iActive].bEditorExpanded) //If we opened it, close all the others
 				{
-					for (x = 0; x < prog.iOpsCount; x++)
+					for (x = 0; x < prog.Ops.size(); x++)
 					{
 						if (x != iActive)
 							prog.Ops[x].bEditorExpanded = false;
@@ -375,7 +370,7 @@ void ProgramEditor_Draw()
 				iHovered = -1;
 
 		//List of operations
-		for (x = 0; x < prog.iOpsCount; x++)
+		for (x = 0; x < prog.Ops.size(); x++)
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, OP_TITLE_PADDING));
 			
@@ -396,7 +391,7 @@ void ProgramEditor_Draw()
 					{
 						case CLOUT_OP_RUN_GCODE_FILE:
 						{
-							CloutProgram_Op_Run_GCode_File &Data = std::any_cast<CloutProgram_Op_Run_GCode_File>(prog.Ops[x].Data);
+							CloutProgram_OpData_Run_GCode_File &Data = std::any_cast<CloutProgram_OpData_Run_GCode_File>(prog.Ops[x].Data);
 							ImGui::Text("Filename:  %s", Data.sFilename.c_str());
 							ImGui::Text("Start Line:  %d", Data.iStartLineNum);
 							ImGui::Text("Last Line:  %d", Data.iLastLineNum);
@@ -405,7 +400,7 @@ void ProgramEditor_Draw()
 
 						case CLOUT_OP_ATC_TOOL_CHANGE:
 						{
-							CloutProgram_Op_ATC_Tool_Change &Data = std::any_cast<CloutProgram_Op_ATC_Tool_Change>(prog.Ops[x].Data);
+							CloutProgram_OpData_ATC_Tool_Change &Data = std::any_cast<CloutProgram_OpData_ATC_Tool_Change>(prog.Ops[x].Data);
 							
 							if (Data.iNewTool > 0)
 								ImGui::Text("New Tool:  %d", Data.iNewTool);
@@ -418,7 +413,7 @@ void ProgramEditor_Draw()
 
 						case CLOUT_OP_RAPID_TO:
 						{
-							CloutProgram_Op_RapidTo& Data = std::any_cast<CloutProgram_Op_RapidTo>(prog.Ops[x].Data);
+							CloutProgram_OpData_RapidTo& Data = std::any_cast<CloutProgram_OpData_RapidTo>(prog.Ops[x].Data);
 							ImGui::Text("Coords:  (%0.03f,  %0.03f,  %0.03f)", Data.Coords.x, Data.Coords.y, Data.Coords.z);
 
 							if (Data.bUseFeedrate)
@@ -431,7 +426,7 @@ void ProgramEditor_Draw()
 
 						case CLOUT_OP_INSTALL_PROBE:
 						{
-							CloutProgram_Op_InstallTouchProbe& Data = std::any_cast<CloutProgram_Op_InstallTouchProbe>(prog.Ops[x].Data);
+							CloutProgram_OpData_InstallTouchProbe& Data = std::any_cast<CloutProgram_OpData_InstallTouchProbe>(prog.Ops[x].Data);
 							ImGui::Text("Confirm function: %s", (Data.bConfirmFunction ? "Yes" : "No"));
 						}
 						break;
@@ -457,7 +452,7 @@ void ProgramEditor_Draw()
 				else if (ImGui::GetMouseDragDelta(0).y > OP_TITLE_PADDING) //We're dragging down, so the next one is higher
 					iHigherItem = iActive + 1;
 
-				if (iHigherItem >= 0 && iHigherItem < prog.iOpsCount)
+				if (iHigherItem >= 0 && iHigherItem < prog.Ops.size())
 				{
 					prog.MoveOperationUp(iHigherItem);
 					ImGui::ResetMouseDragDelta();
@@ -480,7 +475,7 @@ void ProgramEditor_Draw()
 			ImGui::BeginChild("ProgramEditorChild");
 			
 			if (iActive != -1)
-				(*funcEditorDrawTabs[prog.Ops[iActive].iType])(prog.Ops[iActive]);
+				(*funcEditorDrawTabs[prog.Ops[iActive].iType])(&prog.Ops[iActive]);
 
 			ImGui::EndChild();
 		

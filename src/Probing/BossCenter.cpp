@@ -15,7 +15,7 @@ ProbeOperation_BossCenter::ProbeOperation_BossCenter()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
 
-	bType = PROBE_OP_TYPE_BOSS;
+	bProbingType = PROBE_OP_TYPE_BOSS;
 
 	szWindowIdent = "BossCenter";
 
@@ -1067,7 +1067,7 @@ void ProbeOperation_BossCenter::DrawSubwindow()	//Could be drawn in either its o
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 }
-
+/*
 bool ProbeOperation_BossCenter::DrawPopup()
 {
 	bool bRetVal = TRUE;	//The operation continues to run
@@ -1081,4 +1081,4 @@ bool ProbeOperation_BossCenter::DrawPopup()
 	StateMachine(); //Run the state machine if an operation is going
 
 	return bRetVal;
-}
+}*/

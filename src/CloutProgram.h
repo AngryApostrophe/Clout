@@ -22,18 +22,18 @@ using json = nlohmann::json;
 extern const char* szOperationName[];	//Array of strings describing the above
 
 
-struct CloutProgram_Op_ATC_Tool_Change
+struct CloutProgram_OpData_ATC_Tool_Change
 {
 	int iNewTool;			//Index of the tool to change to. -1=None,  0=Wireless Probe, 1-6,    -99=Not defined, error.
 };
 
 
-struct CloutProgram_Op_InstallTouchProbe
+struct CloutProgram_OpData_InstallTouchProbe
 {
 	bool bConfirmFunction;	//True if we wish to confirm that the touch probe is working before moving on
 };
 
-struct CloutProgram_Op_RapidTo
+struct CloutProgram_OpData_RapidTo
 {
 	bool bUseAxis[3];					//True if we are changing each of the axes
 	DOUBLE_XYZ Coords;					//New coords to rapid to.  <-9999999 if the field is not used
@@ -45,26 +45,24 @@ struct CloutProgram_Op_RapidTo
 	Carvera::CoordSystem::eCoordSystem WCS;	//If using WCS, which one?
 };
 
-struct CloutProgram_Op_Custom_GCode
+struct CloutProgram_OpData_Custom_GCode
 {
 	char szGCode[MAX_GCODE_LINES];
 };
 
-struct CloutProgram_Op_ProbeOp
+struct CloutProgram_OpData_ProbeOp
 {
-	int iProbeOpType;		//Type of probing operation to conduct
-	ProbeOperation* ProbeOp;	//Pointer to this probing op object
+	std::shared_ptr<ProbeOperation> ProbeOp;	//Pointer to this probing op object
 };
 
-class CloutProgram_Op_Run_GCode_File
+class CloutProgram_OpData_Run_GCode_File
 {
 public:
-	CloutProgram_Op_Run_GCode_File(){ iLineCount=0;};
-	~CloutProgram_Op_Run_GCode_File() {};
+	CloutProgram_OpData_Run_GCode_File() {};
+	~CloutProgram_OpData_Run_GCode_File() {};
 
 	std::string sFilename;
 	
-	int iLineCount;
 	std::vector<std::string> sGCode_Line;
 	
 	int iStartLineNum;	//Line number that we will begin executing at
@@ -92,13 +90,14 @@ public:
 	~CloutProgram(){};
 
 	void LoadFromFile(const char *szFilename);
-	void AddOperation(CloutProgram_Op *NewOp); //Add a new operation to the program
+	void AddOperation(CloutProgram_Op NewOp); //Add a new operation to the program
 	void DeleteOperation(int iIndex); //Delete an operation from the program
 
 	void MoveOperationUp(int iIdx);
 
-	int iOpsCount;	//Number of operations in the program
-	CloutProgram_Op Ops[MAX_OPERATIONS];	//The array of operations
+	void Erase();	//Erase the current program
+
+	std::vector <CloutProgram_Op> Ops;	//All of the individual operations
 
 	json jData; //JSON Data
 };

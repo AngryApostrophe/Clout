@@ -14,7 +14,7 @@ ProbeOperation_SingleAxis::ProbeOperation_SingleAxis()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
 
-	bType = PROBE_OP_TYPE_SINGLEAXIS;
+	bProbingType = PROBE_OP_TYPE_SINGLEAXIS;
 
 	szWindowIdent = "SingleAxis";
 
@@ -426,7 +426,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 }
-
+/*
 bool ProbeOperation_SingleAxis::DrawPopup()
 {
 	bool bRetVal = TRUE;	//The operation continues to run
@@ -440,4 +440,4 @@ bool ProbeOperation_SingleAxis::DrawPopup()
 	StateMachine(); //Run the state machine if an operation is going
 
 	return bRetVal;
-}
+}*/
