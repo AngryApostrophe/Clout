@@ -4,6 +4,8 @@
 #include <json.hpp>
 using json = nlohmann::json;
 
+#include "Probing/Probing.h"
+
 #define MAX_OPERATIONS			255
 #define MAX_GCODE_LINES			50000
 
@@ -46,6 +48,12 @@ struct CloutProgram_Op_RapidTo
 struct CloutProgram_Op_Custom_GCode
 {
 	char szGCode[MAX_GCODE_LINES];
+};
+
+struct CloutProgram_Op_ProbeOp
+{
+	int iProbeOpType;		//Type of probing operation to conduct
+	ProbeOperation* ProbeOp;	//Pointer to this probing op object
 };
 
 class CloutProgram_Op_Run_GCode_File

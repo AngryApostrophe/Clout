@@ -38,35 +38,46 @@ set  (MISC_LIB_SOURCES
 set  (CLOUT_SOURCES
       "${PROJECT_SOURCE_DIR}/src/winmain.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Clout.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Probing.cpp"
 	"${PROJECT_SOURCE_DIR}/src/ModelViewer.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Helpers.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Console.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Comms.cpp"
 	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.cpp"
 	"${PROJECT_SOURCE_DIR}/src/CloutProgram.cpp"
+	"${PROJECT_SOURCE_DIR}/src/OperationQueue.cpp"
+	)
+	
+set  (CLOUT_SOURCES_PROBING
+      "${PROJECT_SOURCE_DIR}/src/Probing/Probing.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Probing/Probing.h"
+      "${PROJECT_SOURCE_DIR}/src/Probing/BoreCenter.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Probing/BossCenter.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Probing/PocketCenter.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Probing/WebCenter.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Probing/SingleAxis.cpp"
 	)
 	
 set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/Clout.h"
-	"${PROJECT_SOURCE_DIR}/src/Probing.h"
 	"${PROJECT_SOURCE_DIR}/src/ModelViewer.h"
 	"${PROJECT_SOURCE_DIR}/src/Helpers.h"
 	"${PROJECT_SOURCE_DIR}/src/Console.h"
 	"${PROJECT_SOURCE_DIR}/src/Comms.h"
 	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.h"
 	"${PROJECT_SOURCE_DIR}/src/CloutProgram.h"
+	"${PROJECT_SOURCE_DIR}/src/OperationQueue.h"
 	)
 
 source_group("ImgUi" FILES ${IMGUI_SOURCES})
 source_group("Misc Libraries" FILES ${MISC_LIB_SOURCES})
 source_group("Header Files" FILES ${CLOUT_HEADERS})
 source_group("Source Files" FILES ${CLOUT_SOURCES})
+source_group("Source Files/Probing" FILES ${CLOUT_SOURCES_PROBING})
 
 # Set Properties->General->Configuration Type to Application(.exe)
 # Creates app.exe with the listed sources (main.cxx)
 # Adds sources to the Solution Explorer
-add_executable (Clout WIN32 ${CLOUT_SOURCES} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS})
+add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS})
 
 # Properties->Linker->Input->Additional Dependencies
 target_link_libraries (Clout

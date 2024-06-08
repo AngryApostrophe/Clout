@@ -4,6 +4,7 @@
 #include "Clout.h"
 #include "Helpers.h"
 #include "Console.h"
+#include "Probing/Probing.h"
 #include "CloutProgram.h"
 
 
@@ -87,6 +88,27 @@ void from_json(const json& j, CloutProgram_Op& Op)
 
 		Op.Data = Data;
 	}
+	else if (Op.iType == CLOUT_OP_PROBE_OP)
+	{
+		CloutProgram_Op_ProbeOp Data;
+
+		Data.ProbeOp = 0;
+		
+		Data.iProbeOpType = 0;
+		std::string ProbeOpType = j.value("Probe Op Type", "Boss Center");
+		while (Data.iProbeOpType < szProbeOpTypes.size())	//Loop through all the available types and find this one
+		{
+			if (_stricmp(ProbeOpType.c_str(), szProbeOpTypes[Data.iProbeOpType]) == 0)
+				break;
+			Data.iProbeOpType++;
+		}
+		if (Data.iProbeOpType >= szProbeOpTypes.size())	//If we didn't find it, default back to 0
+			Data.iProbeOpType = 0;
+
+		Data.ProbeOp = Probing_InstantiateNewOp(Data.iProbeOpType);
+
+		Op.Data = Data;
+	}
 }
 
 
@@ -127,7 +149,7 @@ CloutProgram::CloutProgram()
 		{ {"Type", CLOUT_OP_ATC_TOOL_CHANGE}, {"Tool", -1} },
 		{ {"Type", CLOUT_OP_INSTALL_PROBE} },
 		{ {"Type", CLOUT_OP_RAPID_TO}, {"X", 40.0f}, {"Y", 140.0f}, {"Z", 10.0f}, {"Use_X", true}, {"Use_Y", true}, {"Use_Z", true} },
-		{ {"Type", CLOUT_OP_PROBE_OP} , {"Probe Type", "Bore Center"}, {"Bore Diameter", 23.0f} }
+		{ {"Type", CLOUT_OP_PROBE_OP} , {"Probe Op Type", "Bore Center"}, {"Bore Diameter", 23.0f} }
 	};
 };
 

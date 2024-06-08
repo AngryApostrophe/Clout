@@ -9,12 +9,28 @@
 #include "Helpers.h"
 #include "Console.h"
 #include "CloutProgram.h"
+#include "Probing\Probing.h"
 
 
 
-CloutProgram prog;
+CloutProgram prog;	//Simple program for testing purposes only
+
 
 #define OP_TITLE_PADDING	7.0f
+
+
+void ProgramEditor_Change_ProbeOp_Type(CloutProgram_Op_ProbeOp& Data, int iNewType)
+{
+	if (Data.ProbeOp != 0)
+	{
+		delete Data.ProbeOp;
+		Data.ProbeOp = 0;
+	}
+
+	Data.iProbeOpType = iNewType;
+	Data.ProbeOp = Probing_InstantiateNewOp(iNewType);
+}
+
 
 void ProgramEditor_DrawTab_Empty(CloutProgram_Op &Op)
 {
@@ -252,6 +268,52 @@ void ProgramEditor_DrawTab_RunGCodeFile(CloutProgram_Op& Op)
 	Op.Data = Data; //Update it
 }
 
+void ProgramEditor_DrawTab_ProbeOp(CloutProgram_Op& Op)
+{
+	CloutProgram_Op_ProbeOp& Data = std::any_cast<CloutProgram_Op_ProbeOp>(Op.Data);
+
+	//Description
+	ImGui::Text("Run a probe operation");
+
+	ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the setup
+
+	//Probe op type
+		if (ImGui::BeginCombo("Op Type##ProbeOp", szProbeOpTypes[Data.iProbeOpType]))
+		{
+			for (int x = 0; x < szProbeOpTypes.size(); x++)
+			{
+				//Add the item
+				const bool is_selected = ((Data.iProbeOpType) == x);
+				if (ImGui::Selectable(szProbeOpTypes[x], is_selected))
+				{
+					if (Data.iProbeOpType != x)
+					{
+						Data.iProbeOpType = x;
+						ProgramEditor_Change_ProbeOp_Type(Data, x);
+					}
+				}
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
+		}
+		HelpMarker("Select which type of probe operation to run.");
+
+	ImGui::Separator();
+
+	//Draw the subwindow for this probe op
+		if (Data.ProbeOp != 0)
+			Data.ProbeOp->DrawSubwindow();
+
+	Op.Data = Data;
+}
+
+
+
+
 
 void (*funcEditorDrawTabs[])(CloutProgram_Op&) = {
 ProgramEditor_DrawTab_Empty,				//CLOUT_OP_NULL			0
@@ -259,7 +321,7 @@ ProgramEditor_DrawTab_ATCToolChange,		//CLOUT_OP_ATC_TOOL_CHANGE	1
 ProgramEditor_DrawTab_RapidTo,			//CLOUT_OP_RAPID_TO			2
 ProgramEditor_DrawTab_Empty,				//CLOUT_OP_HOME_XY			3
 ProgramEditor_DrawTab_InstallTouchProbe,	//CLOUT_OP_INSTALL_PROBE		4
-ProgramEditor_DrawTab_Empty,				//CLOUT_OP_PROBE_OP			5
+ProgramEditor_DrawTab_ProbeOp,			//CLOUT_OP_PROBE_OP			5
 ProgramEditor_DrawTab_RunGCodeFile,		//CLOUT_OP_RUN_GCODE_FILE	6
 ProgramEditor_DrawTab_Empty,				//CLOUT_OP_CUSTOM_GCODE		7
 ProgramEditor_DrawTab_Empty				//CLOUT_OP_ALERT_USER		8
@@ -277,9 +339,8 @@ void ProgramEditor_Draw()
 
 	if (!ImGui::BeginPopupModal("Program Editor", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		prog.jData.get_to(prog); //TODO: Temp.  This resets the data when window is closed
 		return;
-		}
+	}
 	
 
 	if (ImGui::BeginTable("table_ProgramEditor", 2 , ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, ImVec2(800, 700)))
@@ -415,14 +476,18 @@ void ProgramEditor_Draw()
 		
 		//Draw the editor tab
 			ImGui::TableSetColumnIndex(1);
+
+			ImGui::BeginChild("ProgramEditorChild");
 			
 			if (iActive != -1)
 				(*funcEditorDrawTabs[prog.Ops[iActive].iType])(prog.Ops[iActive]);
+
+			ImGui::EndChild();
 		
 		ImGui::EndTable();
 
-		ImGui::Text("Active:  %d", iActive);
-		ImGui::Text("Hovered:  %d", iHovered);
+		//ImGui::Text("Active:  %d", iActive);
+		//ImGui::Text("Hovered:  %d", iHovered);
 
 		if (ImGui::Button("Add Operation##ProgramEditor", ImVec2(120, 0)))
 		{

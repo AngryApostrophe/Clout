@@ -8,10 +8,13 @@ using namespace std;
 #include "Comms.h"
 #include "Console.h"
 #include "ModelViewer.h"
-#include "Probing.h"
+#include "Probing/Probing.h"
 #include "CloutProgram.h"
 #include "ProgramEditor.h"
 
+
+
+extern CloutProgram prog;
 
 //Global vars
 	ImGuiIO* io = 0;
@@ -140,6 +143,8 @@ void Clout_Init()
 {
 	Console.AddLog("Starting up");
 
+	prog.jData.get_to(prog); //TODO: Temp.
+
 	//Setup the global machine status
 		MachineStatus.Status = Carvera::Status::Idle;
 		MachineStatus.Coord.Working = {-1, -1, -1};
@@ -152,6 +157,9 @@ void Clout_Init()
 
 	//Initialize comms
 		CommsInit();
+
+	//Load some GUI resources
+		Probing_InitPage();
 	
 	//And initialize the model viewer
 		ModelViewer.Init();
