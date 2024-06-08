@@ -181,12 +181,18 @@ bool ProbeOperation::DrawPopup()
 	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
 
 	//Run button
+		if (iState != PROBE_STATE_IDLE)
+			ImGui::BeginDisabled();
+
 		sprintf_s(szString, "Run##%s", szWindowIdent);
 		if (ImGui::Button(szString, ImVec2(120, 0)))
 		{
 			//ImGui::CloseCurrentPopup();
 			iState = PROBE_STATE_START;
 		}
+
+		if (iState != PROBE_STATE_IDLE)
+			ImGui::EndDisabled();
 
 		ImGui::SetItemDefaultFocus();
 		ImGui::SameLine();
