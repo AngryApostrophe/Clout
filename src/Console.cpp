@@ -201,29 +201,34 @@ void CommsConsole::ExecCommand(const char* command_line)
 	History.push_back(Strdup(command_line));
 
 	// Process command
-	if (Stricmp(command_line, "CLEAR") == 0)
+	if (command_line[0] != '>') //Send strings to carvera
 	{
-		ClearLog();
-	}
-	else if (Stricmp(command_line, "HELP") == 0)
-	{
-		AddLog("Commands:");
-		for (int i = 0; i < Commands.Size; i++)
-			AddLog("- %s", Commands[i]);
-	}
-	else if (Stricmp(command_line, "HISTORY") == 0)
-	{
-		int first = History.Size - 10;
-		for (int i = first > 0 ? first : 0; i < History.Size; i++)
-			AddLog("%3d: %s\n", i, History[i]);
-	}
-	else if (command_line[0] == '>') //Send strings to Carvera
-	{
-		Comms_SendString(command_line+1); // +1 so we don't send the >
+		Comms_SendString(command_line + 1); // +1 so we don't send the >
 	}
 	else
 	{
-		AddLog("Unknown command: '%s'\n", command_line);
+		char *c = (char*)command_line + 1;
+
+		if (Stricmp(c, "CLEAR") == 0)
+		{
+			ClearLog();
+		}
+		else if (Stricmp(c, "HELP") == 0)
+		{
+			AddLog("Commands:");
+			for (int i = 0; i < Commands.Size; i++)
+				AddLog("- %s", Commands[i]);
+		}
+		else if (Stricmp(c, "HISTORY") == 0)
+		{
+			int first = History.Size - 10;
+			for (int i = first > 0 ? first : 0; i < History.Size; i++)
+				AddLog("%3d: %s\n", i, History[i]);
+		}
+		else
+		{
+			AddLog("Unknown command: '%s'\n", c);
+		}
 	}
 
 	// On command input, we scroll to bottom even if AutoScroll==false
