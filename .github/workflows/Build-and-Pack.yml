@@ -23,6 +23,32 @@ jobs:
         submodules: recursive
 
     # There's probably a better way to do this, but I'm not familiar enough with github
+    - name: Retrieve GLFW Hash
+      uses: theowenyoung/folder-hash@v3
+      with:
+        path: ${{github.workspace}}\src\external\glfw
+      id: GLFWHash
+
+    - name: Restore GLFW cache
+      id: cache-GLFW
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{github.workspace}}\src\external\glfw\src\Release\glfw3.lib
+        #Use the currently active Assimp commit folder hash as the key
+        key: ${{ steps.GLFWHash.outputs.hash }}
+
+    - if: ${{ steps.cache-GLFW.outputs.cache-hit != 'true' }}
+      name: Configure GLFW
+      working-directory: ${{github.workspace}}\src\external\glfw
+      run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - if: ${{ steps.cache-GLFW.outputs.cache-hit != 'true' }}
+      name: Build GLFW
+      working-directory: ${{github.workspace}}\src\external\glfw
+      run: cmake --build . --config ${{env.BUILD_TYPE}}
+
+    # There's probably a better way to do this, but I'm not familiar enough with github
     - name: Retrieve Assimp Hash
       uses: theowenyoung/folder-hash@v3
       with:
