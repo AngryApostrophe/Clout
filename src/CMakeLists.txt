@@ -57,6 +57,15 @@ set  (CLOUT_SOURCES_PROBING
       "${PROJECT_SOURCE_DIR}/src/Probing/SingleAxis.cpp"
 	)
 	
+set  (CLOUT_SOURCES_OPERATIONS
+      "${PROJECT_SOURCE_DIR}/src/Operations/RunGCodeFile.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Operations/ATCToolChange.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Operations/ProbeOp.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Operations/InstallTouchProbe.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Operations/RapidTo.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Operations/CustomGCode.cpp"
+      )
+	
 set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/Clout.h"
 	"${PROJECT_SOURCE_DIR}/src/ModelViewer.h"
@@ -73,11 +82,12 @@ source_group("Misc Libraries" FILES ${MISC_LIB_SOURCES})
 source_group("Header Files" FILES ${CLOUT_HEADERS})
 source_group("Source Files" FILES ${CLOUT_SOURCES})
 source_group("Source Files/Probing" FILES ${CLOUT_SOURCES_PROBING})
+source_group("Source Files/Operations" FILES ${CLOUT_SOURCES_OPERATIONS})
 
 # Set Properties->General->Configuration Type to Application(.exe)
 # Creates app.exe with the listed sources (main.cxx)
 # Adds sources to the Solution Explorer
-add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS})
+add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS})
 
 # Properties->Linker->Input->Additional Dependencies
 target_link_libraries (Clout

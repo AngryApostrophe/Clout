@@ -11,7 +11,7 @@ using namespace std;
 #include "Probing/Probing.h"
 #include "CloutProgram.h"
 #include "ProgramEditor.h"
-
+#include "OperationQueue.h"
 
 
 extern CloutProgram prog;
@@ -163,6 +163,18 @@ void Clout_Init()
 	
 	//And initialize the model viewer
 		ModelViewer.Init();
+
+	//Other init stuff
+		OperationQueue.Init();
+
+	OperationQueue.AddProgramToQueue(prog);
+	OperationQueue.AddProgramToQueue(prog);
+	OperationQueue.AddProgramToQueue(prog);
+	OperationQueue.AddProgramToQueue(prog);
+	OperationQueue.AddProgramToQueue(prog);
+	OperationQueue.AddProgramToQueue(prog);
+	OperationQueue.AddProgramToQueue(prog);
+		
 }
 
 
@@ -184,8 +196,9 @@ void Clout_CreateDefaultLayout()
 	auto dock_id_console = ImGui::DockBuilderSplitNode(dock_id_preview, ImGuiDir_Down, 0.43f, nullptr, &dock_id_preview);
 	ImGui::DockBuilderDockWindow("Console", dock_id_console);
 
-	auto dock_id_previewcontrols= ImGui::DockBuilderSplitNode(dock_id_preview, ImGuiDir_Right, 0.32f, nullptr, &dockspace_id);
-	ImGui::DockBuilderDockWindow("Preview Controls", dock_id_previewcontrols);
+	auto dock_id_queue= ImGui::DockBuilderSplitNode(dock_id_preview, ImGuiDir_Right, 0.32f, nullptr, &dockspace_id);
+	ImGui::DockBuilderDockWindow("Queue", dock_id_queue);
+	ImGui::DockBuilderDockWindow("Preview Controls", dock_id_queue);	
 	
 	ImGui::DockBuilderFinish(dockspace_id);
 }
@@ -202,10 +215,14 @@ bool Clout_MainLoop()
 	const BYTE bSlen = 20;
 	char s[bSlen];	//General purpose string
 
+	//Process the operations queue
+		OperationQueue.Run();
+
 	//Draw the sub windows
-		ModelViewer.Draw();
 		Console.Draw();
 		Window_Control_Draw();
+		OperationQueue.DrawList();
+		ModelViewer.Draw();
 
 	//Status window
 		ImGui::Begin("Status", 0); //Create the status window
