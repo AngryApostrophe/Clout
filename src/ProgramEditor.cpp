@@ -78,7 +78,7 @@ void ProgramEditor_Draw()
 				//Keep track of active/hovered for mouse drag later.  This also has to go inside becuase IsItemActive() doesn't work outside of here if the header is open
 					if (ImGui::IsItemActive())
 						iActive = x;
-					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
+					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem | ImGuiHoveredFlags_ChildWindows))
 						iHovered = x;
 				
 				//Show the summary info
@@ -90,7 +90,7 @@ void ProgramEditor_Draw()
 			//Keep track of active/hovered for mouse drag later
 				if (ImGui::IsItemActive())
 					iActive = x;
-				if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
+				if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem | ImGuiHoveredFlags_ChildWindows))
 					iHovered = x;
 		}
 
@@ -133,8 +133,8 @@ void ProgramEditor_Draw()
 		
 		ImGui::EndTable();
 
-		//ImGui::Text("Active:  %d", iActive);
-		//ImGui::Text("Hovered:  %d", iHovered);
+		ImGui::Text("Active:  %d", iActive);
+		ImGui::Text("Hovered:  %d", iHovered);
 
 		if (ImGui::Button("Add Operation##ProgramEditor", ImVec2(120, 0)))
 		{
