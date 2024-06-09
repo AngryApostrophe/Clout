@@ -76,7 +76,7 @@ void _OperationQueue::DrawList()
 				ImGui::TableSetColumnIndex(0);
 				
 				//sprintf_s(szString, 50, "%s##OpsList%d", szOperationName[Ops[x].iType], x);
-				sprintf_s(szString, 50, "%s##OpsList%d", Ops[x].FullText.c_str(), x);
+				sprintf_s(szString, 50, "%s##OpsList%d", GetOp(x).FullText.c_str(), x);
 				ImGui::Selectable(szString);
 			}
 
@@ -89,15 +89,15 @@ void _OperationQueue::DrawList()
 		ImGui::End();
 }
 
-void _OperationQueue::AddOpToQueue(CloutProgram_Op& NewOp)
+void _OperationQueue::AddOpToQueue(CloutProgram_Op_Datatypes& NewOp)
 {
 	Ops.push_back(NewOp);
 }
 
 void _OperationQueue::AddProgramToQueue(CloutProgram& Program)
 {
-	/*std::for_each(Program.Ops.begin(), Program.Ops.end(), [this](const CloutProgram_Op NewOp) 
+	std::for_each(Program.Ops.begin(), Program.Ops.end(), [this](const CloutProgram_Op_Datatypes NewOp)
 	{ 
 		Ops.push_back(NewOp);
-	});*/
+	});
 }
