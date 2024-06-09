@@ -107,9 +107,10 @@ void CloutProgram::MoveOperationUp(int iIdx)
 	if (iIdx == 0)
 		return;
 
-	CloutProgram_Op_Datatypes op = Ops[iIdx - 1];
-	Ops[iIdx-1] = Ops[iIdx];
-	Ops[iIdx] = op;
+//	CloutProgram_Op_Datatypes op = Ops[iIdx - 1];
+//	Ops[iIdx-1] = Ops[iIdx];
+//	Ops[iIdx] = op;
+	std::swap(Ops[iIdx-1], Ops[iIdx]);
 }
 
 void CloutProgram::LoadFromFile(const char *szFilename)

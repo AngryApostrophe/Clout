@@ -133,8 +133,8 @@ void ProgramEditor_Draw()
 		
 		ImGui::EndTable();
 
-		ImGui::Text("Active:  %d", iActive);
-		ImGui::Text("Hovered:  %d", iHovered);
+		//ImGui::Text("Active:  %d", iActive);
+		//ImGui::Text("Hovered:  %d", iHovered);
 
 		if (ImGui::Button("Add Operation##ProgramEditor", ImVec2(120, 0)))
 		{
