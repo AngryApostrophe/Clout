@@ -1,14 +1,20 @@
-# Building Clout
+# Building Clout from source
 
 ## 1. Clone the repository
-## 2. Build Assimp
+## 2. Build GLFW
+* From GLFW directory: 
+```bash
+cmake CMakeLists.txt
+```
+* If using Visual Studio, open GLFW.sln, ensure you're on Release config and build the ALL_BUILD project
+## 3. Build Assimp
 * https://github.com/assimp/assimp/blob/master/Build.md
 * From Assimp directory: 
 ```bash
 cmake CMakeLists.txt
 ```
 * If using Visual Studio, open Assimp.sln, ensure you're on Release config and build the ALL_BUILD project
-## 3. Build Clout
+## 4. Build Clout
 * From Clout root directory:
  ```bash
  cd build
