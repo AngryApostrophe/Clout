@@ -67,7 +67,7 @@ void CloutProgram_Op_RapidTo::DrawDetailTab()
 	//Description
 	ImGui::Text("G0 - Rapid move to a new location");
 
-	ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the setup
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space before the setup
 
 	ImGui::SeparatorText("Coordinates");
 

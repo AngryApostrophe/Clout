@@ -1,8 +1,8 @@
 //This is an early work in progress.  Lots of work still to do.
 
 
-#include <Windows.h>
-using namespace std;
+//#include <Windows.h>
+//using namespace std;
 
 #include <imgui.h>
 #include <imgui_impl_win32.h>
@@ -43,9 +43,9 @@ bool bDebug_DrawDebugData = false;
 bool bDebug_DrawShadowMap = false;
 
 
-unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
+unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma)
 {
-	string filename = string(path);
+	std::string filename = std::string(path);
 	filename = directory + '/' + filename;
 
 	unsigned int textureID;

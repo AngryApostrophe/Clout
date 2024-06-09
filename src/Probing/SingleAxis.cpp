@@ -231,7 +231,8 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 	ImGui::Text("	Probe must be at start position to move in one axis only");
 
 
-	ImGui::Image((void*)(intptr_t)imgPreview[iAxisDirectionIndex], ImVec2(450, 342));
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ScaledByWindowScale(450.0f)) * 0.5f);	//Center the image in the window
+	ImGui::Image((void*)(intptr_t)imgPreview[iAxisDirectionIndex], ScaledByWindowScale(450, 342));
 
 	//ImGui::Separator();
 
@@ -244,10 +245,12 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 
 	if (ImGui::BeginTable("table_singleaxis_axis", 4 /*, ImGuiTableFlags_Borders*/))
 	{
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 140);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 65);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 80);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+		ImVec2 ButtonSize = ScaledByWindowScale(50, 50);
+
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(140));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(65));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(80));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(100));
 
 		//Y+
 		ImGui::TableNextRow();
@@ -263,7 +266,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
 		}
 
-		if (ImGui::Button("Y+##ProbeSingleAxis", ImVec2(50, 50)))
+		if (ImGui::Button("Y+##ProbeSingleAxis", ButtonSize))
 			iAxisDirectionIndex = 2;
 
 		ImGui::PopStyleColor(1);
@@ -271,7 +274,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 
 		ImGui::TableSetColumnIndex(3);
 		ImGui::BeginDisabled(); //Can't probe Z+
-		ImGui::Button("Z+##ProbeSingleAxis", ImVec2(50, 50));
+		ImGui::Button("Z+##ProbeSingleAxis", ButtonSize);
 		ImGui::EndDisabled();
 
 
@@ -281,7 +284,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 		ImGui::PushID(0);
 
 		//Calculations for right alignment
-		auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - 50 - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+		auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ScaledByWindowScale(50) - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
 		if (posX > ImGui::GetCursorPosX())
 			ImGui::SetCursorPosX(posX);
 
@@ -294,7 +297,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
 		}
 
-		if (ImGui::Button("X-##ProbeSingleAxis", ImVec2(50, 50)))
+		if (ImGui::Button("X-##ProbeSingleAxis", ButtonSize))
 			iAxisDirectionIndex = 0;
 
 		ImGui::PopStyleColor(1);
@@ -315,7 +318,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
 		}
 
-		if (ImGui::Button("X+##ProbeSingleAxis", ImVec2(50, 50)))
+		if (ImGui::Button("X+##ProbeSingleAxis", ButtonSize))
 			iAxisDirectionIndex = 1;
 
 		ImGui::PopStyleColor(1);
@@ -335,7 +338,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
 		}
 
-		if (ImGui::Button("Y-##ProbeSingleAxis", ImVec2(50, 50)))
+		if (ImGui::Button("Y-##ProbeSingleAxis", ButtonSize))
 			iAxisDirectionIndex = 3;
 
 		ImGui::PopStyleColor(1);
@@ -354,7 +357,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 			ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Button]);
 		}
 
-		if (ImGui::Button("Z-##ProbeSingleAxis", ImVec2(50, 50)))
+		if (ImGui::Button("Z-##ProbeSingleAxis", ButtonSize))
 			iAxisDirectionIndex = 4;
 
 		ImGui::PopStyleColor(1);
@@ -367,7 +370,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 
 	ImGui::SeparatorText("Setup");
 
-	ImGui::PushItemWidth(200);	//Set the width of the textboxes
+	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Travel Distance
 	sprintf_s(sString, 10, "%%0.2f%s", sUnits);

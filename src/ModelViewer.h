@@ -13,7 +13,7 @@
 
 #define MAX_BONE_INFLUENCE 4
 
-unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false);
+unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma = false);
 
 
 struct Vertex {
@@ -35,8 +35,8 @@ struct Vertex {
 
 struct Texture {
 	unsigned int id;
-	string type;
-	string path;
+	std::string type;
+	std::string path;
 };
 
 
@@ -210,13 +210,13 @@ class Mesh
 {
 public:
 	// mesh Data
-	vector<Vertex>       vertices;
-	vector<unsigned int> indices;
-	vector<Texture>      textures;
+	std::vector<Vertex>       vertices;
+	std::vector<unsigned int> indices;
+	std::vector<Texture>      textures;
 	unsigned int VAO;
 
 	// constructor
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
@@ -238,8 +238,8 @@ public:
 		{
 			glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
 			// retrieve texture number (the N in diffuse_textureN)
-			string number;
-			string name = textures[i].type;
+			std::string number;
+			std::string name = textures[i].type;
 			if (name == "texture_diffuse")
 				number = std::to_string(diffuseNr++);
 			else if (name == "texture_specular")
@@ -318,13 +318,13 @@ class Model
 {
 public:
 	// model data 
-	vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
-	vector<Mesh>    meshes;
-	string directory;
+	std::vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+	std::vector<Mesh>    meshes;
+	std::string directory;
 	bool gammaCorrection;
 
 	// constructor, expects a filepath to a 3D model.
-	Model(string const& path, bool gamma = false) : gammaCorrection(gamma)
+	Model(std::string const& path, bool gamma = false) : gammaCorrection(gamma)
 	{
 		loadModel(path);
 	}
@@ -338,7 +338,7 @@ public:
 
 private:
 	// loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
-	void loadModel(string const& path)
+	void loadModel(std::string const& path)
 	{
 		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Loading model %s", path.c_str());
 
@@ -380,9 +380,9 @@ private:
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		// data to fill
-		vector<Vertex> vertices;
-		vector<unsigned int> indices;
-		vector<Texture> textures;
+		std::vector<Vertex> vertices;
+		std::vector<unsigned int> indices;
+		std::vector<Texture> textures;
 
 		// walk through each of the mesh's vertices
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -445,10 +445,10 @@ private:
 		// normal: texture_normalN
 
 		// 1. diffuse maps
-		vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+		std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 		// 2. specular maps
-		vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+		std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		// 3. normal maps
 		std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
@@ -463,9 +463,9 @@ private:
 
 	// checks all material textures of a given type and loads the textures if they're not loaded yet.
 	// the required info is returned as a Texture struct.
-	vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
+	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
 	{
-		vector<Texture> textures;
+		std::vector<Texture> textures;
 		for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 		{
 			aiString str;

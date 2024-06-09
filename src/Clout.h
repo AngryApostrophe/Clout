@@ -1,7 +1,12 @@
 #include "Helpers.h"
 
+//My standard types I like to use
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
+
 //Global vars
 	extern ImGuiIO* io;
+	extern GLFWwindow* glfwWindow;	//The main glfw Window object in Main.cpp
 
 extern char szWCSChoices[9][20]; //List of all available WCSs, and which one is active
 
@@ -89,7 +94,7 @@ struct MACHINE_STATUS
 	Carvera::Units::eUnits Units;
 	Carvera::Plane::ePlane Plane;
 
-	BYTE bCurrentTool;
+	unsigned char bCurrentTool;
 	float fToolLengthOffset; //Length of the installed tool. 0 if none.
 };
 

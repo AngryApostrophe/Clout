@@ -1,4 +1,4 @@
-#include <Windows.h>
+//#include <Windows.h>
 using namespace std;
 
 #include <imgui.h>
@@ -167,14 +167,13 @@ void Clout_Init()
 	//Other init stuff
 		OperationQueue.Init();
 
+	/*OperationQueue.AddProgramToQueue(prog);
 	OperationQueue.AddProgramToQueue(prog);
 	OperationQueue.AddProgramToQueue(prog);
 	OperationQueue.AddProgramToQueue(prog);
 	OperationQueue.AddProgramToQueue(prog);
 	OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);
-		
+	OperationQueue.AddProgramToQueue(prog);*/		
 }
 
 

@@ -38,7 +38,7 @@ void CloutProgram_Op_ProbeOp::DrawDetailTab()
 	//Description
 		ImGui::Text("Run a probe operation");
 
-	ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the setup
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space before the setup
 
 	//Probe op type
 		if (ImGui::BeginCombo("Op Type##ProbeOp", szProbeOpNames[ProbeOp->bProbingType]))

@@ -1,11 +1,13 @@
+typedef void* HANDLE;	//TODO: this'll go away after I go cross-platform
+
 #define MAX_DEVICES 10
 
 
 int CommsInit();
 void CommsDisconnect();
-BOOL SendCommand(const char *c, BOOL bShowOnLog = TRUE);
-BOOL SendCommandAndWait(const char* c, BOOL bShowOnLog = TRUE);
-BYTE ProcessIncomingMessage(char* sRecv, const char* sSent=0, BOOL bShowOnLog = TRUE);
+bool SendCommand(const char *c, bool bShowOnLog = true);
+bool SendCommandAndWait(const char* c, bool bShowOnLog = true);
+BYTE ProcessIncomingMessage(char* sRecv, const char* sSent=0, bool bShowOnLog = true);
 
 extern bool bCommsConnected;
 

@@ -13,9 +13,9 @@ The following features are currently available:
 * Pocket center probe
 * Single axis probe (X, Y, or Z)
 ## Console
-Prefix command with > to send code to Carvera. Example:
+Commands typed in the console will be sent to Carvera. Example:
  ```bash
->G38.3 X-20 F75
+G38.3 X-20 F75
 ```
 
 ## Live 3D view
@@ -34,6 +34,7 @@ Use keyboard arrow keys to move camera.  Right click and drag mouse to look arou
 
 Clout uses the following libraries:
 * [Dear ImgUi](https://github.com/ocornut/imgui) - Graphical user interface
+* [GLFW](https://github.com/glfw/glfw) - OS window management
 * [Assimp](https://github.com/assimp/assimp) - 3D model importer
 * [GLEW](https://github.com/nigels-com/glew) - OpenGL extensions
 * [GLM](https://github.com/g-truc/glm) - OpenGL mathematics

@@ -431,14 +431,14 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 	ImGui::Text("	Probe already installed");
 	ImGui::Text("	Probe must be near center of bore at the desired Z height");
 
-	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 450.0f) * 0.5f);	//Center the image in the window
-	ImGui::Image((void*)(intptr_t)imgPreview, ImVec2(450, 342));
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ScaledByWindowScale(450.0f)) * 0.5f);	//Center the image in the window
+	ImGui::Image((void*)(intptr_t)imgPreview, ScaledByWindowScale(450, 342));
 
 	//ImGui::Separator();
 
 	ImGui::SeparatorText("Setup");
 
-	ImGui::PushItemWidth(200);	//Set the width of the textboxes
+	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Bore Diameter
 		sprintf_s(sString, 10, "%%0.3f%s", sUnits);

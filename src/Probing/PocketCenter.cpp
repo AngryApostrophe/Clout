@@ -459,13 +459,14 @@ void ProbeOperation_PocketCenter::DrawSubwindow()
 	ImGui::Text("	Probe must be near center of pocket at the desired Z height");
 
 
-	ImGui::Image((void*)(intptr_t)imgPreview[iAxisIndex], ImVec2(450, 342));
+	ImGui::Image((void*)(intptr_t)imgPreview[iAxisIndex], ScaledByWindowScale(450, 342));
 
 	//ImGui::Separator();
 
 	ImGui::SeparatorText("Setup");
 
-	ImGui::PushItemWidth(200);	//Set the width of the textboxes
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ScaledByWindowScale(450.0f)) * 0.5f);	//Center the image in the window
+	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	const char szAxisChoices[][2] = { "X", "Y" };
 	if (ImGui::BeginCombo("Probe Axis##PocketCenter", szAxisChoices[iAxisIndex]))

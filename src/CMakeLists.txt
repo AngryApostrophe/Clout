@@ -7,6 +7,7 @@ include_directories ("${PROJECT_SOURCE_DIR}/src/external/imgui"
 "${PROJECT_SOURCE_DIR}/src/external/glew/include"
 "${PROJECT_SOURCE_DIR}/src/external/json/single_include/nlohmann"
 "${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog"
+"${PROJECT_SOURCE_DIR}/src/external/glfw/include"
 )
 
 set  (IMGUI_SOURCES
@@ -15,13 +16,13 @@ set  (IMGUI_SOURCES
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imgui_tables.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imgui_widgets.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_opengl3.cpp"
-	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_win32.cpp"
+	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_glfw.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/misc/cpp/imgui_stdlib.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imconfig.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imgui.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_opengl3.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_opengl3_loader.h"
-	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_win32.h"
+	"${PROJECT_SOURCE_DIR}/src/external/imgui/backends/imgui_impl_glfw.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imgui_internal.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imstb_rectpack.h"
 	"${PROJECT_SOURCE_DIR}/src/external/imgui/imstb_textedit.h"
@@ -36,7 +37,7 @@ set  (MISC_LIB_SOURCES
 	)
 
 set  (CLOUT_SOURCES
-      "${PROJECT_SOURCE_DIR}/src/winmain.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Main.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Clout.cpp"
 	"${PROJECT_SOURCE_DIR}/src/ModelViewer.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Helpers.cpp"
@@ -84,6 +85,9 @@ source_group("Source Files" FILES ${CLOUT_SOURCES})
 source_group("Source Files/Probing" FILES ${CLOUT_SOURCES_PROBING})
 source_group("Source Files/Operations" FILES ${CLOUT_SOURCES_OPERATIONS})
 
+# Set the subsystem and entry point for no console and main()
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+
 # Set Properties->General->Configuration Type to Application(.exe)
 # Creates app.exe with the listed sources (main.cxx)
 # Adds sources to the Solution Explorer
@@ -93,6 +97,8 @@ add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SO
 target_link_libraries (Clout
 "${PROJECT_SOURCE_DIR}/src/external/assimp/lib/Release/assimp-vc143-mt.lib"
 "${PROJECT_SOURCE_DIR}/src/external/glew/lib/Release/x64/glew32.lib"
+"${PROJECT_SOURCE_DIR}/src/external/glfw/src/Release/glfw3.lib"
+"opengl32.lib"
 )
 
 # Creates a folder "executables" and adds target 

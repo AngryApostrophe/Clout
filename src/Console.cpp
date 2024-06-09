@@ -25,7 +25,7 @@ CommsConsole::CommsConsole()
 	AutoScroll = true;
 	ScrollToBottom = false;
 
-	ConsoleMutex = CreateMutex(0, FALSE, 0);
+	ConsoleMutex = CreateMutex(0, false, 0);
 }
 
 

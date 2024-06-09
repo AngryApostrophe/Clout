@@ -31,7 +31,7 @@ void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 	//Description
 	ImGui::Text("Run all, or a portion, of an existing G Code file");
 
-	ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the setup
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space before the setup
 
 	ImGui::InputText("Filename##RunGCodeFile", &sFilename);
 	ImGui::SameLine();
@@ -46,7 +46,7 @@ void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 	}
 
 	// Show the File dialog
-	ImVec2 MinSize(750, 450);
+	ImVec2 MinSize(ScaledByWindowScale(750, 450));
 	if (GuiFileDialog->Display("ChooseFileDlgKey", ImGuiWindowFlags_NoCollapse, MinSize))
 	{
 		if (GuiFileDialog->IsOk())
@@ -82,7 +82,7 @@ void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 	ImGui::InputInt("Final Line##RunGCodeFile", &iLastLineNum);
 	HelpMarker("Final line in this G Code file to execute before moving on.");
 
-	const ImVec2 TextViewSize(475, 500);
+	const ImVec2 TextViewSize(ScaledByWindowScale(475, 500));
 	const float fLineNumWidth = 35.0f;
 	if (ImGui::BeginTable("table_RunGCodeFile", 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, TextViewSize))
 	{

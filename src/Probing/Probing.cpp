@@ -1,4 +1,4 @@
-#include <Windows.h>
+//#include <Windows.h>
 #include <math.h>
 #include <typeinfo>
 #include <any>		//std::any
@@ -163,7 +163,7 @@ int ProbeOperation::ProbingSuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOn
 
 bool ProbeOperation::DrawPopup()
 {
-	bool bRetVal = TRUE;	//The operation continues to run
+	bool bRetVal = true;	//The operation continues to run
 
 	char szString[50]; //General purpose string
 
@@ -178,14 +178,14 @@ bool ProbeOperation::DrawPopup()
 	//Draw the derived class's subwindow page
 		DrawSubwindow();
 
-	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f)); //Extra empty space before the buttons
 
 	//Run button
 		if (iState != PROBE_STATE_IDLE)
 			ImGui::BeginDisabled();
 
 		sprintf_s(szString, "Run##%s", szWindowIdent);
-		if (ImGui::Button(szString, ImVec2(120, 0)))
+		if (ImGui::Button(szString, ScaledByWindowScale(120, 0)))
 		{
 			//ImGui::CloseCurrentPopup();
 			iState = PROBE_STATE_START;
@@ -199,7 +199,7 @@ bool ProbeOperation::DrawPopup()
 
 	//Cancel button
 		sprintf_s(szString, "Cancel##%s", szWindowIdent);
-		if (ImGui::Button(szString, ImVec2(120, 0)))
+		if (ImGui::Button(szString, ScaledByWindowScale(120, 0)))
 		{
 			if (iState != PROBE_STATE_IDLE)
 			{
@@ -236,7 +236,7 @@ bool ProbeOperation::DrawPopup()
 //Load the required images
 void Probing_InitPage()
 {	
-	bProbingPageInitialized = TRUE;
+	bProbingPageInitialized = true;
 }
 
 void Probing_Draw() //This is called from inside the main draw code

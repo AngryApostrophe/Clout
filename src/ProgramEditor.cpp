@@ -31,10 +31,11 @@ void ProgramEditor_Draw()
 	if (!ImGui::BeginPopupModal("Program Editor", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		return;
 	
-	if (ImGui::BeginTable("table_ProgramEditor", 2 , ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, ImVec2(800, 700)))
+	const ImVec2 TableSize = ScaledByWindowScale(800, 700);
+	if (ImGui::BeginTable("table_ProgramEditor", 2 , ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, TableSize))
 	{
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 300);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 500);
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(300));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(500));
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
@@ -67,7 +68,7 @@ void ProgramEditor_Draw()
 		{
 			CloutProgram_Op &BaseOp = prog.GetOp(x);
 
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, OP_TITLE_PADDING));
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, ScaledByWindowScale(OP_TITLE_PADDING)));
 			
 			ImGui::SetNextItemOpen(BaseOp.bEditorExpanded);
 
@@ -78,7 +79,7 @@ void ProgramEditor_Draw()
 				//Keep track of active/hovered for mouse drag later.  This also has to go inside becuase IsItemActive() doesn't work outside of here if the header is open
 					if (ImGui::IsItemActive())
 						iActive = x;
-					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem | ImGuiHoveredFlags_ChildWindows))
+					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))// | ImGuiHoveredFlags_ChildWindows))
 						iHovered = x;
 				
 				//Show the summary info
@@ -90,7 +91,7 @@ void ProgramEditor_Draw()
 			//Keep track of active/hovered for mouse drag later
 				if (ImGui::IsItemActive())
 					iActive = x;
-				if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem | ImGuiHoveredFlags_ChildWindows))
+				if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))// | ImGuiHoveredFlags_ChildWindows))
 					iHovered = x;
 		}
 
@@ -125,6 +126,9 @@ void ProgramEditor_Draw()
 			ImGui::TableSetColumnIndex(1);
 
 			ImGui::BeginChild("ProgramEditorChild");
+
+			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+				iHovered = -1;
 			
 			if (iActive != -1)
 				prog.GetOp(iActive).DrawDetailTab();
@@ -133,18 +137,18 @@ void ProgramEditor_Draw()
 		
 		ImGui::EndTable();
 
-		//ImGui::Text("Active:  %d", iActive);
-		//ImGui::Text("Hovered:  %d", iHovered);
+		ImGui::Text("Active:  %d", iActive);
+		ImGui::Text("Hovered:  %d", iHovered);
 
-		if (ImGui::Button("Add Operation##ProgramEditor", ImVec2(120, 0)))
+		if (ImGui::Button("Add Operation##ProgramEditor", ScaledByWindowScale(120, 0)))
 		{
 		}
 	}
 
 
-	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f)); //Extra empty space before the buttons
 
-	if (ImGui::Button("Exit##ProgramEditor", ImVec2(120, 0)))
+	if (ImGui::Button("Exit##ProgramEditor", ScaledByWindowScale(120, 0)))
 	{
 		ImGui::CloseCurrentPopup();
 	}

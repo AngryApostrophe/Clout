@@ -1,6 +1,4 @@
-//TODO:  handle    "<Error:ZProbe triggered before move, aborting command."
-
-
+//TODO:  process "<Error:ZProbe triggered before move, aborting command."
 
 #include <Windows.h>
 
@@ -112,7 +110,7 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 							const char *str = (const char*)msg.wParam;
 
 							//Some message we don't want to wait for a response at all.  Homing doesn't give us any response until it's finished
-								BOOL bWait = TRUE;
+							bool bWait = TRUE;
 								if (_strnicmp(str, "$H", 2) == 0)
 									bWait = false;
 
@@ -300,7 +298,7 @@ void CommsDisconnect()
 	bCommsConnected = FALSE;
 }
 
-BOOL SendCommand(const char *c, BOOL bShowOnLog)
+bool SendCommand(const char *c, bool bShowOnLog)
 {
 	if (!bCommsConnected)
 		return FALSE;
@@ -334,14 +332,14 @@ BOOL SendCommand(const char *c, BOOL bShowOnLog)
 	return TRUE;
 }
 
-BOOL SendCommandAndWait(const char* c, BOOL bShowOnLog)
+bool SendCommandAndWait(const char* c, bool bShowOnLog)
 {
 	int iBytes;
 	char sRecv[5000];
 	BYTE bResult;
 
 	//Should we listen for an OK response?
-		BOOL bWaitForOK = false;
+		bool bWaitForOK = false;
 		if (c[0] == 'G' || c[0] == 'g')
 			bWaitForOK = true;
 		if (c[0] == 'M' || c[0] == 'm')
@@ -380,7 +378,7 @@ BOOL SendCommandAndWait(const char* c, BOOL bShowOnLog)
 }
 
 
-BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, BOOL bShowOnLog)
+BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, bool bShowOnLog)
 {
 	char *c;
 	BYTE bRetVal = 1;

@@ -6,6 +6,38 @@ using namespace std;
 #include "imgui.h"
 
 #include "Helpers.h"
+#include "Clout.h"
+
+
+
+
+//Scale object sizes based on font size.  This is better than hard-coding pixels because things change depending on OS
+ImVec2 ScaledByFontSize(float x, float y)
+{
+	return ImVec2(x * ImGui::GetFontSize(), y * ImGui::GetFontSize());
+}
+
+float ScaledByFontSize(float in)
+{
+	return in * ImGui::GetFontSize();
+}
+
+//This works based on glfw window scaling.
+ImVec2 ScaledByWindowScale(float x, float y)
+{
+	float xscale, yscale;
+	glfwGetWindowContentScale(glfwWindow, &xscale, &yscale);
+
+	return ImVec2(x * xscale, y * yscale);
+}
+float ScaledByWindowScale(float in)
+{
+	float xscale, yscale;
+	glfwGetWindowContentScale(glfwWindow, &xscale, &yscale);
+
+	return in * xscale;
+}
+
 
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture)

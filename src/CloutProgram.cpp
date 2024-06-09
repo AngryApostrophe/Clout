@@ -1,8 +1,6 @@
-#include <Windows.h>
 #include <imgui.h>
 
 #include "Clout.h"
-#include "Helpers.h"
 #include "Console.h"
 #include "Probing/Probing.h"
 #include "CloutProgram.h"

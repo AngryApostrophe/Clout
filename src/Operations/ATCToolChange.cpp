@@ -39,7 +39,7 @@ void CloutProgram_Op_ATC_Tool_Change::DrawDetailTab()
 	//Description
 	ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
 
-	ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the setup
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space before the setup
 
 	//New tool
 	const char szToolChoices[][15] = { "Empty", "Wireless Probe", "1", "2", "3", "4", "5", "6" };

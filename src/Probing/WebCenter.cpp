@@ -50,13 +50,14 @@ void ProbeOperation_WebCenter::DrawSubwindow()
 	ImGui::Text("	Probe must be near center of feature at the clearance Z height");
 
 
-	ImGui::Image((void*)(intptr_t)imgPreview[iAxisIndex], ImVec2(450, 342));
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ScaledByWindowScale(450.0f)) * 0.5f);	//Center the image in the window
+	ImGui::Image((void*)(intptr_t)imgPreview[iAxisIndex], ScaledByWindowScale(450, 342));
 
 	//ImGui::Separator();
 
 	ImGui::SeparatorText("Setup");
 
-	ImGui::PushItemWidth(200);	//Set the width of the textboxes
+	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Axis
 	const char szAxisChoices[][2] = { "X", "Y" };
