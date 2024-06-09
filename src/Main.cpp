@@ -135,7 +135,7 @@ int main(int, char**)
 					prev_scale = xscale;
 					io->Fonts->Clear();
 
-					io->Fonts->AddFontFromFileTTF("..\\src\\external\\imgui\\misc\\fonts\\ProggyClean.ttf", xscale * 13.0f);
+					io->Fonts->AddFontFromFileTTF("res\\ProggyClean.ttf", xscale * 13.0f);
 
 					io->Fonts->Build();
 					ImGui_ImplOpenGL3_DestroyFontsTexture();
