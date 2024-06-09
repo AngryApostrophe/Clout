@@ -17,3 +17,6 @@
 [submodule "ImGuiFileDialog"]
 	path = src/external/ImGuiFileDialog
 	url = https://github.com/aiekick/ImGuiFileDialog
+[submodule "src/external/glfw"]
+	path = src/external/glfw
+	url = https://github.com/glfw/glfw
