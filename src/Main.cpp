@@ -24,6 +24,9 @@
 	ImGuiID dockspace_id;
 	GLFWwindow* glfwWindow;	//The main glfw Window object
 
+//Compressed resources
+	#include "Resources/ProggyClean.h"
+
 
 // Main code
 int main(int, char**)
@@ -136,7 +139,8 @@ int main(int, char**)
 					prev_scale = xscale;
 					io->Fonts->Clear();
 
-					io->Fonts->AddFontFromFileTTF("./res/ProggyClean.ttf", xscale * 13.0f);
+					//io->Fonts->AddFontFromFileTTF("./res/ProggyClean.ttf", xscale * 13.0f);
+					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 13.0f);
 
 					io->Fonts->Build();
 					ImGui_ImplOpenGL3_DestroyFontsTexture();

@@ -77,6 +77,10 @@ set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/CloutProgram.h"
 	"${PROJECT_SOURCE_DIR}/src/OperationQueue.h"
 	)
+	
+set  (CLOUT_RESOURCES
+	"${PROJECT_SOURCE_DIR}/src/Resources/ProggyClean.h"
+	)
 
 	
 IF(WIN32)
@@ -100,7 +104,7 @@ source_group("Source Files" FILES ${CLOUT_SOURCES})
 source_group("Source Files/Probing" FILES ${CLOUT_SOURCES_PROBING})
 source_group("Source Files/Operations" FILES ${CLOUT_SOURCES_OPERATIONS})
 source_group("Source Files/Platforms" FILES ${CLOUT_SOURCES_PLATFORM})
-
+source_group("Source Files/Resources" FILES ${CLOUT_RESOURCES})
 
 
 # Set Properties->General->Configuration Type to Application(.exe)
@@ -110,9 +114,9 @@ source_group("Source Files/Platforms" FILES ${CLOUT_SOURCES_PLATFORM})
 IF(WIN32)
 	# Set the subsystem and entry point for no console and main()
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-	add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS} ${CLOUT_SOURCES_PLATFORM})
+	add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS} ${CLOUT_SOURCES_PLATFORM} ${CLOUT_RESOURCES})
 ELSE(WIN32)
-	add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS} ${CLOUT_SOURCES_PLATFORM})
+	add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS} ${CLOUT_SOURCES_PLATFORM} ${CLOUT_RESOURCES})
 ENDIF(WIN32)
 
 
