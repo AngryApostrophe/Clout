@@ -20,3 +20,6 @@
 [submodule "glfw"]
 	path = src/external/glfw
 	url = https://github.com/glfw/glfw
+[submodule "src/external/glew"]
+	path = src/external/glew
+	url = https://github.com/nigels-com/glew

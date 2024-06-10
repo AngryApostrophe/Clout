@@ -4,7 +4,7 @@ include_directories ("${PROJECT_SOURCE_DIR}/src/external/imgui"
 "${PROJECT_SOURCE_DIR}/src/external/assimp/include"
 "${PROJECT_SOURCE_DIR}/src/external/stb"
 "${PROJECT_SOURCE_DIR}/src/external/glm/glm"
-"${PROJECT_SOURCE_DIR}/src/external/glew/include"
+"${PROJECT_SOURCE_DIR}/src/external/glew-win32/include"
 "${PROJECT_SOURCE_DIR}/src/external/json/single_include/nlohmann"
 "${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog"
 "${PROJECT_SOURCE_DIR}/src/external/glfw/include"
@@ -133,7 +133,7 @@ ENDIF (OPENGL_FOUND)
 IF(WIN32)
     set  (CLOUT_EXTERN_LIBS
 	"${PROJECT_SOURCE_DIR}/src/external/assimp/lib/Release/assimp-vc143-mt.lib"
-	"${PROJECT_SOURCE_DIR}/src/external/glew/lib/Release/x64/glew32.lib"
+	"${PROJECT_SOURCE_DIR}/src/external/glew-win32/lib/Release/x64/glew32.lib"
 	"${PROJECT_SOURCE_DIR}/src/external/glfw/src/Release/glfw3.lib"
       )
 ELSE(WIN32)
