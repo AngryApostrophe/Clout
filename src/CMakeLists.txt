@@ -101,13 +101,20 @@ source_group("Source Files/Probing" FILES ${CLOUT_SOURCES_PROBING})
 source_group("Source Files/Operations" FILES ${CLOUT_SOURCES_OPERATIONS})
 source_group("Source Files/Platforms" FILES ${CLOUT_SOURCES_PLATFORM})
 
-# Set the subsystem and entry point for no console and main()
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+
 
 # Set Properties->General->Configuration Type to Application(.exe)
 # Creates app.exe with the listed sources (main.cxx)
 # Adds sources to the Solution Explorer
-add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS} ${CLOUT_SOURCES_PLATFORM})
+
+IF(WIN32)
+	# Set the subsystem and entry point for no console and main()
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+	add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS} ${CLOUT_SOURCES_PLATFORM})
+ELSE(WIN32)
+	add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_HEADERS} ${CLOUT_SOURCES_PLATFORM})
+ENDIF(WIN32)
+
 
 #Add opengl
 #Find OpenGL

@@ -9,16 +9,16 @@
 #include "Console.h"
 
 //Winsock stuff
-	SOCKET sckCarvera;
+	CloutSocket sckCarvera;
 	sockaddr_in addrCarvera;
 
-	SOCKET sckBroadcast;
+	CloutSocket sckBroadcast;
 	sockaddr_in addrBroadcast;
 
 	struct timeval tv;
 
 //Status info
-	bool bCommsConnected = FALSE;
+	bool bCommsConnected = false;
 	char sConnectedIP[16];
 	WORD wConnectedPort;
 
@@ -26,32 +26,11 @@
 	char sDetectedDevices[MAX_DEVICES][3][20];
 
 //Inter-thread comms
-	DWORD dwCommsThreadID=0;
-	bool bOperationRunning = false; //Set by other modules when a complex operation is running, and we should limit what we show in the console (like "ok"s)
+	CloutThreadHandle hCommsThread;
+	bool bOperationRunning = false;		//Set by other modules when a complex operation is running, and we should limit what we show in the console (like "ok"s)
 
-	HANDLE hProbeResponseEvent;	//Alerts the probing operations when the comms thread receives a probe response message
-	char* sProbeReplyMessage = 0;	//The probing completion message
-
-
-
-
-//This function is called from the GUI thread.  It checks to see if we've gotten a response to a probing operation.  This function is non-blocking
-//Expected returns:
-//	COMM_RESULT_ERROR	- Some error
-//	COMM_RESULT_SUCCESS	- Good response
-//	COMM_RESULT_TIMEOUT	- Nothing has come in yet
-int WaitForProbeResponse(HANDLE h)
-{
-	int iRes = WaitForSingleObject(h, 0);
-
-	if (iRes == WAIT_OBJECT_0)
-		return COMM_RESULT_SUCCESS;
-	else if (iRes == WAIT_TIMEOUT)
-		return COMM_RESULT_TIMEOUT;
-
-	return COMM_RESULT_ERROR;
-}
-
+	CloutEventHandle hProbeResponseEvent;	//Alerts the probing operations when the comms thread receives a probe response message
+	char* sProbeReplyMessage = 0;			//The probing completion message
 
 
 //Make sure the string is null terminated, sometimes they aren't
@@ -62,7 +41,11 @@ void TerminateString(char *s, int iBytes)
 }
 
 //Main communications thread
+#ifdef WIN32
 DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
+#else
+void* CommsThreadProc(void* arg)
+#endif
 {
 	//Receive buffer
 		const int iRecvBufferLen = 5000;
@@ -75,76 +58,73 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 	while (1)
 	{
 		//Process incoming messages
-			MSG msg;
-			while (PeekMessage(&msg, nullptr, WM_USER, MSG_MAX, PM_REMOVE))
+			CloutThreadMessage msg;
+			while (GetThreadMessage(&hCommsThread , &msg))
 			{
-				switch (msg.message)
+				switch (msg.iType)
 				{
 					case MSG_CONNECT_DEVICE: //User asks to connect to a device
+					{
+						unsigned long Param1 = *(unsigned long*)(&msg.Param1); //Yep, this is really stupid.  TODO: Fix this shit.
+						unsigned long Param2 = *(unsigned long*)(&msg.Param2);
+
 						iLoopCounter = 0;
 
 						//Create the socket for communicating with Carvera
 							sckCarvera = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-							if (sckCarvera == INVALID_SOCKET)
+							if (sckCarvera != 0)
 							{
-								Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error creating transmit socket: %d", WSAGetLastError());
+								DisplaySocketError();
+
 								return 0;
 							}
 
 						//Get the address
-							addrCarvera.sin_family = AF_INET;
-							addrCarvera.sin_port = htons(atoi(sDetectedDevices[msg.wParam][2]));
-							addrCarvera.sin_addr.s_addr = inet_addr(sDetectedDevices[msg.wParam][1]);
+							BuildAddress(&addrCarvera, sDetectedDevices[Param1][1], sDetectedDevices[Param1][2]);
 
 						//Connect
-							if (connect(sckCarvera, (sockaddr*)&addrCarvera, sizeof(addrCarvera)) == SOCKET_ERROR)
+							if (connect(sckCarvera, (sockaddr*)&addrCarvera, sizeof(addrCarvera)) != 0)
 							{
-								int iError = WSAGetLastError();
-
-								if (iError != WSAEISCONN)
-								{
-									Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error: %d", iError);
-									CommsDisconnect();
-
+								if (!DisplaySocketError())
 									continue;
-								}
 							}
 					
 						//Connection established
 
-						bCommsConnected = TRUE;
+						bCommsConnected = true;
 
 						//Save the info to display on the screen
-							strcpy(sConnectedIP, sDetectedDevices[msg.wParam][1]);
-							wConnectedPort = atoi(sDetectedDevices[msg.wParam][2]);
+							strcpy(sConnectedIP, sDetectedDevices[Param1][1]);
+							wConnectedPort = atoi(sDetectedDevices[Param1][2]);
 
-						Console.AddLog("Connected to %s at %s:%d", sDetectedDevices[msg.wParam][0], sConnectedIP, wConnectedPort);
+						Console.AddLog("Connected to %s at %s:%d", sDetectedDevices[Param1][0], sConnectedIP, wConnectedPort);
 
 						//Start getting some info
-							SendCommandAndWait("?", FALSE);
-							SendCommandAndWait("version", TRUE);
+							SendCommandAndWait("?", false);
+							SendCommandAndWait("version", true);
+					}
 					break;
 
 					case MSG_SEND_STRING:	//Send a string to Carvera
 						if (bCommsConnected)
 						{
-							const char *str = (const char*)msg.wParam;
+							const char *str = (const char*)msg.Param1;
 
 							//Some message we don't want to wait for a response at all.  Homing doesn't give us any response until it's finished
-							bool bWait = TRUE;
+							bool bWait = true;
 								if (_strnicmp(str, "$H", 2) == 0)
 									bWait = false;
 
 									bWait = false;
 							if (bWait)
-								SendCommandAndWait(str, TRUE);
+								SendCommandAndWait(str, true);
 							else
-								SendCommand(str, TRUE);
+								SendCommand(str, true);
 						}
 
 						//wParam is a string allocated in the other thread.  We can delete it now
-							if (msg.wParam != 0)
-								free((void*)msg.wParam);
+							if (msg.Param1 != 0)
+								free((void*)msg.Param1);
 					break;
 
 					case MSG_DISCONNECT:
@@ -168,13 +148,13 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 
 						char *token=0;
 						char* next_token = 0;
-						token = strtok_s(sRecv, ",", &next_token);
+						token = strtok_r(sRecv, ",", &next_token);
 						if (token != 0)
 							strcpy(sName, token);
-						token = strtok_s(0, ",", &next_token);
+						token = strtok_r(0, ",", &next_token);
 						if (token != 0)
 							strcpy(sIP, token);
-						token = strtok_s(0, ",", &next_token);
+						token = strtok_r(0, ",", &next_token);
 						if (token != 0)
 							strcpy(sPort, token);
 
@@ -218,10 +198,11 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 			FD_ZERO(&stReadFDS);
 			FD_SET(sckCarvera, &stReadFDS);
 			int t = select(-1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
-			if (t == SOCKET_ERROR)
+			if (t < 0)
 			{
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Comms select error: %d", WSAGetLastError());
+				DisplaySocketError();
 				CommsDisconnect();
+
 				return 0;
 			}
 			else if (t > 0) //Something is available
@@ -240,7 +221,7 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 				}
 				else
 				{
-					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Receive error: %d", WSAGetLastError());
+					DisplaySocketError();
 					CommsDisconnect();
 				}
 			}
@@ -248,15 +229,15 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 		//Periodic updates
 			if (iLoopCounter > 15) //TODO: This should be based on how long since our last update, not a loop counter
 			{
-				SendCommandAndWait("?", FALSE);
+				SendCommandAndWait("?", false);
 
 				if (MachineStatus.Status == Carvera::Status::Idle)
-					SendCommandAndWait("$G", FALSE);
+					SendCommandAndWait("$G", false);
 				iLoopCounter = 0;
 			}
 			
 		iLoopCounter++;
-		Sleep(25);
+		ThreadSleep(25);
 	}
 
 	return 0;
@@ -267,13 +248,11 @@ int CommsInit()
 {
 	int iResult;
 
-	bCommsConnected = FALSE;
+	bCommsConnected = false;
 	bDetectedDevices = 0;
 
 	//Startup Winsock
-		WSADATA wsaData;
-		iResult = WSAStartup(MAKEWORD(1, 1), &wsaData);
-		if (iResult != NO_ERROR)
+		if (!StartupSockets())
 		{
 			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error starting Winsock!");
 			return 0;
@@ -281,9 +260,10 @@ int CommsInit()
 	
 	//Create the socket for finding Carvera devices on the network
 		sckBroadcast = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		if (sckBroadcast == INVALID_SOCKET)
+		if (sckBroadcast != 0)
 		{
-			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error creating DGRAM socket: %d", WSAGetLastError());
+			//Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error creating DGRAM socket: %d", WSAGetLastError());
+			DisplaySocketError();
 			return 0;
 		}
 		
@@ -294,7 +274,8 @@ int CommsInit()
 		//Bind the socket for receiving
 		if (bind(sckBroadcast, (sockaddr*)&addrBroadcast, sizeof(addrBroadcast)) < 0)
 		{
-			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error binding DGRAM socket: %d", WSAGetLastError());
+			//Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error binding DGRAM socket: %d", WSAGetLastError());
+			DisplaySocketError();
 			return 0;
 		}
 
@@ -303,11 +284,10 @@ int CommsInit()
 		tv.tv_usec = 10000; //10ms
 
 	//Events
-		hProbeResponseEvent = CreateEventA(NULL, FALSE, FALSE, NULL); //TODO: add a CloseHandle() to the shutdown function, when I make one some day
+		NewEvent(&hProbeResponseEvent);
 
 	//Create the communications thread
-		dwCommsThreadID = 0;
-		CreateThread(NULL, 0, CommsThreadProc, 0, 0, &dwCommsThreadID);
+		CloutCreateThread(&hCommsThread, CommsThreadProc);
 
 		return 1;
 }
@@ -315,14 +295,14 @@ int CommsInit()
 void CommsDisconnect()
 {
 	Console.AddLog("Disconnected");
-	closesocket(sckCarvera);
-	bCommsConnected = FALSE;
+	CloseSocket(&sckCarvera);
+	bCommsConnected = false;
 }
 
 bool SendCommand(const char *c, bool bShowOnLog)
 {
 	if (!bCommsConnected)
-		return FALSE;
+		return false;
 
 	//Make sure it's got the terminator or Carvera won't recognize it
 		char s[500];
@@ -340,17 +320,18 @@ bool SendCommand(const char *c, bool bShowOnLog)
 		}
 
 	int n_bytes = send(sckCarvera, s, x, 0);
-	if (n_bytes == SOCKET_ERROR)
+	if (n_bytes < 0)
 	{
-		Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error sending command: %d", WSAGetLastError());
+		//Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error sending command: %d", WSAGetLastError());
+		DisplaySocketError();
 		CommsDisconnect();
-		return FALSE;
+		return false;
 	}
 
 	if (bShowOnLog)
 		Console.AddLog(CommsConsole::ITEM_TYPE_SENT, ">%s", c);
 
-	return TRUE;
+	return true;
 }
 
 bool SendCommandAndWait(const char* c, bool bShowOnLog)
@@ -370,7 +351,7 @@ bool SendCommandAndWait(const char* c, bool bShowOnLog)
 
 	//Send the command
 		if (!SendCommand(c, bShowOnLog))
-			return FALSE;
+			return false;
 
 	//Listen for a response
 		do
@@ -382,20 +363,21 @@ bool SendCommandAndWait(const char* c, bool bShowOnLog)
 			{
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection Closed");
 				CommsDisconnect();
-				return FALSE;
+				return false;
 			}
 			else
 			{
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Receive error: %d", WSAGetLastError());
+				//Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Receive error: %d", WSAGetLastError());
+				DisplaySocketError();
 				CommsDisconnect();
-				return FALSE;
+				return false;
 			}
 
 		//Process the response
 			bResult = ProcessIncomingMessage(sRecv, c, bShowOnLog);
 		} while (bWaitForOK && bResult); //Keep going until we get "ok"
 
-	return TRUE;
+	return true;
 }
 
 
@@ -461,7 +443,7 @@ BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, bool bShowOnLog)
 		{
 			sProbeReplyMessage = (char*)malloc(strlen(sRecv) + 1);
 			strcpy(sProbeReplyMessage, sRecv);
-			SetEvent(hProbeResponseEvent); //Alert any probing operations about this message
+			TriggerEvent(&hProbeResponseEvent); //Alert any probing operations about this message
 		}
 		else
 		{
@@ -542,12 +524,12 @@ BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, bool bShowOnLog)
 void Comms_ConnectDevice(BYTE bDeviceIdx)
 {
 	//Post a message to the comms thread to connect to this device
-		PostThreadMessageA(dwCommsThreadID, MSG_CONNECT_DEVICE, bDeviceIdx, 0);
+		SendThreadMessage(&hCommsThread, MSG_CONNECT_DEVICE, (void*)bDeviceIdx, 0);
 }
 void Comms_Disconnect()
 {
 	//Post a message to the comms thread to disconnect from the device
-		PostThreadMessageA(dwCommsThreadID, MSG_DISCONNECT, 0, 0);
+		SendThreadMessage(&hCommsThread, MSG_DISCONNECT, 0, 0);
 }
 void Comms_SendString(const char* sString)
 {
@@ -558,5 +540,5 @@ void Comms_SendString(const char* sString)
 		strcpy(c, sString);
 
 	//Now post the message to the thread
-		PostThreadMessageA(dwCommsThreadID, MSG_SEND_STRING, (WPARAM)c, 0);
+		SendThreadMessage(&hCommsThread, MSG_SEND_STRING, (void*)c, 0);
 }

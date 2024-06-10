@@ -1,5 +1,3 @@
-#pragma comment(lib, "Ws2_32.lib")
-
 #include "Platforms/Platforms.h"
 
 #include <imgui.h>

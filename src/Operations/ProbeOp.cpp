@@ -88,7 +88,7 @@ void CloutProgram_Op_ProbeOp::ParseFromJSON(const json& j)
 	//Make sure it's in our list
 		while (iProbeOpType < szProbeOpNames.size())	//Loop through all the available types and find this one
 		{
-			if (_stricmp(ProbeOpType.c_str(), szProbeOpNames[iProbeOpType]) == 0)
+			if (strcmp(ProbeOpType.c_str(), szProbeOpNames[iProbeOpType]) == 0)
 				break;
 			iProbeOpType++;
 		}

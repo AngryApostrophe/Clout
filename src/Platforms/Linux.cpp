@@ -1,6 +1,9 @@
 #include "Platforms.h"
 
+#include <unistd.h>
 
+
+//Mutex stuff
 void NewMutex(CloutMutex* Handle)
 {
 }
@@ -23,8 +26,10 @@ int WaitForMutex(CloutMutex* Handle, bool bWait)	//This either blocks forever or
 		int iRes = pthread_mutex_trylock(Handle);
 		if (iRes == 0) //Success
 			return MUTEX_RESULT_SUCCESS;
-		else if (iRes == EBUSY)
-			return MUTEX_RESULT_TIMEOUT;	//It's not available yet
+
+		return MUTEX_RESULT_TIMEOUT;
+		//else if (iRes == EBUSY)	//TODO: EBUSY isn't defined for some reason
+		//	return MUTEX_RESULT_TIMEOUT;	//It's not available yet
 	}
 
 	return MUTEX_RESULT_ERROR;
@@ -33,4 +38,105 @@ int WaitForMutex(CloutMutex* Handle, bool bWait)	//This either blocks forever or
 void ReleaseMutex(CloutMutex* Handle)
 {
 	pthread_mutex_unlock(Handle);
+}
+
+
+
+//Event stuff
+void NewEvent(CloutEventHandle* Handle)
+{
+	*Handle = eventfd(0, EFD_NONBLOCK);
+}
+
+void TriggerEvent(CloutEventHandle* Handle)
+{
+	uint64_t i = 1;
+	write(*Handle, &i, sizeof(i));
+}
+
+int IsEventSet(CloutEventHandle* Handle)
+{
+	uint64_t i;
+	if (read(*Handle, &i, sizeof(i)) == 0)
+		return EVENT_RESULT_TIMEOUT;
+	
+	return EVENT_RESULT_SUCCESS;
+}
+
+
+//Threads
+void CloutCreateThread(CloutThreadHandle* handle, void* func(void*))
+{
+	pthread_create(&handle->Handle, NULL, func, 0);
+
+	pipe(handle->Pipe);	//The pipe for sending data
+	handle->MessageMutex = eventfd(0, EFD_NONBLOCK | EFD_SEMAPHORE); //Counter of how many messages are in the queue
+}
+
+bool GetThreadMessage(CloutThreadHandle* Thread, CloutThreadMessage* msg)
+{
+	uint64_t i;
+
+	if (read(Thread->MessageMutex, &i, sizeof(i) > 0))	//If there's something on the queue
+	{
+		read(Thread->Pipe[PIPE_READ], msg, sizeof(CloutThreadMessage));	//Then read it.  
+		return true;
+	}
+
+	return false;
+}
+
+void SendThreadMessage(CloutThreadHandle* Thread, int Msg, void* Param1, void* Param2)
+{
+	//PostThreadMessageA(*Thread, Msg, Param1, Param2);
+	CloutThreadMessage msgout;
+	msgout.iType = Msg;
+	msgout.Param1 = Param1;
+	msgout.Param2 = Param2;
+
+	write(Thread->Pipe[PIPE_WRITE], &msgout, sizeof(msgout));
+
+	uint64_t i = 1;
+	write(Thread->MessageMutex, &i, sizeof(i));
+
+}
+
+void ThreadSleep(int ms)
+{
+	usleep(ms * 1000);
+}
+
+
+//Socket stuff
+int StartupSockets()	//Don't need this in Linux
+{
+	return 1;
+}
+
+void BuildAddress(sockaddr_in* addr, char* szAddress, char* szPort)
+{
+	bzero((char*)addr, sizeof(sockaddr_in));
+
+	addr->sin_family = AF_INET;
+	
+	//bcopy((char*)server->h_addr,
+	//	(char*)&serv_addr.sin_addr.s_addr,
+	//	server->h_length);
+}
+
+bool DisplaySocketError()	//TODO: Get error info
+{
+	return false;
+}
+
+void CloseSocket(CloutSocket* sock)
+{
+	close(*sock);
+}
+
+
+//Random stuff
+int _strnicmp(const char* s1, const char* s2, size_t len)
+{
+	return strncasecmp(s1, s2, len);
 }

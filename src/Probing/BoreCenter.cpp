@@ -64,9 +64,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -74,7 +74,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -97,9 +97,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos1))
 				{
@@ -107,7 +107,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -150,9 +150,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -160,7 +160,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -183,9 +183,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos2))
 				{
@@ -193,7 +193,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -236,9 +236,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -246,7 +246,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -269,9 +269,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos3))
 				{
@@ -279,7 +279,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -322,9 +322,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -332,7 +332,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -355,9 +355,9 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = WaitForProbeResponse(hProbeResponseEvent);
+			int iRet = IsEventSet(&hProbeResponseEvent);
 
-			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos4))
 				{
@@ -365,7 +365,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command

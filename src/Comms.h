@@ -1,5 +1,3 @@
-typedef void* HANDLE;	//TODO: this'll go away after I go cross-platform
-
 #define MAX_DEVICES 10
 
 
@@ -12,12 +10,12 @@ unsigned char ProcessIncomingMessage(char* sRecv, const char* sSent=0, bool bSho
 extern bool bCommsConnected;
 
 extern char sConnectedIP[16];
-extern WORD wConnectedPort;
+extern unsigned short wConnectedPort;
 
-extern BYTE bDetectedDevices;
+extern unsigned char bDetectedDevices;
 extern char sDetectedDevices[MAX_DEVICES][3][20];
 
-extern HANDLE hProbeResponseEvent;
+extern CloutEventHandle hProbeResponseEvent;
 extern char* sProbeReplyMessage;
 
 extern bool bOperationRunning;
@@ -32,10 +30,3 @@ void Comms_SendString(const char* sString);
 #define MSG_SEND_STRING			WM_USER+3	//Send a string and continue
 #define MSG_SEND_STRING_AND_WAIT	WM_USER+4 //Send a string and wait to process a response
 #define MSG_MAX MSG_SEND_STRING_AND_WAIT
-
-
-
-int WaitForProbeResponse(HANDLE h);
-#define COMM_RESULT_ERROR	0
-#define COMM_RESULT_SUCCESS	1
-#define COMM_RESULT_TIMEOUT	2
