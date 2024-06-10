@@ -11,6 +11,11 @@
 #include "../Console.h"
 #include "Probing.h"
 
+#include "../Resources/ProbeWebX.h"
+#include "../Resources/ProbeWebY.h"
+static GLuint imgProbeWebCenter[2] = {0,0};	//Only load it once, rather than every time we open a window
+
+
 ProbeOperation_WebCenter::ProbeOperation_WebCenter()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
@@ -19,10 +24,13 @@ ProbeOperation_WebCenter::ProbeOperation_WebCenter()
 
 	szWindowIdent = "WebCenter";
 
-	imgPreview[0] = 0;
-	imgPreview[1] = 0;
-	LoadPreviewImage(&imgPreview[0], "./res/ProbeWebX.png");
-	LoadPreviewImage(&imgPreview[1], "./res/ProbeWebY.png");
+	if (imgProbeWebCenter[0] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeWebX_compressed_data, ProbeWebX_compressed_size, &imgProbeWebCenter[0]);
+	imgPreview[0] = imgProbeWebCenter[0];
+
+	if (imgProbeWebCenter[1] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeWebY_compressed_data, ProbeWebY_compressed_size, &imgProbeWebCenter[1]);
+	imgPreview[1] = imgProbeWebCenter[1];
 	
 	iAxisIndex = 0;
 	fWebWidth = 15.0f;

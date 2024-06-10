@@ -11,6 +11,13 @@
 #include "../Console.h"
 #include "Probing.h"
 
+#include "../Resources/ProbeSingleAxisX0.h"
+#include "../Resources/ProbeSingleAxisX1.h"
+#include "../Resources/ProbeSingleAxisY2.h"
+#include "../Resources/ProbeSingleAxisY3.h"
+#include "../Resources/ProbeSingleAxisZ4.h"
+static GLuint imgProbeSingleAxis[5] = {0,0,0,0,0};	//Only load it once, rather than every time we open a window
+
 ProbeOperation_SingleAxis::ProbeOperation_SingleAxis()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
@@ -19,16 +26,21 @@ ProbeOperation_SingleAxis::ProbeOperation_SingleAxis()
 
 	szWindowIdent = "SingleAxis";
 
-	imgPreview[0] = 0;
-	imgPreview[1] = 0;
-	imgPreview[2] = 0;
-	imgPreview[3] = 0;
-	imgPreview[4] = 0;
-	LoadPreviewImage(&imgPreview[0], "./res/ProbeSingleAxisX0.png");
-	LoadPreviewImage(&imgPreview[1], "./res/ProbeSingleAxisX1.png");
-	LoadPreviewImage(&imgPreview[2], "./res/ProbeSingleAxisY2.png");
-	LoadPreviewImage(&imgPreview[3], "./res/ProbeSingleAxisY3.png");
-	LoadPreviewImage(&imgPreview[4], "./res/ProbeSingleAxisZ4.png");
+	if (imgProbeSingleAxis[0] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeSingleAxisX0_compressed_data, ProbeSingleAxisX0_compressed_size, &imgProbeSingleAxis[0]);
+	imgPreview[0] = imgProbeSingleAxis[0];
+	if (imgProbeSingleAxis[1] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeSingleAxisX1_compressed_data, ProbeSingleAxisX1_compressed_size, &imgProbeSingleAxis[1]);
+	imgPreview[1] = imgProbeSingleAxis[1];
+	if (imgProbeSingleAxis[2] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeSingleAxisY2_compressed_data, ProbeSingleAxisY2_compressed_size, &imgProbeSingleAxis[2]);
+	imgPreview[2] = imgProbeSingleAxis[2];
+	if (imgProbeSingleAxis[3] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeSingleAxisY3_compressed_data, ProbeSingleAxisY3_compressed_size, &imgProbeSingleAxis[3]);
+	imgPreview[3] = imgProbeSingleAxis[3];
+	if (imgProbeSingleAxis[4] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeSingleAxisZ4_compressed_data, ProbeSingleAxisZ4_compressed_size, &imgProbeSingleAxis[4]);
+	imgPreview[4] = imgProbeSingleAxis[4];
 
 	iAxisDirectionIndex = 0;
 	fTravel = 5.0f;

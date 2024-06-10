@@ -78,9 +78,14 @@ set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/OperationQueue.h"
 	)
 	
-set  (CLOUT_RESOURCES
-	"${PROJECT_SOURCE_DIR}/src/Resources/ProggyClean.h"
-	)
+#set  (CLOUT_RESOURCES
+#	"${PROJECT_SOURCE_DIR}/src/Resources/ProggyClean.h"
+#	"${PROJECT_SOURCE_DIR}/src/Resources/Resources.h"
+#	)
+file(GLOB CLOUT_RESOURCES
+     "${PROJECT_SOURCE_DIR}/src/Resources/*.h"
+     "${PROJECT_SOURCE_DIR}/src/Resources/*.cpp"
+)
 
 	
 IF(WIN32)

@@ -13,6 +13,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STB_DEFINE
+#include "deprecated/stb.h"  //This is supposedly going away, but it works for now.  I use it for decompressing images stored in header files
+
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -138,8 +141,6 @@ int main(int, char**)
 				{
 					prev_scale = xscale;
 					io->Fonts->Clear();
-
-					//io->Fonts->AddFontFromFileTTF("./res/ProggyClean.ttf", xscale * 13.0f);
 					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 13.0f);
 
 					io->Fonts->Build();

@@ -7,6 +7,7 @@ using namespace std;
 #include "Clout.h"
 
 #include <stb_image.h>
+#include <deprecated/stb.h> //This is supposedly going away, but it works for now.  He said that years ago.
 
 
 
@@ -47,15 +48,8 @@ float ScaledByWindowScale(float in)
 
 
 // Simple helper function to load an image into a OpenGL texture with common settings
-bool LoadTextureFromFile(const char* filename, GLuint* out_texture)
+static GLuint LoadTextureCommon()
 {
-	// Load from file
-	int image_width = 0;
-	int image_height = 0;
-	unsigned char* image_data = stbi_load(filename, &image_width, &image_height, NULL, 4);
-	if (image_data == NULL)
-		return false;
-
 	// Create a OpenGL texture identifier
 	GLuint image_texture;
 	glGenTextures(1, &image_texture);
@@ -71,10 +65,51 @@ bool LoadTextureFromFile(const char* filename, GLuint* out_texture)
 #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
+
+	return image_texture;
+}
+
+bool LoadTextureFromFile(const char* filename, GLuint* out_texture)
+{
+	// Load from file
+	int image_width = 0;
+	int image_height = 0;
+	unsigned char* image_data = stbi_load(filename, &image_width, &image_height, NULL, 4);
+	if (image_data == NULL)
+		return false;
+
+	*out_texture = LoadTextureCommon();
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
 	stbi_image_free(image_data);
 
-	*out_texture = image_texture;
+	return true;
+}
+// Simple helper function to load an image from memory into a OpenGL texture with common settings
+bool LoadCompressedTextureFromMemory(const unsigned char* buf_data, const unsigned int size, GLuint * out_texture)
+{
+	if (buf_data == NULL)
+		return false;
+
+	//First decompress the image data
+		const unsigned int buf_decompressed_size = stb_decompress_length((stb_uchar*)buf_data);
+		unsigned char* buf_decompressed_data = (unsigned char*)malloc(buf_decompressed_size);
+		stb_decompress(buf_decompressed_data, (stb_uchar*)buf_data, (unsigned int)size);
+
+	if (buf_decompressed_data == NULL)
+		return false;
+
+	//Now load it from memory
+		int c;
+		int image_width = 0;
+		int image_height = 0;
+		unsigned char* image_data = stbi_load_from_memory(buf_decompressed_data, buf_decompressed_size, &image_width, &image_height, &c, 0);
+
+	*out_texture = LoadTextureCommon(); 
+	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+	stbi_image_free(image_data);
+	stbi_image_free(buf_decompressed_data);
 
 	return true;
 }

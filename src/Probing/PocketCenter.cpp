@@ -11,6 +11,11 @@
 #include "../Console.h"
 #include "Probing.h"
 
+#include "../Resources/ProbePocketX.h"
+#include "../Resources/ProbePocketY.h"
+static GLuint imgProbePocketCenter[2] = {0,0};	//Only load it once, rather than every time we open a window
+
+
 ProbeOperation_PocketCenter::ProbeOperation_PocketCenter()
 {
 	ProbeOperation();	//Do the stuff in the base class constructor
@@ -19,10 +24,12 @@ ProbeOperation_PocketCenter::ProbeOperation_PocketCenter()
 
 	szWindowIdent = "PocketCenter";
 
-	imgPreview[0] = 0;
-	imgPreview[1] = 0;
-	LoadPreviewImage(&imgPreview[0], "./res/ProbePocketX.png");
-	LoadPreviewImage(&imgPreview[1], "./res/ProbePocketY.png");;
+	if (imgProbePocketCenter[0] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbePocketX_compressed_data, ProbePocketX_compressed_size, &imgProbePocketCenter[0]);
+	imgPreview[0] = imgProbePocketCenter[0];
+	if (imgProbePocketCenter[1] == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbePocketY_compressed_data, ProbePocketY_compressed_size, &imgProbePocketCenter[1]);
+	imgPreview[1] = imgProbePocketCenter[1];
 
 
 	iAxisIndex = 0;

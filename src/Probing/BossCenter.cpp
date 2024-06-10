@@ -11,6 +11,9 @@
 #include "../Console.h"
 #include "Probing.h"
 
+#include "../Resources/ProbeBoss.h"
+static GLuint imgProbeBossCenter = 0;	//Only load it once, rather than every time we open a window
+
 
 ProbeOperation_BossCenter::ProbeOperation_BossCenter()
 {
@@ -20,8 +23,9 @@ ProbeOperation_BossCenter::ProbeOperation_BossCenter()
 
 	szWindowIdent = "BossCenter";
 
-	imgPreview = 0;
-	LoadPreviewImage(&imgPreview, "./res/ProbeBoss.png");
+	if (imgProbeBossCenter == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeBoss_compressed_data, ProbeBoss_compressed_size, &imgProbeBossCenter);
+	imgPreview = imgProbeBossCenter;
 
 	fBossDiameter = 25.0f;
 	fClearance = 5.0f;

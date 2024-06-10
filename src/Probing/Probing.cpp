@@ -58,17 +58,6 @@ void Probing_InstantiateNewOp(std::shared_ptr<ProbeOperation> &Op, int iOpType)
 }
 
 
-void ProbeOperation::LoadPreviewImage(GLuint *img, const char *szFilename)
-{
-	if (img != 0 && *img == 0) //Make sure there's nothing already there
-	{
-		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Loading image %s", szFilename);
-		if (LoadTextureFromFile(szFilename, img) == 0)
-		{
-			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "^Error loading image!");
-		}
-	}
-}
 void ProbeOperation::ZeroWCS(bool x, bool y, bool z, float x_val, float y_val, float z_val)
 {
 	char szCmd[50];

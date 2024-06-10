@@ -11,6 +11,8 @@
 #include "../Console.h"
 #include "Probing.h"
 
+#include "../Resources/ProbeBore.h"
+static GLuint imgProbeBoreCenter = 0;	//Only load it once, rather than every time we open a window
 
 ProbeOperation_BoreCenter::ProbeOperation_BoreCenter()
 {
@@ -20,9 +22,10 @@ ProbeOperation_BoreCenter::ProbeOperation_BoreCenter()
 
 	szWindowIdent = "BoreCenter";
 
-	imgPreview = 0;
-	LoadPreviewImage(&imgPreview, "./res/ProbeBore.png");
-
+	if (imgProbeBoreCenter == 0)
+		LoadCompressedTextureFromMemory((const unsigned char*)ProbeBore_compressed_data, ProbeBore_compressed_size, &imgProbeBoreCenter);
+	imgPreview = imgProbeBoreCenter;
+	
 	fBoreDiameter = 25.0f;
 	fOvertravel = 5.0f;
 }

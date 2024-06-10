@@ -34,7 +34,6 @@ public:
 	ProbeOperation() { iState=0; bStepIsRunning=false; szWindowIdent=0; bZeroWCS=true; iWCSIndex=0;};
 	virtual ~ProbeOperation(){};
 
-	void LoadPreviewImage(GLuint* img, const char* szFilename);
 	void ZeroWCS(bool x, bool y, bool z, float x_val = -10000.0f, float y_val = -10000.0f, float z_val = -10000.0f);
 	int ProbingSuccessOrFail(char* s, DOUBLE_XYZ* xyz = 0, bool bAbortOnFail = true);
 
