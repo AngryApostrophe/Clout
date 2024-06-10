@@ -108,7 +108,7 @@ int StartupSockets()
 void BuildAddress(sockaddr_in *addr, char* szAddress, char* szPort)
 {
 	addr->sin_family = AF_INET;
-	addr->sin_port = htons(atoi(szAddress));
+	addr->sin_port = htons(atoi(szPort));
 	addr->sin_addr.s_addr = inet_addr(szAddress);
 }
 

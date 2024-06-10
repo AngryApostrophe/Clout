@@ -49,7 +49,7 @@ void Window_ChangeTool_Draw()
 	//Description
 		ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
 
-		ImGui::Dummy(ImVec2(0.0f, 5.0f)); //Extra empty space before the combo box
+		ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space before the combo box
 
 	//New tool
 		static int iNewToolChoice = 2;
@@ -71,9 +71,9 @@ void Window_ChangeTool_Draw()
 			ImGui::EndCombo();
 		}
 
-	ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space before the buttons
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f)); //Extra empty space before the buttons
 
-	if (ImGui::Button("Run##ChangeTool", ImVec2(120, 0)))
+	if (ImGui::Button("Run##ChangeTool", ScaledByWindowScale(120, 0)))
 	{
 		char szString[8];
 		sprintf(szString, "M6 T%d", iNewToolChoice - 1);
@@ -85,7 +85,7 @@ void Window_ChangeTool_Draw()
 	ImGui::SetItemDefaultFocus();
 	ImGui::SameLine();
 
-	if (ImGui::Button("Cancel##ChangeTool", ImVec2(120, 0)))
+	if (ImGui::Button("Cancel##ChangeTool", ScaledByWindowScale(120, 0)))
 	{
 		ImGui::CloseCurrentPopup();
 	}
@@ -94,41 +94,249 @@ void Window_ChangeTool_Draw()
 		ImGui::End();
 }
 
+void Window_Jog_Draw()
+{
+	int x;
+	std::string String; //General purpose string
+	char sUnits[5] = "mm"; //Currently select machine units
+
+	static int XYJogIdx = 3;
+	static int ZJogIdx = 3;
+	std::vector<const char*> JogVals = {"0.001", "0.01", "0.1", "1", "10", "100"};
+
+	if (MachineStatus.Units != Carvera::Units::mm)
+		strcat(sUnits, "in"); //Inches
+
+	// Always center this window when appearing
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+	//Size the window
+		const ImVec2 WindowSize(800, 500);
+		ImGui::SetNextWindowSize(ScaledByWindowScale(WindowSize));
+
+	//Create the modal popup
+		if (!ImGui::BeginPopupModal("Jog Axis", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		
+
+//	ImGui::SeparatorText("Setup");
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 5)); //Extra empty space
+
+	//Jog buttons
+	ImGui::SetCursorPosX(ScaledByWindowScale(50));	//Bump in the left side a bit
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 25));	//Space above and below each button.  Leaves 50 in between them in Y
+	if (ImGui::BeginTable("table_jogaxis", 5 /*, ImGuiTableFlags_Borders*/))
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10);
+
+		ImVec2 ButtonSize = ScaledByWindowScale(100, 100);
+		ImVec2 DistanceButtonSize = ScaledByWindowScale(75, 50);
+
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(150));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(150));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(250));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(100));
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(10));	//This last column is just a filler
+
+		//Y+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(1);		
+
+		if (ImGui::Button("Y+##JogAxis", ButtonSize))
+		{
+			String = "G91 G0 Y";
+			String += JogVals[XYJogIdx];
+			Comms_SendString(String.c_str());
+			Comms_SendString("G90");	//Back to absolute mode
+		}
+
+		//Z+
+		ImGui::TableSetColumnIndex(3);
+		if (ImGui::Button("Z+##JogAxis", ButtonSize))
+		{
+			String = "G91 G0 Z";
+			String += JogVals[ZJogIdx];
+			Comms_SendString(String.c_str());
+			Comms_SendString("G90");	//Back to absolute mode
+		}
+
+		// X-
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+
+		if (ImGui::Button("X-##JogAxis", ButtonSize))
+		{
+			String = "G91 G0 X-";
+			String += JogVals[XYJogIdx];
+			Comms_SendString(String.c_str());
+			Comms_SendString("G90");	//Back to absolute mode
+		}
+
+		//XY Value
+			ImGui::TableSetColumnIndex(1);
+			String = JogVals[ZJogIdx];
+			String += " ";
+			String += sUnits;
+			String += "##xyvalbtn";
+			
+			//Position the button in the center.  TODO: This shouldn't be hardcoded.  I really don't even know if this aligns on other users' computers, but this is quick and dirty.
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX()+ScaledByWindowScale(12));
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY()+ScaledByWindowScale(25));
+			
+			if (ImGui::Button(String.c_str(), DistanceButtonSize))
+				ImGui::OpenPopup("popup_change_xyval");
+
+			if (ImGui::BeginPopup("popup_change_xyval"))
+			{
+				ImGui::SeparatorText("Distance");
+				for (x = 0; x < JogVals.size(); x++)
+				{
+					if (ImGui::Selectable(JogVals[x]))
+						XYJogIdx = x;
+				}
+				ImGui::EndPopup();
+			}
+
+		// X+
+		ImGui::TableSetColumnIndex(2);
+
+		if (ImGui::Button("X+##JogAxis", ButtonSize))
+		{
+			String = "G91 G0 X";
+			String += JogVals[XYJogIdx];
+			Comms_SendString(String.c_str());
+			Comms_SendString("G90");	//Back to absolute mode
+		}
+
+		//Z Value
+		ImGui::TableSetColumnIndex(3);
+			String = JogVals[ZJogIdx];
+			String += " ";
+			String += sUnits;
+			String += "##zvalbtn";
+
+			//Position the button in the center.  TODO: This shouldn't be hardcoded.  I really don't even know if this aligns on other users' computers, but this is quick and dirty.
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ScaledByWindowScale(12));
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ScaledByWindowScale(25));
+
+			if (ImGui::Button(String.c_str(), DistanceButtonSize))
+				ImGui::OpenPopup("popup_change_zval");
+
+			if (ImGui::BeginPopup("popup_change_zval"))
+			{
+				ImGui::SeparatorText("Distance");
+				for (x = 0; x < JogVals.size(); x++)
+				{
+					if (ImGui::Selectable(JogVals[x]))
+						ZJogIdx = x;
+				}
+				ImGui::EndPopup();
+			}
+
+		// Y-
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(1);
+
+		if (ImGui::Button("Y-##JogAxis", ButtonSize))
+		{
+			String = "G91 G0 Y-";
+			String += JogVals[XYJogIdx];
+			Comms_SendString(String.c_str());
+			Comms_SendString("G90");	//Back to absolute mode
+		}
+
+		// Z-
+		ImGui::TableSetColumnIndex(3);
+		if (ImGui::Button("Z-##JogAxis", ButtonSize))
+		{
+			String = "G91 G0 Z-";
+			String += JogVals[ZJogIdx];
+			Comms_SendString(String.c_str());
+			Comms_SendString("G90");	//Back to absolute mode
+		}
+
+
+		ImGui::PopStyleVar();
+
+		ImGui::EndTable();
+	}
+	ImGui::PopStyleVar();
+
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 12.0f)); //Extra empty space before the buttons
+
+	
+	ImGui::SetCursorPosX(ScaledByWindowScale((WindowSize.x/2)-50));
+	if (ImGui::Button("Ok##Jog", ScaledByWindowScale(100, 25)))
+	{
+		ImGui::CloseCurrentPopup();
+	}
+
+	//All done
+	ImGui::End();
+}
+
 
 void Window_Control_Draw()
 {
+	ImVec2 BtnSize = ScaledByWindowScale(110,25);
+
 	//Create the window
 		ImGui::Begin("Control");
 
 	//General section
 		ImGui::SeparatorText("General");
 
-		if (ImGui::Button("Home X/Y"))
-			Comms_SendString("$H");
+		if (ImGui::BeginTable("table", 2))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
 
-		ImGui::Button("Rapid to location");
+			if (ImGui::Button("Home X/Y", BtnSize))
+				Comms_SendString("$H");
 
-		if (ImGui::Button("Go to clearance"))
-			Comms_SendString("G28");
+			if (ImGui::Button("Go to clearance", BtnSize))
+				Comms_SendString("G28");
+
+			ImGui::TableSetColumnIndex(1);
+			
+			if (ImGui::Button("Jog Axis", BtnSize))
+				ImGui::OpenPopup("Jog Axis");
+			Window_Jog_Draw();
+
+			ImGui::BeginDisabled();
+			ImGui::Button("Rapid To", BtnSize);
+			ImGui::EndDisabled();
+
+			ImGui::EndTable();
+		}
+			
 
 	//Tool section
 		ImGui::SeparatorText("Tool");
-		if (ImGui::Button("ATC change tool"))
-			ImGui::OpenPopup("Change Tool");
-		Window_ChangeTool_Draw();
-		
-		ImGui::SameLine(); ImGui::Text("   "); ImGui::SameLine(); 		
-		
-		if (ImGui::Button("TLO Calibrate"))
-			Comms_SendString("M491");
-		
-		if (ImGui::Button("Open collet"))
-			Comms_SendString("M490.2");
+		if (ImGui::BeginTable("table", 2))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
 
-		ImGui::SameLine(); ImGui::Text("       "); ImGui::SameLine();		
+			if (ImGui::Button("ATC change tool", BtnSize))
+				ImGui::OpenPopup("Change Tool");
+			Window_ChangeTool_Draw();
+
+			if (ImGui::Button("Open collet", BtnSize))
+				Comms_SendString("M490.2");
 		
-		if (ImGui::Button("Close collet"))
-			Comms_SendString("M490.1");
+			ImGui::TableSetColumnIndex(1);
+		
+			if (ImGui::Button("TLO Calibrate", BtnSize))
+				Comms_SendString("M491");	
+			
+			if (ImGui::Button("Close collet", BtnSize))
+				Comms_SendString("M490.1");
+
+			ImGui::EndTable();
+		}
 
 	//Probing section
 		ImGui::SeparatorText("Probing");
@@ -230,7 +438,7 @@ bool Clout_MainLoop()
 		ImGui::SeparatorText("Connection");
 			if (bCommsConnected)
 			{
-				if (ImGui::BeginTable("table_pos", 2))
+				if (ImGui::BeginTable("table", 2))
 				{
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
@@ -254,7 +462,7 @@ bool Clout_MainLoop()
 			}
 			else
 			{
-				if (ImGui::BeginTable("table_pos", 2))
+				if (ImGui::BeginTable("table", 2))
 				{
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
@@ -273,7 +481,7 @@ bool Clout_MainLoop()
 			ImGui::SeparatorText("Devices");
 
 			static int item_current_idx = 0; // Here we store our selection data as an index.
-			if (ImGui::BeginListBox("##devices", ImVec2(-FLT_MIN, 3 * ImGui::GetTextLineHeightWithSpacing())))
+			if (ImGui::BeginListBox("##devices", ScaledByWindowScale(-FLT_MIN, 3 * ImGui::GetTextLineHeightWithSpacing())))
 			{
 				for (x = 0; x < bDetectedDevices; x++)
 				{
@@ -343,7 +551,7 @@ bool Clout_MainLoop()
 				ImGui::EndTable();
 			}
 
-			ImGui::Dummy(ImVec2(0.0f, 15.0f)); //Extra empty space
+			ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f)); //Extra empty space
 
 			if (ImGui::BeginTable("table_status", 3))// , ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersH))
 			{
@@ -544,6 +752,8 @@ bool Clout_MainLoop()
 
 			if (ImGui::Button("Program Editor"))
 				ImGui::OpenPopup("Program Editor");
+			ImGui::SameLine();
+			ImGui::Text("<Not Functional>");
 			ProgramEditor_Draw();
 
 		

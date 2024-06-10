@@ -72,7 +72,7 @@ void* CommsThreadProc(void* arg)
 
 						//Create the socket for communicating with Carvera
 							sckCarvera = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-							if (sckCarvera != 0)
+							if (sckCarvera < 0)
 							{
 								DisplaySocketError();
 
@@ -260,7 +260,7 @@ int CommsInit()
 	
 	//Create the socket for finding Carvera devices on the network
 		sckBroadcast = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		if (sckBroadcast != 0)
+		if (sckBroadcast < 0)
 		{
 			//Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error creating DGRAM socket: %d", WSAGetLastError());
 			DisplaySocketError();

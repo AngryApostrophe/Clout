@@ -242,6 +242,8 @@ void Probing_InitPage()
 
 void Probing_Draw() //This is called from inside the main draw code
 {
+	ImVec2 BtnSize = ScaledByWindowScale(110, 25);
+
 	if (!bProbingPageInitialized)
 		Probing_InitPage();
 
@@ -250,7 +252,7 @@ void Probing_Draw() //This is called from inside the main draw code
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 
-		if (ImGui::Button("Pocket center"))
+		if (ImGui::Button("Pocket center", BtnSize))
 		{
 			ImGui::OpenPopup("Probe Pocket Center");
 			Probing_StartManualOp<ProbeOperation_PocketCenter>();
@@ -260,7 +262,7 @@ void Probing_Draw() //This is called from inside the main draw code
 
 		ImGui::TableSetColumnIndex(1);
 
-		if (ImGui::Button("Single Axis"))
+		if (ImGui::Button("Single Axis", BtnSize))
 		{
 			ImGui::OpenPopup("Probe Single Axis");
 			Probing_StartManualOp<ProbeOperation_SingleAxis>();

@@ -100,6 +100,7 @@ int main(int, char**)
 			style.WindowRounding = 0.0f;
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
+		style.FrameRounding = 3;
 
 	// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForOpenGL(glfwWindow, true);

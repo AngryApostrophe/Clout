@@ -30,6 +30,13 @@ ImVec2 ScaledByWindowScale(float x, float y)
 
 	return ImVec2(x * xscale, y * yscale);
 }
+ImVec2 ScaledByWindowScale(ImVec2 size)
+{
+	float xscale, yscale;
+	glfwGetWindowContentScale(glfwWindow, &xscale, &yscale);
+
+	return ImVec2(size.x * xscale, size.y * yscale);
+}
 float ScaledByWindowScale(float in)
 {
 	float xscale, yscale;
