@@ -1,6 +1,11 @@
 #include "Platforms.h"
 
 #include <unistd.h>
+#include <arpa/inet.h>
+
+#include "../imgui/imgui.h"
+
+#include "../Console.h"
 
 
 //Mutex stuff
@@ -118,14 +123,18 @@ void BuildAddress(sockaddr_in* addr, char* szAddress, char* szPort)
 	bzero((char*)addr, sizeof(sockaddr_in));
 
 	addr->sin_family = AF_INET;
+
+	inet_pton(AF_INET, szAddress, &(addr->sin_addr));
+	addr->sin_port = htons(atoi(szPort));
+	//addr->sin_addr.s_addr = inet_addr(szAddress);
 	
-	//bcopy((char*)server->h_addr,
-	//	(char*)&serv_addr.sin_addr.s_addr,
-	//	server->h_length);
+	//bcopy((char*)server->h_addr, (char*)&serv_addr.sin_addr.s_addr, server->h_length);
 }
 
 bool DisplaySocketError()	//TODO: Get error info
 {
+	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error");
+
 	return false;
 }
 
