@@ -1,4 +1,5 @@
-#include <Windows.h>
+#include "../Platforms/Platforms.h"
+
 #include <stdio.h>
 #include <math.h>
 
@@ -63,19 +64,19 @@ void ProbeOperation_SingleAxis::StateMachine()
 	case PROBE_STATE_SINGLEAXIS_PROBE_FAST:
 		if (!bStepIsRunning)
 		{
-			strcpy_s(sCmd, 50, "G38.3 ");
+			strcpy(sCmd, "G38.3 ");
 
 			//Add the axis direction
 			if (iAxisDirectionIndex == 0)
-				strcat_s(sCmd, 50, "X-");
+				strcat(sCmd, "X-");
 			else if (iAxisDirectionIndex == 1)
-				strcat_s(sCmd, 50, "X");
+				strcat(sCmd, "X");
 			else if (iAxisDirectionIndex == 2)
-				strcat_s(sCmd, 50, "Y");
+				strcat(sCmd, "Y");
 			else if (iAxisDirectionIndex == 3)
-				strcat_s(sCmd, 50, "Y-");
+				strcat(sCmd, "Y-");
 			else if (iAxisDirectionIndex == 4)
-				strcat_s(sCmd, 50, "Z-");
+				strcat(sCmd, "Z-");
 			else
 			{
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unknown probe direction.  Aborted.");
@@ -85,23 +86,23 @@ void ProbeOperation_SingleAxis::StateMachine()
 
 			//Add the travel distance
 			char szTemp[10];
-			sprintf_s(szTemp, 10, "%0.2f ", fTravel);
-			strcat_s(sCmd, 50, szTemp);
+			sprintf(szTemp, "%0.2f ", fTravel);
+			strcat(sCmd, szTemp);
 
 			//Add the feed rate
-			sprintf_s(szTemp, 10, "F%d", iProbingSpeedFast);
-			strcat_s(sCmd, 50, szTemp);
+			sprintf(szTemp, "F%d", iProbingSpeedFast);
+			strcat(sCmd, szTemp);
 
 			//Send it out
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -109,7 +110,7 @@ void ProbeOperation_SingleAxis::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -125,19 +126,19 @@ void ProbeOperation_SingleAxis::StateMachine()
 	case PROBE_STATE_SINGLEAXIS_PROBE_SLOW:
 		if (!bStepIsRunning)
 		{
-			strcpy_s(sCmd, 50, "G38.5 ");
+			strcpy(sCmd, "G38.5 ");
 
 			//Add the axis direction (opposite this time)
 			if (iAxisDirectionIndex == 0)
-				strcat_s(sCmd, 50, "X");
+				strcat(sCmd, "X");
 			else if (iAxisDirectionIndex == 1)
-				strcat_s(sCmd, 50, "X-");
+				strcat(sCmd, "X-");
 			else if (iAxisDirectionIndex == 2)
-				strcat_s(sCmd, 50, "Y-");
+				strcat(sCmd, "Y-");
 			else if (iAxisDirectionIndex == 3)
-				strcat_s(sCmd, 50, "Y");
+				strcat(sCmd, "Y");
 			else if (iAxisDirectionIndex == 4)
-				strcat_s(sCmd, 50, "Z");
+				strcat(sCmd, "Z");
 			else
 			{
 				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unknown probe direction.  Aborted.");
@@ -147,23 +148,23 @@ void ProbeOperation_SingleAxis::StateMachine()
 
 			//Add the travel distance
 			char szTemp[10];
-			sprintf_s(szTemp, 10, "%0.2f ", fTravel);
-			strcat_s(sCmd, 50, szTemp);
+			sprintf(szTemp, "%0.2f ", fTravel);
+			strcat(sCmd, szTemp);
 
 			//Add the feed rate
-			sprintf_s(szTemp, 10, "F%d", iProbingSpeedSlow);
-			strcat_s(sCmd, 50, szTemp);
+			sprintf(szTemp, "F%d", iProbingSpeedSlow);
+			strcat(sCmd, szTemp);
 
 			//Do it
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &EndPos))
 				{
@@ -171,7 +172,7 @@ void ProbeOperation_SingleAxis::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -192,7 +193,7 @@ void ProbeOperation_SingleAxis::StateMachine()
 		break;
 
 	case PROBE_STATE_SINGLEAXIS_FINISH:
-		sprintf_s(sCmd, 50, "G0 F%f", StartFeedrate.x); //Restore the feedrate to what it was
+		sprintf(sCmd, "G0 F%f", StartFeedrate.x); //Restore the feedrate to what it was
 		Comms_SendString(sCmd);
 
 		//Get the end position in WCS
@@ -203,11 +204,11 @@ void ProbeOperation_SingleAxis::StateMachine()
 		sCmd[0] = 0x0;
 
 		if (iAxisDirectionIndex == 0 || iAxisDirectionIndex == 1)
-			sprintf_s(sCmd, 50, "Edge at X: %0.03f", EndPos.x);
+			sprintf(sCmd, "Edge at X: %0.03f", EndPos.x);
 		if (iAxisDirectionIndex == 2 || iAxisDirectionIndex == 3)
-			sprintf_s(sCmd, 50, "Edge at Y: %0.03f", EndPos.y);
+			sprintf(sCmd, "Edge at Y: %0.03f", EndPos.y);
 		if (iAxisDirectionIndex == 4)
-			sprintf_s(sCmd, 50, "Bottom at Z: %0.03f", EndPos.z);
+			sprintf(sCmd, "Bottom at Z: %0.03f", EndPos.z);
 
 		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  %s", sCmd);
 		iState = PROBE_STATE_COMPLETE;
@@ -223,7 +224,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 	char sUnits[5] = "mm"; //Currently select machine units
 
 	if (MachineStatus.Units != Carvera::Units::mm)
-		strcat_s(sUnits, 5, "in"); //Inches
+		strcat(sUnits, "in"); //Inches
 
 	ImGui::Text("Probe along a single axis to find an edge");
 	ImGui::Text("Setup:");
@@ -373,7 +374,7 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Travel Distance
-	sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+	sprintf(sString, "%%0.2f%s", sUnits);
 	ImGui::InputFloat("Travel distance", &fTravel, 0.1f, 1.0f, sString);
 	ImGui::SameLine(); HelpMarker("How far to probe in the desired direction before failing.");
 

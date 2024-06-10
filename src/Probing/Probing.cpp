@@ -1,4 +1,5 @@
-//#include <Windows.h>
+#include "../Platforms/Platforms.h"
+
 #include <math.h>
 #include <typeinfo>
 #include <any>		//std::any
@@ -73,37 +74,37 @@ void ProbeOperation::ZeroWCS(bool x, bool y, bool z, float x_val, float y_val, f
 	char szCmd[50];
 	char szTemp[10];
 
-	sprintf_s(szCmd, 50, "G10 L20 P%d", iWCSIndex - 1);
+	sprintf(szCmd, "G10 L20 P%d", iWCSIndex - 1);
 
 	if (x)
 	{
 		szTemp[0] = 0x0;
 
 		if (x_val < -500.0f) //Random, but it's clearly still the default value
-			strcpy_s(szTemp, 10, " X0");
+			strcpy(szTemp, " X0");
 		else
-			sprintf_s(szTemp, 10, " X%0.1f", x_val);
-		strcat_s(szCmd, 50, szTemp);
+			sprintf(szTemp, " X%0.1f", x_val);
+		strcat(szCmd, szTemp);
 	}
 	if (y)
 	{
 		szTemp[0] = 0x0;
 
 		if (y_val < -500.0f) //Random, but it's clearly still the default value
-			strcpy_s(szTemp, 10, " Y0");
+			strcpy(szTemp, " Y0");
 		else
-			sprintf_s(szTemp, 10, " Y%0.1f", y_val);
-		strcat_s(szCmd, 50, szTemp);
+			sprintf(szTemp, " Y%0.1f", y_val);
+		strcat(szCmd, szTemp);
 	}
 	if (z)
 	{
 		szTemp[0] = 0x0;
 
 		if (z_val < -500.0f) //Random, but it's clearly still the default value
-			strcpy_s(szTemp, 10, " Z0");
+			strcpy(szTemp, " Z0");
 		else
-			sprintf_s(szTemp, 10, " Z%0.1f", z_val);
-		strcat_s(szCmd, 50, szTemp);
+			sprintf(szTemp, " Z%0.1f", z_val);
+		strcat(szCmd, szTemp);
 	}
 
 	Comms_SendString(szCmd);
@@ -172,7 +173,7 @@ bool ProbeOperation::DrawPopup()
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 	//Create the modal popup
-		sprintf_s(szString, "Probe %s", szProbeOpNames[bProbingType]);
+		sprintf(szString, "Probe %s", szProbeOpNames[bProbingType]);
 		ImGui::BeginPopupModal(szString, NULL, ImGuiWindowFlags_AlwaysAutoResize);
 
 	//Draw the derived class's subwindow page
@@ -184,7 +185,7 @@ bool ProbeOperation::DrawPopup()
 		if (iState != PROBE_STATE_IDLE)
 			ImGui::BeginDisabled();
 
-		sprintf_s(szString, "Run##%s", szWindowIdent);
+		sprintf(szString, "Run##%s", szWindowIdent);
 		if (ImGui::Button(szString, ScaledByWindowScale(120, 0)))
 		{
 			//ImGui::CloseCurrentPopup();
@@ -198,7 +199,7 @@ bool ProbeOperation::DrawPopup()
 		ImGui::SameLine();
 
 	//Cancel button
-		sprintf_s(szString, "Cancel##%s", szWindowIdent);
+		sprintf(szString, "Cancel##%s", szWindowIdent);
 		if (ImGui::Button(szString, ScaledByWindowScale(120, 0)))
 		{
 			if (iState != PROBE_STATE_IDLE)

@@ -1,4 +1,5 @@
-#include <Windows.h>
+#include "Platforms/Platforms.h"
+
 #include <imgui.h>
 
 #include "Clout.h"
@@ -24,7 +25,7 @@ void _OperationQueue::Init()
 
 void _OperationQueue::Start()
 {
-	bIsRunning = TRUE;
+	bIsRunning = true;
 }
 
 void _OperationQueue::Run()
@@ -75,8 +76,7 @@ void _OperationQueue::DrawList()
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				
-				//sprintf_s(szString, 50, "%s##OpsList%d", szOperationName[Ops[x].iType], x);
-				sprintf_s(szString, 50, "%s##OpsList%d", GetOp(x).FullText.c_str(), x);
+				sprintf(szString, "%s##OpsList%d", GetOp(x).FullText.c_str(), x);
 				ImGui::Selectable(szString);
 			}
 

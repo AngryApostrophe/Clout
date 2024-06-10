@@ -1,5 +1,5 @@
 #include <cctype>
-typedef void* HANDLE;	//TODO: this'll go away after I go cross-platform
+//typedef void* HANDLE;	//TODO: this'll go away after I go cross-platform
 
 class CommsConsole
 {
@@ -29,7 +29,8 @@ class CommsConsole
 	bool                  AutoScroll;
 	bool                  ScrollToBottom;
 
-	HANDLE ConsoleMutex;
+	//HANDLE ConsoleMutex;
+	CloutMutex ConsoleMutex;
 
 	CommsConsole();
 	~CommsConsole();
@@ -43,7 +44,7 @@ class CommsConsole
 	void    ClearLog();
 
 	void    AddLog(const char* fmt, ...) IM_FMTARGS(2);
-	void    AddLog(CONSOLE_ITEM_TYPE Type, const char* fmt, ...) IM_FMTARGS(2);
+	void    AddLog(CONSOLE_ITEM_TYPE Type, const char* fmt, ...) IM_FMTARGS(3);
 
 	void    Draw();
 	void    ExecCommand(const char* command_line);

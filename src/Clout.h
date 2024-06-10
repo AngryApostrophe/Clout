@@ -3,6 +3,7 @@
 //My standard types I like to use
 typedef unsigned char BYTE;
 typedef unsigned short WORD;
+typedef unsigned long DWORD;
 
 //Global vars
 	extern ImGuiIO* io;

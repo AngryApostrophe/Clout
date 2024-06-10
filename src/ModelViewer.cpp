@@ -1,8 +1,6 @@
 //This is an early work in progress.  Lots of work still to do.
 
-
-//#include <Windows.h>
-//using namespace std;
+#include "Platforms/Platforms.h"
 
 #include <imgui.h>
 #include <imgui_impl_win32.h>

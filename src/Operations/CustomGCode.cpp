@@ -1,4 +1,5 @@
-#include <Windows.h>
+#include "../Platforms/Platforms.h"
+
 #include <stdio.h>
 
 #include <imgui.h>

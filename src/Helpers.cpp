@@ -1,12 +1,12 @@
-#include <Windows.h>
+//#include <Windows.h>
 using namespace std;
 
-#include <stb_image.h>
+#include "Platforms/Platforms.h"
 
 #include "imgui.h"
-
-#include "Helpers.h"
 #include "Clout.h"
+
+#include <stb_image.h>
 
 
 
@@ -83,7 +83,7 @@ void CommaStringTo3Doubles(char* str, double* d1, double* d2, double* d3)
 
 	while (*c == '-' || *c == '+' || *c == '.' || (*c >= '0' && *c <= '9')) //Only copy out the number characters
 	{
-		strncat_s(sTemp, 100, c, 1);
+		strncat(sTemp, c, 1);
 		c++;
 	}
 
@@ -94,7 +94,7 @@ void CommaStringTo3Doubles(char* str, double* d1, double* d2, double* d3)
 	c++; //Probably left off last time at a "," separating numbers
 	while (*c == '-' || *c == '+' || *c == '.' || (*c >= '0' && *c <= '9')) //Only copy out the number characters
 	{
-		strncat_s(sTemp, 100, c, 1);
+		strncat(sTemp, c, 1);
 		c++;
 	}
 
@@ -105,7 +105,7 @@ void CommaStringTo3Doubles(char* str, double* d1, double* d2, double* d3)
 	c++; //Probably left off last time at a "," separating numbers
 	while (*c == '-' || *c == '+' || *c == '.' || (*c >= '0' && *c <= '9')) //Only copy out the number characters
 	{
-		strncat_s(sTemp, 100, c, 1);
+		strncat(sTemp, c, 1);
 		c++;
 	}
 

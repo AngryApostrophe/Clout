@@ -1,6 +1,6 @@
 //TODO:  process "<Error:ZProbe triggered before move, aborting command."
 
-#include <Windows.h>
+#include "Platforms/Platforms.h"
 
 #include <imgui.h>
 
@@ -31,6 +31,27 @@
 
 	HANDLE hProbeResponseEvent;	//Alerts the probing operations when the comms thread receives a probe response message
 	char* sProbeReplyMessage = 0;	//The probing completion message
+
+
+
+
+//This function is called from the GUI thread.  It checks to see if we've gotten a response to a probing operation.  This function is non-blocking
+//Expected returns:
+//	COMM_RESULT_ERROR	- Some error
+//	COMM_RESULT_SUCCESS	- Good response
+//	COMM_RESULT_TIMEOUT	- Nothing has come in yet
+int WaitForProbeResponse(HANDLE h)
+{
+	int iRes = WaitForSingleObject(h, 0);
+
+	if (iRes == WAIT_OBJECT_0)
+		return COMM_RESULT_SUCCESS;
+	else if (iRes == WAIT_TIMEOUT)
+		return COMM_RESULT_TIMEOUT;
+
+	return COMM_RESULT_ERROR;
+}
+
 
 
 //Make sure the string is null terminated, sometimes they aren't
@@ -94,7 +115,7 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 						bCommsConnected = TRUE;
 
 						//Save the info to display on the screen
-							strcpy_s(sConnectedIP, 16, sDetectedDevices[msg.wParam][1]);
+							strcpy(sConnectedIP, sDetectedDevices[msg.wParam][1]);
 							wConnectedPort = atoi(sDetectedDevices[msg.wParam][2]);
 
 						Console.AddLog("Connected to %s at %s:%d", sDetectedDevices[msg.wParam][0], sConnectedIP, wConnectedPort);
@@ -149,13 +170,13 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 						char* next_token = 0;
 						token = strtok_s(sRecv, ",", &next_token);
 						if (token != 0)
-							strcpy_s(sName, 20, token);
+							strcpy(sName, token);
 						token = strtok_s(0, ",", &next_token);
 						if (token != 0)
-							strcpy_s(sIP, 20, token);
+							strcpy(sIP, token);
 						token = strtok_s(0, ",", &next_token);
 						if (token != 0)
-							strcpy_s(sPort, 20, token);
+							strcpy(sPort, token);
 
 					//Check if it's already in our list
 					BYTE bSearch1 = 0;
@@ -173,16 +194,16 @@ DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
 					{
 						if (bDetectedDevices < MAX_DEVICES)
 						{				
-							strcpy_s(sDetectedDevices[x][0], 20, sName);
-							strcpy_s(sDetectedDevices[x][1], 20, sIP);
-							strcpy_s(sDetectedDevices[x][2], 20, sPort);
+							strcpy(sDetectedDevices[x][0], sName);
+							strcpy(sDetectedDevices[x][1], sIP);
+							strcpy(sDetectedDevices[x][2], sPort);
 							bDetectedDevices++;
 						}
 					}
 					else if (bSearch2 != 0) //We found a duplicate, but the IP or Port has changed, so update that one
 					{
-						strcpy_s(sDetectedDevices[x][1], 20, sIP);
-						strcpy_s(sDetectedDevices[x][2], 20, sPort);
+						strcpy(sDetectedDevices[x][1], sIP);
+						strcpy(sDetectedDevices[x][2], sPort);
 					}
 				}
 
@@ -305,7 +326,7 @@ bool SendCommand(const char *c, bool bShowOnLog)
 
 	//Make sure it's got the terminator or Carvera won't recognize it
 		char s[500];
-		strcpy_s(s, 500, c);
+		strcpy(s, c);
 		int x = (int)strlen(s);
 		if (x > 1)
 		{					
@@ -439,7 +460,7 @@ BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, bool bShowOnLog)
 		if (sProbeReplyMessage == 0)
 		{
 			sProbeReplyMessage = (char*)malloc(strlen(sRecv) + 1);
-			strcpy_s(sProbeReplyMessage, strlen(sRecv) + 1, sRecv);
+			strcpy(sProbeReplyMessage, sRecv);
 			SetEvent(hProbeResponseEvent); //Alert any probing operations about this message
 		}
 		else
@@ -484,16 +505,16 @@ BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, bool bShowOnLog)
 				{
 					MachineStatus.WCS = NewWCS;
 
-					strcpy_s(szWCSChoices[1], 20, "G53");
-					strcpy_s(szWCSChoices[2], 20, "G54");
-					strcpy_s(szWCSChoices[3], 20, "G55");
-					strcpy_s(szWCSChoices[4], 20, "G56");
-					strcpy_s(szWCSChoices[5], 20, "G57");
-					strcpy_s(szWCSChoices[6], 20, "G58");
-					strcpy_s(szWCSChoices[7], 20, "G59");
+					strcpy(szWCSChoices[1], "G53");
+					strcpy(szWCSChoices[2], "G54");
+					strcpy(szWCSChoices[3], "G55");
+					strcpy(szWCSChoices[4], "G56");
+					strcpy(szWCSChoices[5], "G57");
+					strcpy(szWCSChoices[6], "G58");
+					strcpy(szWCSChoices[7], "G59");
 
 					if (NewWCS > Carvera::CoordSystem::G53)
-						strcat_s(szWCSChoices[NewWCS], 20, " (Active)");
+						strcat(szWCSChoices[NewWCS], " (Active)");
 				}
 
 			if (strstr(sRecv, "G20") != 0)
@@ -534,7 +555,7 @@ void Comms_SendString(const char* sString)
 
 	//First save the string for that thread to access
 		char* c = (char*)malloc(strlen(sString) + 2); //This will get free'd by the comms thread
-		strcpy_s(c, strlen(sString) + 2, sString);
+		strcpy(c, sString);
 
 	//Now post the message to the thread
 		PostThreadMessageA(dwCommsThreadID, MSG_SEND_STRING, (WPARAM)c, 0);

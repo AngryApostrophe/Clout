@@ -1,4 +1,5 @@
-#include <Windows.h>
+#include "../Platforms/Platforms.h"
+
 #include <stdio.h>
 #include <math.h>
 
@@ -56,16 +57,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MIN_X_FAST:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.3 X-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
+			sprintf(sCmd, "G38.3 X-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -73,7 +74,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -89,16 +90,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MIN_X_SLOW:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.5 X%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
+			sprintf(sCmd, "G38.5 X%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos1))
 				{
@@ -106,7 +107,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -124,10 +125,10 @@ void ProbeOperation_BoreCenter::StateMachine()
 		{
 			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
 
-			sprintf_s(sCmd, 50, "G0 X%0.2f F%d", StartPos.x, iProbingSpeedFast); //All the way back to center
+			sprintf(sCmd, "G0 X%0.2f F%d", StartPos.x, iProbingSpeedFast); //All the way back to center
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
@@ -142,16 +143,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MAX_X_FAST:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.3 X%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
+			sprintf(sCmd, "G38.3 X%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -159,7 +160,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -175,16 +176,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MAX_X_SLOW:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.5 X-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
+			sprintf(sCmd, "G38.5 X-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos2))
 				{
@@ -192,7 +193,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -209,10 +210,10 @@ void ProbeOperation_BoreCenter::StateMachine()
 		if (!bStepIsRunning)
 		{
 			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
-			sprintf_s(sCmd, 50, "G0 X%0.2f F%d", StartPos.x, iProbingSpeedFast); //All the way back to center
+			sprintf(sCmd, "G0 X%0.2f F%d", StartPos.x, iProbingSpeedFast); //All the way back to center
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
@@ -228,16 +229,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MIN_Y_FAST:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.3 Y-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
+			sprintf(sCmd, "G38.3 Y-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -245,7 +246,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -261,16 +262,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MIN_Y_SLOW:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.5 Y%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
+			sprintf(sCmd, "G38.5 Y%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos3))
 				{
@@ -278,7 +279,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -296,10 +297,10 @@ void ProbeOperation_BoreCenter::StateMachine()
 		{
 			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
 
-			sprintf_s(sCmd, 50, "G0 Y%0.2f F%d", StartPos.y, iProbingSpeedFast); //All the way back to center
+			sprintf(sCmd, "G0 Y%0.2f F%d", StartPos.y, iProbingSpeedFast); //All the way back to center
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
@@ -314,16 +315,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MAX_Y_FAST:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.3 Y%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
+			sprintf(sCmd, "G38.3 Y%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedFast);
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage))
 				{
@@ -331,7 +332,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -347,16 +348,16 @@ void ProbeOperation_BoreCenter::StateMachine()
 	case PROBE_STATE_BORECENTER_PROBE_MAX_Y_SLOW:
 		if (!bStepIsRunning)
 		{
-			sprintf_s(sCmd, 50, "G38.5 Y-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
+			sprintf(sCmd, "G38.5 Y-%0.2f F%d", (fBoreDiameter / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
-			DWORD dwRet = WaitForSingleObject(hProbeResponseEvent, 0);
+			int iRet = WaitForProbeResponse(hProbeResponseEvent);
 
-			if (dwRet == WAIT_OBJECT_0) //Comms thread has triggered the event
+			if (iRet == COMM_RESULT_SUCCESS) //Comms thread has triggered the event
 			{
 				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos4))
 				{
@@ -364,7 +365,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 					iState++;
 				}
 			}
-			else if (dwRet != WAIT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet != COMM_RESULT_TIMEOUT) //Windows error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -385,10 +386,10 @@ void ProbeOperation_BoreCenter::StateMachine()
 			EndPos.y = (ProbePos3.y + ProbePos4.y) / 2.0;
 
 			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning. 
-			sprintf_s(sCmd, 50, "G53 G0 X%0.2f Y%0.2f F%d", EndPos.x, EndPos.y, iProbingSpeedFast); //All the way back to center, in MCS
+			sprintf(sCmd, "G53 G0 X%0.2f Y%0.2f F%d", EndPos.x, EndPos.y, iProbingSpeedFast); //All the way back to center, in MCS
 			Comms_SendString(sCmd);
 
-			bStepIsRunning = TRUE;
+			bStepIsRunning = true;
 		}
 		else //Step is running.  Monitor for completion
 		{
@@ -408,7 +409,7 @@ void ProbeOperation_BoreCenter::StateMachine()
 		if (bZeroWCS)
 			ZeroWCS(true, true, false);	//Set this location to 0,0
 
-		sprintf_s(sCmd, 50, "G0 F%f", StartFeedrate.x); //Restore the feedrate to what it was
+		sprintf(sCmd, "G0 F%f", StartFeedrate.x); //Restore the feedrate to what it was
 		Comms_SendString(sCmd);
 
 		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Bore center: (%0.03f, %0.03f)", EndPos.x, EndPos.y);
@@ -424,7 +425,7 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 	char sUnits[5] = "mm"; //Currently select machine units
 
 	if (MachineStatus.Units != Carvera::Units::mm)
-		strcat_s(sUnits, 5, "in"); //Inches
+		strcat(sUnits, "in"); //Inches
 
 	ImGui::Text("Probe inside a bore to find the center");
 	ImGui::Text("Setup:");
@@ -441,12 +442,12 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Bore Diameter
-		sprintf_s(sString, 10, "%%0.3f%s", sUnits);
+		sprintf(sString, "%%0.3f%s", sUnits);
 		ImGui::InputFloat("Bore diameter", &fBoreDiameter, 0.01f, 0.1f, sString);
 		ImGui::SameLine(); HelpMarker("Nominal diameter of the bore, in current machine units.");
 
 	//Overtravel Distance
-		sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+		sprintf(sString, "%%0.2f%s", sUnits);
 		ImGui::InputFloat("Overtravel distance", &fOvertravel, 0.1f, 1.0f, sString);
 		ImGui::SameLine(); HelpMarker("Distance beyond the nominal diameter to continue probing before failing.");
 
@@ -476,7 +477,7 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 			if (iWCSIndex < Carvera::CoordSystem::G54)
 				iWCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-			sprintf_s(sString, "iWCSIndex: %d", iWCSIndex);
+			sprintf(sString, "iWCSIndex: %d", iWCSIndex);
 			if (ImGui::BeginCombo("##ProbingBoreCenter_WCS", szWCSChoices[iWCSIndex]))
 			{
 				x = Carvera::CoordSystem::G54;
@@ -505,7 +506,7 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 /*
 bool ProbeOperation_BoreCenter::DrawPopup()
 {
-	bool bRetVal = TRUE;	//The operation continues to run
+	bool bRetVal = true;	//The operation continues to run
 
 	BeginPopup();
 

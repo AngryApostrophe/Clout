@@ -7,7 +7,7 @@ int CommsInit();
 void CommsDisconnect();
 bool SendCommand(const char *c, bool bShowOnLog = true);
 bool SendCommandAndWait(const char* c, bool bShowOnLog = true);
-BYTE ProcessIncomingMessage(char* sRecv, const char* sSent=0, bool bShowOnLog = true);
+unsigned char ProcessIncomingMessage(char* sRecv, const char* sSent=0, bool bShowOnLog = true);
 
 extern bool bCommsConnected;
 
@@ -32,3 +32,10 @@ void Comms_SendString(const char* sString);
 #define MSG_SEND_STRING			WM_USER+3	//Send a string and continue
 #define MSG_SEND_STRING_AND_WAIT	WM_USER+4 //Send a string and wait to process a response
 #define MSG_MAX MSG_SEND_STRING_AND_WAIT
+
+
+
+int WaitForProbeResponse(HANDLE h);
+#define COMM_RESULT_ERROR	0
+#define COMM_RESULT_SUCCESS	1
+#define COMM_RESULT_TIMEOUT	2

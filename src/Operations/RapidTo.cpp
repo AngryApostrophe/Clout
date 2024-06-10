@@ -1,4 +1,5 @@
-#include <Windows.h>
+#include "../Platforms/Platforms.h"
+
 #include <stdio.h>
 
 #include <imgui.h>
@@ -36,22 +37,22 @@ void CloutProgram_Op_RapidTo::GenerateFullTitle()
 
 	if (bUseAxis[0])
 	{
-		sprintf_s(szString, 20, "X%0.2f ", Coords.x);
+		sprintf(szString, "X%0.2f ", Coords.x);
 		FullText += szString;
 	}
 	if (bUseAxis[1])
 	{
-		sprintf_s(szString, 20, "Y%0.02f ", Coords.y);
+		sprintf(szString, "Y%0.02f ", Coords.y);
 		FullText += szString;
 	}
 	if (bUseAxis[2])
 	{
-		sprintf_s(szString, 20, "Z%0.02f ", Coords.z);
+		sprintf(szString, "Z%0.02f ", Coords.z);
 		FullText += szString;
 	}
 	if (bUseFeedrate)
 	{
-		sprintf_s(szString, 20, " @ %0.0f ", fFeedrate);
+		sprintf(szString, " @ %0.0f ", fFeedrate);
 		FullText += szString;
 	}
 };
@@ -62,8 +63,6 @@ void CloutProgram_Op_RapidTo::StateMachine()
 
 void CloutProgram_Op_RapidTo::DrawDetailTab()
 {
-	int x;
-
 	//Description
 	ImGui::Text("G0 - Rapid move to a new location");
 

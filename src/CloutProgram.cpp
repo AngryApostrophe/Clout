@@ -1,3 +1,5 @@
+#include "Platforms/Platforms.h"
+
 #include <imgui.h>
 
 #include "Clout.h"

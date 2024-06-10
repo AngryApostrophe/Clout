@@ -1,5 +1,6 @@
-//#include <Windows.h>
 using namespace std;
+
+#include "Platforms/Platforms.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -75,7 +76,7 @@ void Window_ChangeTool_Draw()
 	if (ImGui::Button("Run##ChangeTool", ImVec2(120, 0)))
 	{
 		char szString[8];
-		sprintf_s(szString, 8, "M6 T%d", iNewToolChoice - 1);
+		sprintf(szString, "M6 T%d", iNewToolChoice - 1);
 		Comms_SendString(szString);
 
 		ImGui::CloseCurrentPopup();
@@ -359,11 +360,11 @@ bool Clout_MainLoop()
 						ImGui::AlignTextToFramePadding();
 
 						//The string to show
-							strcpy_s(s, bSlen, "Unknown");
+							strcpy(s, "Unknown");
 							if (MachineStatus.Positioning == Carvera::Positioning::Absolute)
-								strcpy_s(s, bSlen, "Absolute");
+								strcpy(s, "Absolute");
 							else if (MachineStatus.Positioning == Carvera::Positioning::Relative)
-								strcpy_s(s, bSlen, "Relative");
+								strcpy(s, "Relative");
 
 						//Calculations for right alignment
 							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
@@ -416,21 +417,21 @@ bool Clout_MainLoop()
 						ImGui::AlignTextToFramePadding();
 
 						//The string to show
-							strcpy_s(s, bSlen, "Unknown");
+							strcpy(s, "Unknown");
 							if (MachineStatus.WCS == Carvera::CoordSystem::G53)
-								strcpy_s(s, bSlen, "G53");
+								strcpy(s, "G53");
 							else if (MachineStatus.WCS == Carvera::CoordSystem::G54)
-								strcpy_s(s, bSlen, "G54");
+								strcpy(s, "G54");
 							else if (MachineStatus.WCS == Carvera::CoordSystem::G55)
-								strcpy_s(s, bSlen, "G55");
+								strcpy(s, "G55");
 							else if (MachineStatus.WCS == Carvera::CoordSystem::G56)
-								strcpy_s(s, bSlen, "G56");
+								strcpy(s, "G56");
 							else if (MachineStatus.WCS == Carvera::CoordSystem::G57)
-								strcpy_s(s, bSlen, "G57");
+								strcpy(s, "G57");
 							else if (MachineStatus.WCS == Carvera::CoordSystem::G58)
-								strcpy_s(s, bSlen, "G58");
+								strcpy(s, "G58");
 							else if (MachineStatus.WCS == Carvera::CoordSystem::G59)
-								strcpy_s(s, bSlen, "G59");
+								strcpy(s, "G59");
 
 						//Calculations for right alignment
 							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
@@ -480,11 +481,11 @@ bool Clout_MainLoop()
 						ImGui::AlignTextToFramePadding();
 
 						//The string to show
-							strcpy_s(s, bSlen, "Unknown");
+							strcpy(s, "Unknown");
 							if (MachineStatus.Units == Carvera::Units::inch)
-								strcpy_s(s, bSlen, "Inch");
+								strcpy(s, "Inch");
 							else if (MachineStatus.Units == Carvera::Units::mm)
-								strcpy_s(s, bSlen, "Millimeter");
+								strcpy(s, "Millimeter");
 
 						//Calculations for right alignment
 							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
@@ -508,13 +509,13 @@ bool Clout_MainLoop()
 						ImGui::AlignTextToFramePadding();
 
 						//The string to show
-							strcpy_s(s, bSlen, "Unknown");
+							strcpy(s, "Unknown");
 							if (MachineStatus.Plane == Carvera::Plane::XYZ)
-								strcpy_s(s, bSlen, "XYZ");
+								strcpy(s, "XYZ");
 							else if (MachineStatus.Plane == Carvera::Plane::XZY)
-								strcpy_s(s, bSlen, "XZY");
+								strcpy(s, "XZY");
 							else if (MachineStatus.Plane == Carvera::Plane::YZX)
-								strcpy_s(s, bSlen, "YZX");
+								strcpy(s, "YZX");
 
 						//Calculations for right alignment
 							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);

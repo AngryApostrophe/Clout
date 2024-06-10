@@ -1,10 +1,11 @@
 //This is pretty much right out of the Dear ImgUi demo for now.  Lots of work to be done
 
-#include <Windows.h>
+#include "Platforms/Platforms.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include "Clout.h"
 #include "Console.h"
 #include "Comms.h"
 
@@ -25,7 +26,7 @@ CommsConsole::CommsConsole()
 	AutoScroll = true;
 	ScrollToBottom = false;
 
-	ConsoleMutex = CreateMutex(0, false, 0);
+	NewMutex(&ConsoleMutex);
 }
 
 
@@ -35,7 +36,7 @@ CommsConsole::~CommsConsole()
 	for (int i = 0; i < History.Size; i++)
 		ImGui::MemFree(History[i]);
 
-	CloseHandle(ConsoleMutex);
+	CloseMutex(&ConsoleMutex);
 }
 
 void CommsConsole::ClearLog()
@@ -47,14 +48,14 @@ void CommsConsole::ClearLog()
 
 void CommsConsole::Draw()
 {
-	if (WaitForSingleObject(ConsoleMutex, INFINITE) != WAIT_OBJECT_0)
+	if (WaitForMutex(&ConsoleMutex, true) != MUTEX_RESULT_SUCCESS)
 		return;
 
 	ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin("Console", 0))
 	{
 		ImGui::End();
-		ReleaseMutex(ConsoleMutex);
+		ReleaseMutex(&ConsoleMutex);
 		return;
 	}
 
@@ -167,7 +168,7 @@ void CommsConsole::Draw()
 		Strtrim(s);
 		if (s[0])
 			ExecCommand(s);
-		strcpy_s(s, 256, "");
+		strcpy(s, "");
 		reclaim_focus = true;
 	}
 
@@ -178,12 +179,12 @@ void CommsConsole::Draw()
 
 	ImGui::End();
 
-	ReleaseMutex(ConsoleMutex);
+	ReleaseMutex(&ConsoleMutex);
 }
 
 void CommsConsole::ExecCommand(const char* command_line)
 {
-	if (WaitForSingleObject(ConsoleMutex, INFINITE) != WAIT_OBJECT_0)
+	if (WaitForMutex(&ConsoleMutex, true) != MUTEX_RESULT_SUCCESS)
 		return;
 
 	AddLog("# %s\n", command_line);
@@ -234,12 +235,12 @@ void CommsConsole::ExecCommand(const char* command_line)
 	// On command input, we scroll to bottom even if AutoScroll==false
 	ScrollToBottom = true;
 
-	ReleaseMutex(ConsoleMutex);
+	ReleaseMutex(&ConsoleMutex);
 }
 
-void CommsConsole::AddLog(const char* fmt, ...) IM_FMTARGS(2)
+void CommsConsole::AddLog(const char* fmt, ...)
 {
-	if (WaitForSingleObject(ConsoleMutex, INFINITE) != WAIT_OBJECT_0)
+	if (WaitForMutex(&ConsoleMutex, true) != MUTEX_RESULT_SUCCESS)
 		return;
 
 	// FIXME-OPT
@@ -252,15 +253,15 @@ void CommsConsole::AddLog(const char* fmt, ...) IM_FMTARGS(2)
 
 	CONSOLE_ITEM* NewItem = new CONSOLE_ITEM;
 	NewItem->Type = ITEM_TYPE_NONE;
-	strcpy_s(NewItem->string, 1024, buf);
+	strcpy(NewItem->string, buf);
 	Items.push_back(NewItem);
 
-	ReleaseMutex(ConsoleMutex);
+	ReleaseMutex(&ConsoleMutex);
 }
 
-void CommsConsole::AddLog(CommsConsole::CONSOLE_ITEM_TYPE Type, const char* fmt, ...) IM_FMTARGS(2)
+void CommsConsole::AddLog(CommsConsole::CONSOLE_ITEM_TYPE Type, const char* fmt, ...)
 {
-	if (WaitForSingleObject(ConsoleMutex, INFINITE) != WAIT_OBJECT_0)
+	if (WaitForMutex(&ConsoleMutex, true) != MUTEX_RESULT_SUCCESS)
 		return;
 
 	// FIXME-OPT
@@ -273,8 +274,8 @@ void CommsConsole::AddLog(CommsConsole::CONSOLE_ITEM_TYPE Type, const char* fmt,
 
 	CONSOLE_ITEM* NewItem = new CONSOLE_ITEM;
 	NewItem->Type = Type;
-	strcpy_s(NewItem->string, 1024, buf);
+	strcpy(NewItem->string, buf);
 	Items.push_back(NewItem);
 
-	ReleaseMutex(ConsoleMutex);
+	ReleaseMutex(&ConsoleMutex);
 }

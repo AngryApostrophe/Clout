@@ -1,4 +1,5 @@
-#include <Windows.h>
+#include "../Platforms/Platforms.h"
+
 #include <stdio.h>
 
 #include <imgui.h>
@@ -14,7 +15,7 @@
 
 CloutProgram_Op_InstallTouchProbe::CloutProgram_Op_InstallTouchProbe()
 {
-	bConfirmFunction = TRUE;
+	bConfirmFunction = true;
 }
 
 void CloutProgram_Op_InstallTouchProbe::StateMachine()

@@ -1,4 +1,5 @@
-#include <Windows.h>
+#include "../Platforms/Platforms.h"
+
 #include <stdio.h>
 #include <math.h>
 
@@ -42,7 +43,7 @@ void ProbeOperation_WebCenter::DrawSubwindow()
 	char sUnits[5] = "mm"; //Currently select machine units
 
 	if (MachineStatus.Units != Carvera::Units::mm)
-		strcat_s(sUnits, 5, "in"); //Inches
+		strcat(sUnits, "in"); //Inches
 
 	ImGui::Text("Probe outside a web feature to find the center");
 	ImGui::Text("Setup:");
@@ -80,22 +81,22 @@ void ProbeOperation_WebCenter::DrawSubwindow()
 	ImGui::SameLine(); HelpMarker("Axis in which to probe.");
 
 	//Web Diameter
-		sprintf_s(sString, 10, "%%0.3f%s", sUnits);
+		sprintf(sString, "%%0.3f%s", sUnits);
 		ImGui::InputFloat("Feature width##WebCenter", &fWebWidth, 0.01f, 0.1f, sString);
 		ImGui::SameLine(); HelpMarker("Nominal width of the feature, in current machine units.");
 
 	//Clearance Distance
-		sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+		sprintf(sString, "%%0.2f%s", sUnits);
 		ImGui::InputFloat("Clearance distance##WebCenter", &fClearance, 0.1f, 1.0f, sString);
 		ImGui::SameLine(); HelpMarker("Distance traveled outside the nominal width before lowering and lowering and probing back in.");
 
 	//Overtravel Distance
-		sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+		sprintf(sString, "%%0.2f%s", sUnits);
 		ImGui::InputFloat("Overtravel distance##WebCenter", &fOvertravel, 0.1f, 1.0f, sString);
 		ImGui::SameLine(); HelpMarker("Distance inside the nominal width to continue probing before failing.");
 
 	//Z Depth
-		sprintf_s(sString, 10, "%%0.2f%s", sUnits);
+		sprintf(sString, "%%0.2f%s", sUnits);
 		ImGui::InputFloat("Z probing depth##WebCenter", &fZDepth, 0.1f, 1.0f, sString);
 		ImGui::SameLine(); HelpMarker("How far to lower the probe when we start measuring.\nNote: Negative numbers are lower.");
 
