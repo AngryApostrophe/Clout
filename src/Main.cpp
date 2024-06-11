@@ -64,6 +64,7 @@ int main(int, char**)
 
     // Create window with graphics context
 		glfwWindowHint(GLFW_SCALE_TO_MONITOR, true);
+		glfwWindowHint(GLFW_SAMPLES, 4);
 		glfwWindow = glfwCreateWindow(1280, 910, "Clout", nullptr, nullptr);
 		if (glfwWindow == 0)
 			return 1;

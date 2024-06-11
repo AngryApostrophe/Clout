@@ -382,6 +382,12 @@ public:
 		loadModel(path);
 	}
 
+	// constructor, expects a pointer to memory with the model
+	Model(const char* name, const unsigned int* buf_data, const unsigned int size)
+	{
+		loadModel(name, buf_data, size);
+	}
+
 	// draws the model, and thus all its meshes
 	void Draw(Shader& shader)
 	{
@@ -406,6 +412,33 @@ private:
 		}
 		// retrieve the directory path of the filepath
 		directory = path.substr(0, path.find_last_of('/'));
+
+		// process ASSIMP's root node recursively
+		processNode(scene->mRootNode, scene);
+	}
+
+	// Loads a model with supported ASSIMP extensions from memory and stores the resulting meshes in the meshes vector.
+	void loadModel(const char* name, const unsigned int* buf_data, const unsigned int size)
+	{
+		//Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Loading model %s", path.c_str());
+
+		//Decompress the data
+			const unsigned int buf_decompressed_size = stb_decompress_length((stb_uchar*)buf_data);
+			unsigned char *buf_uncompressed = (unsigned char*)malloc(buf_decompressed_size);
+			stb_decompress(buf_uncompressed, (stb_uchar*)buf_data, (unsigned int)size);
+
+		// read file via ASSIMP
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFileFromMemory(buf_uncompressed, buf_decompressed_size, aiProcess_JoinIdenticalVertices | aiProcess_FixInfacingNormals | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_ConvertToLeftHanded);
+
+		free(buf_uncompressed);
+
+		// check for errors
+		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
+		{
+			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "ERROR::ASSIMP:: %s", importer.GetErrorString());
+			return;
+		}
 
 		// process ASSIMP's root node recursively
 		processNode(scene->mRootNode, scene);

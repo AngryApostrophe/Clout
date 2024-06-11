@@ -13,11 +13,17 @@
 #include "Console.h"
 #include "ModelViewer.h"
 
+//Resources
 #include "Resources/shaderMainF.h"
 #include "Resources/shaderMainV.h"
 #include "Resources/shaderShadowMapViewerF.h"
 #include "Resources/shaderShadowMapViewerV.h"
 #include "Resources/shaderShadowV.h"
+
+#include "Resources/modelCarveraBody.h"
+#include "Resources/modelCarveraSpindle.h"
+#include "Resources/modelCarveraCarriage.h"
+#include "Resources/modelCarveraBed.h"
 
 
 //The main Model viewer object
@@ -280,10 +286,11 @@ void MODEL_VIEWER::Init()
 		bg_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	//Load models
-		BodyModel = new Model("./res/CarveraBody.stl");
-		CarriageModel = new Model("./res/CarveraCarriage.3mf");
-		BedModel = new Model("./res/CarveraBed.stl");
-		SpindleModel = new Model("./res/CarveraSpindle.3mf");
+		//BodyModel = new Model("./res/CarveraBody.3mf");
+		BodyModel = new Model("modelBody", modelCarveraBody_compressed_data, modelCarveraBody_compressed_size);
+		CarriageModel = new Model("modelCarriage", modelCarveraCarriage_compressed_data, modelCarveraCarriage_compressed_size);
+		SpindleModel = new Model("modelSpindle", modelCarveraSpindle_compressed_data, modelCarveraSpindle_compressed_size);
+		BedModel = new Model("modelSpindle", modelCarveraBed_compressed_data, modelCarveraBed_compressed_size);
 
 	//Load shaders
 		//Shader_Main = new Shader("./res/MainView_Vert.glsl", "./res/MainView_Frag.glsl");
@@ -314,6 +321,9 @@ void MODEL_VIEWER::Init()
 
 		//Enable culling of faces for better performance
 			glEnable(GL_CULL_FACE); 
+
+		//Anti-aliasing
+			glEnable(GL_MULTISAMPLE); //See also glfwWindowHint(GLFW_SAMPLES, 4) in Main.cpp
 		
 		// Create the depth buffer
 			glGenRenderbuffers(1, &DepthBuffer);
@@ -400,7 +410,7 @@ void MODEL_VIEWER::RenderScene(Shader* shader)
 		shader->setFloat("Lighting_Specular", 0.3f);
 
 	//Draw main Carvera body
-		ModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-160.0f, -100.0f, 350.0f));
+		ModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-140.0f, -110.0f, -255.0f));
 		shader->setMat4("model", ModelMatrix);
 		
 		shader->setVec3("objectColor", glm::vec3(0.6f, 0.6f, 0.6f));
@@ -426,9 +436,7 @@ void MODEL_VIEWER::RenderScene(Shader* shader)
 		SpindleModel->Draw(*shader);
 
 	//Draw Bed
-		ModelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		ModelMatrix = glm::translate(ModelMatrix, glm::vec3(-15, -15, 31.6f)); //Translate down so 0,0,0 is at home position.   //TODO: Fix the model so 0,0,0 is at the right spot
-		ModelMatrix = glm::translate(ModelMatrix, glm::vec3(0, -OriginOffset.y, 0)); //Translate so the y axis moves relative to the origin, not the other way around 
+		ModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -OriginOffset.y)); //Translate so the y axis moves relative to the origin, not the other way around 
 		shader->setMat4("model", ModelMatrix);
 
 		shader->setVec3("objectColor", glm::vec3(0.2f, 0.2f, 0.2f));
@@ -541,7 +549,8 @@ void MODEL_VIEWER::Draw()
 			//Keyboard control
 				if (ImGui::IsWindowFocused())
 				{
-					const float cameraSpeed = 10.0f; // adjust accordingly
+					float cameraSpeed = 500.0f * (1/io.Framerate);
+
 					if (ImGui::IsKeyDown((ImGuiKey)515)) //Up arrow
 						View_MainCameraPos += cameraSpeed * cameraFront;
 					else if (ImGui::IsKeyDown((ImGuiKey)516)) //Up arrow

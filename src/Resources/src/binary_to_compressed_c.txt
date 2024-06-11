@@ -1,0 +1,4 @@
+From ImGui's sample in imgui/misc/fonts
+
+Usage:
+binary_to_compressed_c modelCarveraBody.3mf modelCarveraBody > ../modelCarveraBody.h
