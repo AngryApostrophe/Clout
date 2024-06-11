@@ -3,6 +3,9 @@
 #include <GL/glew.h>
 #include <gtc/matrix_transform.hpp>
 
+#include "stb_image.h"
+#include <deprecated/stb.h> //This is supposedly going away, but it works for now.  He said that years ago.
+
 #include <sstream>
 #include <fstream>
 
@@ -95,21 +98,71 @@ public:
 		vertex = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertex, 1, &vShaderCode, NULL);
 		glCompileShader(vertex);
-		checkCompileErrors(vertex, "VERTEX");
+		checkCompileErrors("", vertex, "VERTEX");
 		// fragment Shader
 		fragment = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(fragment, 1, &fShaderCode, NULL);
 		glCompileShader(fragment);
-		checkCompileErrors(fragment, "FRAGMENT");
+		checkCompileErrors("", fragment, "FRAGMENT");
 		// shader Program
 		ID = glCreateProgram();
 		glAttachShader(ID, vertex);
 		glAttachShader(ID, fragment);
 		glLinkProgram(ID);
-		checkCompileErrors(ID, "PROGRAM");
+		checkCompileErrors("", ID, "PROGRAM");
 		// delete the shaders as they're linked into our program now and no longer necessary
 		glDeleteShader(vertex);
 		glDeleteShader(fragment);
+
+	}
+	Shader(const char *name, const unsigned int* vert_buf_data, const unsigned int vert_size, const unsigned int* frag_buf_data, const unsigned int frag_size)
+	{
+		unsigned char *vShaderCode, *fShaderCode;
+
+		// Decompress the data
+			if (vert_buf_data != 0)
+			{
+				const unsigned int buf_decompressed_size = stb_decompress_length((stb_uchar*)vert_buf_data);
+				vShaderCode = (unsigned char*)malloc(buf_decompressed_size)+1; //Add an extra byte for a null terminator
+				vShaderCode[buf_decompressed_size] = 0x0;	//The incoming data isn't null terminated
+				stb_decompress(vShaderCode, (stb_uchar*)vert_buf_data, (unsigned int)vert_size);
+			}
+
+			if (frag_buf_data != 0)
+			{
+				const unsigned int buf_decompressed_size = stb_decompress_length((stb_uchar*)frag_buf_data);
+				fShaderCode = (unsigned char*)malloc(buf_decompressed_size); //Add an extra byte for a null terminator
+				fShaderCode[buf_decompressed_size] = 0x0;	//The incoming data isn't null terminated
+				stb_decompress(fShaderCode, (stb_uchar*)frag_buf_data, (unsigned int)frag_size);
+			}
+		// 2. compile shaders
+			unsigned int vertex = 0;
+			unsigned int fragment = 0;
+			// vertex shader
+				if (vert_buf_data != 0)
+				{
+					vertex = glCreateShader(GL_VERTEX_SHADER);
+					glShaderSource(vertex, 1, (GLchar**)&vShaderCode, NULL);
+					glCompileShader(vertex);
+					checkCompileErrors(name, vertex, "VERTEX");
+				}
+			// fragment Shader
+				if (frag_buf_data != 0)
+				{
+					fragment = glCreateShader(GL_FRAGMENT_SHADER);
+					glShaderSource(fragment, 1, (GLchar**)&fShaderCode, NULL);
+					glCompileShader(fragment);
+					checkCompileErrors(name, fragment, "FRAGMENT");
+				}
+			// shader Program
+				ID = glCreateProgram();
+				glAttachShader(ID, vertex);
+				glAttachShader(ID, fragment);
+				glLinkProgram(ID);
+				checkCompileErrors(name, ID, "PROGRAM");
+			// delete the shaders as they're linked into our program now and no longer necessary
+				glDeleteShader(vertex);
+				glDeleteShader(fragment);
 
 	}
 	// activate the shader
@@ -180,7 +233,7 @@ public:
 private:
 	// utility function for checking shader compilation/linking errors.
 	// ------------------------------------------------------------------------
-	void checkCompileErrors(GLuint shader, std::string type)
+	void checkCompileErrors(const char *name, GLuint shader, std::string type)
 	{
 		GLint success;
 		GLchar infoLog[1024];
@@ -190,7 +243,7 @@ private:
 			if (!success)
 			{
 				glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Shader error of type %s: %s", type.c_str(), infoLog);
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "%s Shader error of type %s: %s", name, type.c_str(), infoLog);
 			}
 		}
 		else
@@ -199,7 +252,7 @@ private:
 			if (!success)
 			{
 				glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Shader error of type %s: %s", type.c_str(), infoLog);
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "%s Shader error of type %s: %s", name, type.c_str(), infoLog);
 			}
 		}
 	}

@@ -7,10 +7,17 @@
 #include <imgui_impl_opengl3.h>
 
 #include "stb_image.h"
+//#include <deprecated/stb.h> //This is supposedly going away, but it works for now.  He said that years ago.
 
 #include "Clout.h"
 #include "Console.h"
 #include "ModelViewer.h"
+
+#include "Resources/shaderMainF.h"
+#include "Resources/shaderMainV.h"
+#include "Resources/shaderShadowMapViewerF.h"
+#include "Resources/shaderShadowMapViewerV.h"
+#include "Resources/shaderShadowV.h"
 
 
 //The main Model viewer object
@@ -279,9 +286,12 @@ void MODEL_VIEWER::Init()
 		SpindleModel = new Model("./res/CarveraSpindle.3mf");
 
 	//Load shaders
-		Shader_Main = new Shader("./res/MainView_Vert.glsl", "./res/MainView_Frag.glsl");
-		Shader_ShadowMap = new Shader("./res/ShadowMap_Vert.glsl", 0); //No fragment shader needed since we're not rendering any color data
-		Shader_ShadowMapViewer = new Shader("./res/ShadowMapViewer_Vert.glsl", "./res/ShadowMapViewer_Frag.glsl");
+		//Shader_Main = new Shader("./res/MainView_Vert.glsl", "./res/MainView_Frag.glsl");
+		//Shader_ShadowMap = new Shader("./res/ShadowMap_Vert.glsl", 0); //No fragment shader needed since we're not rendering any color data
+		//Shader_ShadowMapViewer = new Shader("./res/ShadowMapViewer_Vert.glsl", "./res/ShadowMapViewer_Frag.glsl");
+		Shader_Main = new Shader("shaderMain", shaderMainV_compressed_data, shaderMainV_compressed_size, shaderMainF_compressed_data, shaderMainF_compressed_size);
+		Shader_ShadowMap = new Shader("shaderShadow", shaderShadowV_compressed_data, shaderShadowV_compressed_size, 0,0);
+		Shader_ShadowMapViewer = new Shader("shaderShadowMapViewer", shaderShadowMapViewerV_compressed_data, shaderShadowMapViewerV_compressed_size, shaderShadowMapViewerF_compressed_data, shaderShadowMapViewerF_compressed_size);
 
 	//Render to texture
 		Framebuffer = 0;
