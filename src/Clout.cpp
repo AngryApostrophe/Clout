@@ -176,7 +176,7 @@ void Window_Jog_Draw()
 
 		//XY Value
 			ImGui::TableSetColumnIndex(1);
-			String = JogVals[ZJogIdx];
+			String = JogVals[XYJogIdx];
 			String += " ";
 			String += sUnits;
 			String += "##xyvalbtn";
