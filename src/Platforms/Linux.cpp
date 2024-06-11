@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 #include "../imgui/imgui.h"
 
@@ -74,7 +75,7 @@ void CloutCreateThread(CloutThreadHandle* handle, void* func(void*))
 {
 	pthread_create(&handle->Handle, NULL, func, 0);
 
-	pipe(handle->Pipe);	//The pipe for sending data
+	pipe2(handle->Pipe, O_NONBLOCK);	//The pipe for sending data
 	handle->MessageMutex = eventfd(0, EFD_NONBLOCK | EFD_SEMAPHORE); //Counter of how many messages are in the queue
 }
 
@@ -84,8 +85,9 @@ bool GetThreadMessage(CloutThreadHandle* Thread, CloutThreadMessage* msg)
 
 	if (read(Thread->MessageMutex, &i, sizeof(i) > 0))	//If there's something on the queue
 	{
-		read(Thread->Pipe[PIPE_READ], msg, sizeof(CloutThreadMessage));	//Then read it.  
-		return true;
+		int iRes = read(Thread->Pipe[PIPE_READ], msg, sizeof(CloutThreadMessage));	//Then read it.  
+		if (iRes > 0)
+			return true;
 	}
 
 	return false;
@@ -131,9 +133,9 @@ void BuildAddress(sockaddr_in* addr, char* szAddress, char* szPort)
 	//bcopy((char*)server->h_addr, (char*)&serv_addr.sin_addr.s_addr, server->h_length);
 }
 
-bool DisplaySocketError()	//TODO: Get error info
+bool DisplaySocketError(char *s)	//TODO: Get error info
 {
-	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error");
+	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error at %s: &d", s, errno);
 
 	return false;
 }

@@ -112,13 +112,13 @@ void BuildAddress(sockaddr_in *addr, char* szAddress, char* szPort)
 	addr->sin_addr.s_addr = inet_addr(szAddress);
 }
 
-bool DisplaySocketError()	//Returns true if it was an acceptable error and we can continue
+bool DisplaySocketError(char *s)	//Returns true if it was an acceptable error and we can continue
 {
 	int iError = WSAGetLastError();
 
 	if (iError != WSAEISCONN)
 	{
-		Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error: %d", iError);
+		Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error at %s: %d", s, iError);
 		CommsDisconnect();
 
 		return false;

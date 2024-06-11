@@ -76,7 +76,7 @@ void* CommsThreadProc(void* arg)
 							{
 								DisplaySocketError();
 
-								return 0;
+								continue;
 							}
 
 						//Get the address
@@ -136,54 +136,67 @@ void* CommsThreadProc(void* arg)
 			if (!bCommsConnected)
 			{
 				//Listen for broadcast messages from Carvera
-				iBytes = recv(sckBroadcast, sRecv, iRecvBufferLen, 0);
-				if (iBytes > 0)
+				fd_set stReadFDS;
+				FD_ZERO(&stReadFDS);
+				FD_SET(sckBroadcast, &stReadFDS);
+
+				//Set the timeout time.  This has to be done every time because of linux
+				tv.tv_sec = 0;
+				tv.tv_usec = 10000; //10ms
+
+				int t = select(9999, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+
+				if (t > 0)
 				{
-					TerminateString(sRecv, iBytes);
-
-					//Get the Name, IP, and Port from the message
-						char sName[20]="";
-						char sIP[20]="";
-						char sPort[20]="";
-
-						char *token=0;
-						char* next_token = 0;
-						token = strtok_r(sRecv, ",", &next_token);
-						if (token != 0)
-							strcpy(sName, token);
-						token = strtok_r(0, ",", &next_token);
-						if (token != 0)
-							strcpy(sIP, token);
-						token = strtok_r(0, ",", &next_token);
-						if (token != 0)
-							strcpy(sPort, token);
-
-					//Check if it's already in our list
-					BYTE bSearch1 = 0;
-					BYTE bSearch2 = 0;
-					for (x = 0; x < bDetectedDevices; x++)
+					iBytes = recv(sckBroadcast, sRecv, iRecvBufferLen, 0);
+					if (iBytes > 0)
 					{
-						bSearch1 = strcmp(sName, sDetectedDevices[x][0]);
-						bSearch2 = strcmp(sIP, sDetectedDevices[x][1]);
-						bSearch2 += strcmp(sPort, sDetectedDevices[x][2]);
+						TerminateString(sRecv, iBytes);
 
-						if (bSearch1 == 0 && bSearch2 == 0) //Perfect match
-							break;
-					}
-					if (x == bDetectedDevices) //We went through the list and it's a new one, so add it
-					{
-						if (bDetectedDevices < MAX_DEVICES)
-						{				
-							strcpy(sDetectedDevices[x][0], sName);
+						//Get the Name, IP, and Port from the message
+							char sName[20]="";
+							char sIP[20]="";
+							char sPort[20]="";
+
+							char *token=0;
+							char* next_token = 0;
+							token = strtok_r(sRecv, ",", &next_token);
+							if (token != 0)
+								strcpy(sName, token);
+							token = strtok_r(0, ",", &next_token);
+							if (token != 0)
+								strcpy(sIP, token);
+							token = strtok_r(0, ",", &next_token);
+							if (token != 0)
+								strcpy(sPort, token);
+
+						//Check if it's already in our list
+						BYTE bSearch1 = 0;
+						BYTE bSearch2 = 0;
+						for (x = 0; x < bDetectedDevices; x++)
+						{
+							bSearch1 = strcmp(sName, sDetectedDevices[x][0]);
+							bSearch2 = strcmp(sIP, sDetectedDevices[x][1]);
+							bSearch2 += strcmp(sPort, sDetectedDevices[x][2]);
+
+							if (bSearch1 == 0 && bSearch2 == 0) //Perfect match
+								break;
+						}
+						if (x == bDetectedDevices) //We went through the list and it's a new one, so add it
+						{
+							if (bDetectedDevices < MAX_DEVICES)
+							{				
+								strcpy(sDetectedDevices[x][0], sName);
+								strcpy(sDetectedDevices[x][1], sIP);
+								strcpy(sDetectedDevices[x][2], sPort);
+								bDetectedDevices++;
+							}
+						}
+						else if (bSearch2 != 0) //We found a duplicate, but the IP or Port has changed, so update that one
+						{
 							strcpy(sDetectedDevices[x][1], sIP);
 							strcpy(sDetectedDevices[x][2], sPort);
-							bDetectedDevices++;
 						}
-					}
-					else if (bSearch2 != 0) //We found a duplicate, but the IP or Port has changed, so update that one
-					{
-						strcpy(sDetectedDevices[x][1], sIP);
-						strcpy(sDetectedDevices[x][2], sPort);
 					}
 				}
 
@@ -197,13 +210,16 @@ void* CommsThreadProc(void* arg)
 			fd_set stReadFDS;
 			FD_ZERO(&stReadFDS);
 			FD_SET(sckCarvera, &stReadFDS);
-			int t = select(-1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+
+			//Set the timeout time.  This has to be done every time because of linux
+				tv.tv_sec = 0;
+				tv.tv_usec = 10000; //10ms
+
+			int t = select(9999, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
 			if (t < 0)
 			{
 				DisplaySocketError();
 				CommsDisconnect();
-
-				return 0;
 			}
 			else if (t > 0) //Something is available
 			{
