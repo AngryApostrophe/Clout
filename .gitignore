@@ -2,11 +2,12 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/bin/x64/
+/bin/assimp-vc143-mtd.dll
 /src/.vs/
 /res/Sources
 /.vs
 /bin/res/Sources
 /bin/imgui.ini
 /build/
+/out/
 /src/external

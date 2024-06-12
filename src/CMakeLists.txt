@@ -2,13 +2,19 @@
 include_directories ("${PROJECT_SOURCE_DIR}/src/external/imgui"
 "${PROJECT_SOURCE_DIR}/src/external/imgui/backends"
 "${PROJECT_SOURCE_DIR}/src/external/assimp/include"
+"${PROJECT_SOURCE_DIR}/build/external/assimp/include"
 "${PROJECT_SOURCE_DIR}/src/external/stb"
 "${PROJECT_SOURCE_DIR}/src/external/glm/glm"
-"${PROJECT_SOURCE_DIR}/src/external/glew-win32/include"
 "${PROJECT_SOURCE_DIR}/src/external/json/single_include/nlohmann"
 "${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog"
 "${PROJECT_SOURCE_DIR}/src/external/glfw/include"
 )
+
+IF(WIN32)
+	include_directories ("${PROJECT_SOURCE_DIR}/src/external/glew-win32/include")
+ELSE(WIN32)
+	include_directories ("${PROJECT_SOURCE_DIR}/src/external/glew/include")
+ENDIF(WIN32)
 
 set  (IMGUI_SOURCES
       "${PROJECT_SOURCE_DIR}/src/external/imgui/imgui.cpp"
@@ -78,10 +84,6 @@ set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/OperationQueue.h"
 	)
 	
-#set  (CLOUT_RESOURCES
-#	"${PROJECT_SOURCE_DIR}/src/Resources/ProggyClean.h"
-#	"${PROJECT_SOURCE_DIR}/src/Resources/Resources.h"
-#	)
 file(GLOB CLOUT_RESOURCES
      "${PROJECT_SOURCE_DIR}/src/Resources/*.h"
      "${PROJECT_SOURCE_DIR}/src/Resources/*.cpp"
@@ -120,34 +122,29 @@ IF(WIN32)
 	# Set the subsystem and entry point for no console and main()
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 	add_executable (Clout WIN32 ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_SOURCES_PLATFORM} ${CLOUT_RESOURCES})
-ELSE(WIN32)
+ELSE()
 	add_executable (Clout ${CLOUT_SOURCES} ${CLOUT_SOURCES_PROBING} ${CLOUT_SOURCES_OPERATIONS} ${IMGUI_SOURCES} ${MISC_LIB_SOURCES} ${CLOUT_SOURCES_PLATFORM} ${CLOUT_RESOURCES})
-ENDIF(WIN32)
+	add_dependencies (Clout glew) #Glew needs to be built first to generate the header files we need
+ENDIF()
 
+add_dependencies (Clout assimp glfw)
 
 #Add opengl
-FIND_PACKAGE(OpenGL)
-
-#Other libraries
-IF(WIN32)
-    set  (CLOUT_EXTERN_LIBS
-	"${PROJECT_SOURCE_DIR}/src/external/assimp/lib/Release/assimp-vc143-mt.lib"
-	"${PROJECT_SOURCE_DIR}/src/external/glew-win32/lib/Release/x64/glew32.lib"
-	"${PROJECT_SOURCE_DIR}/src/external/glfw/src/Release/glfw3.lib"
-      )
-ELSE(WIN32)
-	find_package(ZLIB)
-
-    set  (CLOUT_EXTERN_LIBS
-    "${PROJECT_SOURCE_DIR}/src/external/assimp/lib/libassimp.a"
-	"${PROJECT_SOURCE_DIR}/src/external/glfw/src/libglfw3.a"
-	"${PROJECT_SOURCE_DIR}/src/external/glew/lib/libGLEW.a"
-	ZLIB::ZLIB
-      )
-ENDIF(WIN32)
+FIND_PACKAGE(OpenGL REQUIRED)
 
 # Properties->Linker->Input->Additional Dependencies
-target_link_libraries (Clout ${CLOUT_EXTERN_LIBS} ${OPENGL_LIBRARIES} )
+target_link_libraries (Clout ${CLOUT_GLEW_LIB} ${OPENGL_LIBRARIES})
+
+#Add Assimp and GLFW libraries.
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+	target_link_libraries( Clout debug ${CLOUT_ASSIMP_LIBD})
+	target_link_libraries( Clout optimized ${CLOUT_ASSIMP_LIBR})
+	target_link_libraries( Clout debug ${CLOUT_GLFW_LIBD})
+	target_link_libraries( Clout optimized ${CLOUT_GLFW_LIBR})
+ELSE()
+	target_link_libraries( Clout ${CLOUT_ASSIMP_LIB})
+	target_link_libraries( Clout ${CLOUT_GLFW_LIB})
+ENDIF()
 
 # Creates a folder "executables" and adds target 
 # project (Clout.vcproj) under it
@@ -157,10 +154,10 @@ target_link_libraries (Clout ${CLOUT_EXTERN_LIBS} ${OPENGL_LIBRARIES} )
 set_property(TARGET Clout PROPERTY CXX_STANDARD 17)
 
 # Properties->General->Output Directory
-set_target_properties(Clout PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+set_target_properties(Clout PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build/bin)
 
 # Adds logic to INSTALL.vcproj to copy app.exe to destination directory
-install (TARGETS Clout RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/bin)
+#install (TARGETS Clout RUNTIME DESTINATION ${PROJECT_SOURCE_DIR}/bin)
 
 # Set the Visual Studio working directory so we can run the app
 set_property(TARGET Clout PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
