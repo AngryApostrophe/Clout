@@ -1,25 +1,37 @@
 # Building Clout from source
 
-## 1. Clone the repository
-## 2. Build GLFW
-* From GLFW directory: 
+## Clone the repository
 ```bash
-cmake CMakeLists.txt
+git clone --recurse-submodules http://www.github.com/AngryApostrophe/Clout Clout
 ```
-* If using Visual Studio, open GLFW.sln, ensure you're on Release config and build the ALL_BUILD project
-## 3. Build Assimp
-* https://github.com/assimp/assimp/blob/master/Build.md
-* From Assimp directory: 
+In addition to Clout, this also clones all required submodules.
+
+## Windows
+Clout can be built either from a Visual Studio solution, or directly from CMake
+
+### 1. Visual Studio
+Open a command window in Clout's root folder
 ```bash
-cmake CMakeLists.txt
+cd build
+cmake ../CMakeLists.txt
 ```
-* If using Visual Studio, open Assimp.sln, ensure you're on Release config and build the ALL_BUILD project
-## 4. Build Clout
-* From Clout root directory:
- ```bash
- cd build
-cmake ..\CMakeLists.txt
+
+This will generate the Visual Studio solution/project.  Open the generated solution in /Build.  Select Build Solution and VS will build all required submodules.
+
+### 2.  CMake
+Open the root CMakeLists.txt directly in Visual Studio or other environment of your choice.  Files will be built in /Build.
+
+## Linux
+From Clout root directory: 
+```bash
+cd build
+cmake ../CMakeLists.txt
+make
 ```
-* Cmake will generate the required Visual Studio solution and project files
-* Open \build\Clout.sln and build Clout
-* Note assimp-vc143-mt.dll and glew32.dll are already placed in the project bin folder.  Ensure your working directory is set here when running.
+Clout and all additional submodules will be built.  Resulting binary will be in /Build/bin.
+
+### Ubuntu libraries
+The following are some of the libraries required to build Clout and its submodules:
+* libglu1-mesa-dev
+* zlib1g-dev
+* Everything at https://www.glfw.org/docs/3.3/compile.html
