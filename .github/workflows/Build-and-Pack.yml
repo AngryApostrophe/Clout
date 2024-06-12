@@ -34,7 +34,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: |
-          ${{github.workspace}}\build\external\glfw\src\glfw3.lib
+          ${{github.workspace}}\build\external\glfw\src\Release\glfw3.lib
         #Use the currently active Assimp commit folder hash as the key
         key: ${{ steps.GLFWHash.outputs.hash }}
 
@@ -60,7 +60,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: |
-          ${{github.workspace}}\build\external\assimp\lib\assimp-vc143-mt.lib
+          ${{github.workspace}}\build\external\assimp\lib\Release\assimp-vc143-mt.lib
           ${{github.workspace}}\build\external\assimp\include\assimp\config.h
         #Use the currently active Assimp commit folder hash as the key
         key: ${{ steps.AssimpHash.outputs.hash }}
