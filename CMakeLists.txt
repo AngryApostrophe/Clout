@@ -22,7 +22,8 @@ message ("cxx Flags: " ${CMAKE_CXX_FLAGS})
 
 include(ExternalProject)
 
-
+option(CLOUT_SKIP_ASSIMP "Skip building Assimp source if restoring cache in a Github workflow" OFF)
+option(CLOUT_SKIP_GLFW "Skip building GLFW source if restoring cache in a Github workflow" OFF)
 
 
 #Required lib sources
@@ -53,48 +54,52 @@ ENDIF()
 		set (CLOUT_ASSIMP_ZLIB OFF)
 	ENDIF()
 
-	ExternalProject_Add(assimp
-		SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/external/assimp
-		BINARY_DIR "${PROJECT_SOURCE_DIR}/build/external/assimp/"
+	IF (NOT CLOUT_SKIP_ASSIMP)
+		ExternalProject_Add(assimp
+			SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/external/assimp
+			BINARY_DIR "${PROJECT_SOURCE_DIR}/build/external/assimp/"
 
-		CMAKE_ARGS 
-			   -DCMAKE_BUILD_TYPE=Release	#This is for non-MSVC compilers. In MSVC it depends on current config
+			CMAKE_ARGS 
+				   -DCMAKE_BUILD_TYPE=Release	#This is for non-MSVC compilers. In MSVC it depends on current config
 
-			   -DBUILD_SHARED_LIBS=${CLOUT_ASSIMP_SHARED}
-			   -DASSIMP_BUILD_ZLIB=${CLOUT_ASSIMP_ZLIB}
+				   -DBUILD_SHARED_LIBS=${CLOUT_ASSIMP_SHARED}
+				   -DASSIMP_BUILD_ZLIB=${CLOUT_ASSIMP_ZLIB}
 			   
-			   #Select which importers/exporters are included, to reduce file size
-				   -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF 
-				   -DASSIMP_BUILD_3MF_IMPORTER=ON
-				   -DASSIMP_NO_EXPORT=ON
+				   #Select which importers/exporters are included, to reduce file size
+					   -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT=OFF 
+					   -DASSIMP_BUILD_3MF_IMPORTER=ON
+					   -DASSIMP_NO_EXPORT=ON
 				   			   
-			   #Don't waste time building the extra stuff we don't need
-				   -DASSIMP_BUILD_TESTS=OFF
-				   -DASSIMP_BUILD_ASSIMP_TOOLS=OFF
-				   -DASSIMP_INSTALL=OFF
-				   -DASSIMP_WARNINGS_AS_ERRORS=OFF
+				   #Don't waste time building the extra stuff we don't need
+					   -DASSIMP_BUILD_TESTS=OFF
+					   -DASSIMP_BUILD_ASSIMP_TOOLS=OFF
+					   -DASSIMP_INSTALL=OFF
+					   -DASSIMP_WARNINGS_AS_ERRORS=OFF
 
 				  
-		STEP_TARGETS   build
-		BUILD_BYPRODUCTS ${CLOUT_ASSIMP_LIB} ${CLOUT_ASSIMP_LIBR} ${CLOUT_ASSIMP_LIBD} #The actual byproduct depends on our compiler
-		INSTALL_COMMAND ""
-	)
+			STEP_TARGETS   build
+			BUILD_BYPRODUCTS ${CLOUT_ASSIMP_LIB} ${CLOUT_ASSIMP_LIBR} ${CLOUT_ASSIMP_LIBD} #The actual byproduct depends on our compiler
+			INSTALL_COMMAND ""
+		)
+	ENDIF()
 
 #Build GLFW
-	ExternalProject_Add(glfw
-		SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/external/glfw
-		BINARY_DIR ${PROJECT_SOURCE_DIR}/build/external/glfw
+	IF (NOT CLOUT_SKIP_GLFW)
+		ExternalProject_Add(glfw
+			SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/external/glfw
+			BINARY_DIR ${PROJECT_SOURCE_DIR}/build/external/glfw
 
-		CMAKE_ARGS 
-             -DGLFW_BUILD_EXAMPLES=OFF
-		   -DGLFW_BUILD_TESTS=OFF
-		   -DGLFW_BUILD_DOCS=OFF
-		   -DGLFW_INSTALL=OFF
+			CMAKE_ARGS 
+			   -DGLFW_BUILD_EXAMPLES=OFF
+			   -DGLFW_BUILD_TESTS=OFF
+			   -DGLFW_BUILD_DOCS=OFF
+			   -DGLFW_INSTALL=OFF
 
-		STEP_TARGETS   build
-		BUILD_BYPRODUCTS ${CLOUT_GLFW_LIB} ${CLOUT_GLFW_LIBR} ${CLOUT_GLFW_LIBD}
-		INSTALL_COMMAND ""
-	)
+			STEP_TARGETS   build
+			BUILD_BYPRODUCTS ${CLOUT_GLFW_LIB} ${CLOUT_GLFW_LIBR} ${CLOUT_GLFW_LIBD}
+			INSTALL_COMMAND ""
+		)
+	ENDIF()
 
 #Build GLEW (Linux only)
 	IF(NOT WIN32)
