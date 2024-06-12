@@ -49,7 +49,7 @@ jobs:
 
     - if: ${{ steps.cache-GLFW.outputs.cache-hit == 'true' }}
       name: Configure GLFW
-      run: echo "{SkipGLFW}={ON}" >> "$GITHUB_ENV"
+      run: echo "SkipGLFW=ON" >> $env:GITHUB_ENV
 
 #    - if: ${{ steps.cache-GLFW.outputs.cache-hit != 'true' }}
 #      name: Build GLFW
@@ -80,7 +80,7 @@ jobs:
 
     - if: ${{ steps.cache-assimp.outputs.cache-hit == 'true' }}
       name: Configure Assimp
-      run: echo "{SkipAssimp}={ON}" >> "$GITHUB_ENV"
+      run: echo "SkipAssimp=ON" >> $env:GITHUB_ENV
 
 #    - if: ${{ steps.cache-assimp.outputs.cache-hit != 'true' }}
 #      name: Build Assimp
