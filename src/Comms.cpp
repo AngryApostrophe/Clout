@@ -144,7 +144,7 @@ void* CommsThreadProc(void* arg)
 				tv.tv_sec = 0;
 				tv.tv_usec = 10000; //10ms
 
-				int t = select(9999, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+				int t = select(sckBroadcast+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
 
 				if (t > 0)
 				{
@@ -215,7 +215,7 @@ void* CommsThreadProc(void* arg)
 				tv.tv_sec = 0;
 				tv.tv_usec = 10000; //10ms
 
-			int t = select(9999, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+			int t = select(sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
 			if (t < 0)
 			{
 				DisplaySocketError();
@@ -249,6 +249,7 @@ void* CommsThreadProc(void* arg)
 
 				if (MachineStatus.Status == Carvera::Status::Idle)
 					SendCommandAndWait("$G", false);
+
 				iLoopCounter = 0;
 			}
 			
@@ -372,7 +373,12 @@ bool SendCommandAndWait(const char* c, bool bShowOnLog)
 	//Listen for a response
 		do
 		{
+			//Console.AddLog("Call Recv");
+
 			iBytes = recv(sckCarvera, sRecv, 5000, 0);
+
+			//Console.AddLog("Finish Recv");
+
 			if (iBytes > 0)
 				TerminateString(sRecv, iBytes);
 			else if (iBytes == 0)
