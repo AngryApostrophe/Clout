@@ -127,7 +127,13 @@ ELSE()
 	add_dependencies (Clout glew) #Glew needs to be built first to generate the header files we need
 ENDIF()
 
-add_dependencies (Clout assimp glfw)
+IF (NOT CLOUT_SKIP_ASSIMP)
+	add_dependencies (Clout assimp)
+ENDIF()
+
+IF (NOT CLOUT_SKIP_GLFW)
+	add_dependencies (Clout glfw)
+ENDIF()
 
 #Add opengl
 FIND_PACKAGE(OpenGL REQUIRED)
