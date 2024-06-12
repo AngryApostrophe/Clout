@@ -47,6 +47,7 @@ jobs:
 
     - if: ${{ steps.cache-GLFW.outputs.cache-hit == 'true' }}
       name: Configure GLFW
+      run: echo "Restored GLFW from cahce, skipping build"
       env:
         SkipGLFW: "ON"
 
@@ -79,6 +80,7 @@ jobs:
 
     - if: ${{ steps.cache-assimp.outputs.cache-hit == 'true' }}
       name: Configure Assimp
+      run: echo "Restored Assimp from cahce, skipping build"
       env:
         SkipAssimp: "ON"
 
