@@ -9,6 +9,8 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  SkipAssimp: "OFF"
+  SkipGLFW: "OFF"
 
 jobs:
   build:
@@ -23,7 +25,7 @@ jobs:
         submodules: recursive
 
     # There's probably a better way to do this, but I'm not familiar enough with github
-    - name: Retrieve GLFW Hash
+    - name: Calculate GLFW Hash
       uses: theowenyoung/folder-hash@v3
       with:
         path: ${{github.workspace}}\src\external\glfw
@@ -43,13 +45,18 @@ jobs:
 #      working-directory: ${{github.workspace}}\src\external\glfw
 #      run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
+    - if: ${{ steps.cache-GLFW.outputs.cache-hit == 'true' }}
+      name: Configure GLFW
+      env:
+        SkipGLFW: "ON"
+
 #    - if: ${{ steps.cache-GLFW.outputs.cache-hit != 'true' }}
 #      name: Build GLFW
 #      working-directory: ${{github.workspace}}\src\external\glfw
 #      run: cmake --build . --config ${{env.BUILD_TYPE}}
 
     # There's probably a better way to do this, but I'm not familiar enough with github
-    - name: Retrieve Assimp Hash
+    - name: Calculate Assimp Hash
       uses: theowenyoung/folder-hash@v3
       with:
         path: ${{github.workspace}}\src\external\assimp
@@ -70,6 +77,11 @@ jobs:
 #      working-directory: ${{github.workspace}}\src\external\assimp
 #      run: cmake CMakeLists.txt -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
+    - if: ${{ steps.cache-assimp.outputs.cache-hit == 'true' }}
+      name: Configure Assimp
+      env:
+        SkipAssimp: "ON"
+
 #    - if: ${{ steps.cache-assimp.outputs.cache-hit != 'true' }}
 #      name: Build Assimp
 #      working-directory: ${{github.workspace}}\src\external\assimp
@@ -78,7 +90,7 @@ jobs:
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCLOUT_SKIP_ASSIMP=${{env.SkipAssimp}} -DCLOUT_SKIP_GLFW=${{env.SkipGLFW}}
       
     - name: Build
       # Build your program with the given configuration
