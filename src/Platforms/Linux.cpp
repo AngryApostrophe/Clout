@@ -84,7 +84,15 @@ bool GetThreadMessage(CloutThreadHandle* Thread, CloutThreadMessage* msg)
 {
 	uint64_t i;
 
-	if (read(Thread->MessageMutex, &i, sizeof(i) > 0))	//If there's something on the queue
+	//if (read(Thread->MessageMutex, &i, sizeof(i) > 0))	//If there's something on the queue
+
+	int flags = fcntl(Thread->MessageMutex, F_GETFL);
+	flags |= O_NONBLOCK;
+	fcntl(Thread->MessageMutex, F_SETFL, flags);
+
+
+	int x = eventfd_read(Thread->MessageMutex, &i);
+	if (x == 0)
 	{
 		int iRes = read(Thread->Pipe[PIPE_READ], msg, sizeof(CloutThreadMessage));	//Then read it.  
 		if (iRes > 0)
