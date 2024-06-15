@@ -423,6 +423,9 @@ bool Clout_MainLoop()
 	const BYTE bSlen = 20;
 	char s[bSlen];	//General purpose string
 
+	//Process comms stuff
+		Comms_Update();
+
 	//Process the operations queue
 		OperationQueue.Run();
 

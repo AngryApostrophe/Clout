@@ -3,6 +3,8 @@ using namespace std;
 
 #include "Platforms/Platforms.h"
 
+#include <chrono>
+
 #include "imgui.h"
 #include "Clout.h"
 
@@ -11,6 +13,12 @@ using namespace std;
 
 
 
+//Return time elapsed (in ms) since a previous time
+double TimeSince_ms(const std::chrono::steady_clock::time_point StartTime)
+{
+	const std::chrono::duration<double, std::milli> ElapsedTime = StartTime - std::chrono::steady_clock::now();
+	return ElapsedTime.count();
+}
 
 //Scale object sizes based on font size.  This is better than hard-coding pixels because things change depending on OS
 ImVec2 ScaledByFontSize(float x, float y)

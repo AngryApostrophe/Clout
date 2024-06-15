@@ -11,6 +11,8 @@
 	typedef DWORD CloutThreadHandle;
 
 	void CloutCreateThread(CloutThreadHandle* handle, void* func);
+	#define THREADPROC_DEC DWORD WINAPI
+	#define THREADPROC_ARG _In_ LPVOID
 
 //Socket stuff
 	typedef SOCKET CloutSocket;

@@ -1,8 +1,14 @@
 //TODO:  process "<Error:ZProbe triggered before move, aborting command."
+//TODO:    $RST=#   Erases G54 - G59 WCS offsets and G28 / 30 positions stored in EEPROM.
 
 #include "Platforms/Platforms.h"
 
 #include <imgui.h>
+
+#include <chrono>
+using namespace std::chrono;
+
+#include <vector>
 
 #include "Clout.h"
 #include "Comms.h"
@@ -25,12 +31,18 @@
 	BYTE bDetectedDevices = 0;
 	char sDetectedDevices[MAX_DEVICES][3][20];
 
+//Message Queue
+	std::vector<CarveraMessage> XmitMessageQueue;
+	std::vector<CarveraMessage> RecvMessageQueue;
+	void DetermineMsgType(CarveraMessage& msg);
+
 //Inter-thread comms
 	CloutThreadHandle hCommsThread;
 	bool bOperationRunning = false;		//Set by other modules when a complex operation is running, and we should limit what we show in the console (like "ok"s)
 
-	CloutEventHandle hProbeResponseEvent;	//Alerts the probing operations when the comms thread receives a probe response message
-	char* sProbeReplyMessage = 0;			//The probing completion message
+	CloutThreadHandle hSocketsThread;
+
+	CloutMutex hBufferMutex;  //Mutex for accessing send and recv buffers
 
 
 //Make sure the string is null terminated, sometimes they aren't
@@ -40,12 +52,125 @@ void TerminateString(char *s, int iBytes)
 		s[iBytes] = 0x0;
 }
 
+//Sockets thread.  This handles direct socket comms stuff
+THREADPROC_DEC SocketThreadProc(THREADPROC_ARG lpParameter)
+{
+	int n;
+
+	steady_clock::time_point LastStatusRqst = steady_clock::now();
+	XmitMessageQueue.clear();
+	RecvMessageQueue.clear();
+
+	//Start getting some info
+		//SendCommandAndWait("?", false);
+		//SendCommandAndWait("version", true);
+
+	while (bCommsConnected)
+	{
+		//Check for incoming messages
+			fd_set stReadFDS;
+			FD_ZERO(&stReadFDS);
+			FD_SET(sckCarvera, &stReadFDS);
+
+			//Set the timeout time.  This has to be done every time because of linux
+				tv.tv_sec = 0;
+				tv.tv_usec = 10000; //10ms
+
+			n = select(sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+			if (n > 0) //Something is available to read
+			{
+				char buf[MAX_DATA_LENGTH];
+				n = recv(sckCarvera, buf, MAX_DATA_LENGTH, 0); //Read it
+				if (n > 0)
+				{
+					//Place this message on the receive queue
+						TerminateString(buf, n);
+
+						CarveraMessage msg;
+						msg.iProcessed = 0;
+						memcpy(msg.cData, buf, n);
+						//msg.Time = steady_clock::now();						
+
+						DetermineMsgType(msg);
+
+						if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
+						{
+							//TODO: Error message
+							continue;
+						}
+
+						RecvMessageQueue.push_back(msg);
+
+						ReleaseMutex(&hBufferMutex);
+				}
+				else if (n < 0) //Error
+				{
+					DisplaySocketError();
+					break;
+				}
+				else //(n == 0)  Connection has been closed
+					break;
+				
+			}
+			else if (n < 0) //Error
+			{
+				DisplaySocketError();
+				break;
+			}
+
+
+		//Send any messages in the queue
+			if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
+			{
+				//TODO: Error message
+				continue;
+			}
+
+			while (XmitMessageQueue.size() > 0)
+			{
+				n = send(sckCarvera, XmitMessageQueue.at(0).cData, strlen(XmitMessageQueue.at(0).cData)+1, 0); //Send the first message in the queue
+				if (n < 0)
+				{
+					DisplaySocketError();
+					break;
+				}
+
+				XmitMessageQueue.erase(XmitMessageQueue.begin()); //Delete the message we just sent
+			}
+
+			ReleaseMutex(&hBufferMutex);
+
+		//Send status request if it's time
+			if (TimeSince_ms(LastStatusRqst) > 500)
+			{
+				n = send(sckCarvera, "?", 2, 0);
+				if (n < 0)
+				{
+					DisplaySocketError();
+					break;
+				}
+
+				n = send(sckCarvera, "$G", 3, 0);
+				if (n < 0)
+				{
+					DisplaySocketError();
+					break;
+				}
+
+				LastStatusRqst = steady_clock::now();
+			}
+
+			Sleep(25);
+	}
+
+	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection Closed");
+	bCommsConnected = false;
+
+	return 0;
+}
+
 //Main communications thread
-#ifdef WIN32
-DWORD WINAPI CommsThreadProc(_In_ LPVOID lpParameter)
-#else
-void* CommsThreadProc(void* arg)
-#endif
+THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 {
 	//Receive buffer
 		const int iRecvBufferLen = 5000;
@@ -53,7 +178,7 @@ void* CommsThreadProc(void* arg)
 		int iBytes;
 	
 	int x;
-	int iLoopCounter = 0;
+	//int iLoopCounter = 0;
 
 	while (1)
 	{
@@ -63,48 +188,6 @@ void* CommsThreadProc(void* arg)
 			{
 				switch (msg.iType)
 				{
-					case MSG_CONNECT_DEVICE: //User asks to connect to a device
-					{
-						unsigned long Param1 = *(unsigned long*)(&msg.Param1); //Yep, this is really stupid.  TODO: Fix this shit.
-						unsigned long Param2 = *(unsigned long*)(&msg.Param2);
-
-						iLoopCounter = 0;
-
-						//Create the socket for communicating with Carvera
-							sckCarvera = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-							if (sckCarvera < 0)
-							{
-								DisplaySocketError();
-
-								continue;
-							}
-
-						//Get the address
-							BuildAddress(&addrCarvera, sDetectedDevices[Param1][1], sDetectedDevices[Param1][2]);
-
-						//Connect
-							if (connect(sckCarvera, (sockaddr*)&addrCarvera, sizeof(addrCarvera)) != 0)
-							{
-								if (!DisplaySocketError())
-									continue;
-							}
-					
-						//Connection established
-
-						bCommsConnected = true;
-
-						//Save the info to display on the screen
-							strcpy(sConnectedIP, sDetectedDevices[Param1][1]);
-							wConnectedPort = atoi(sDetectedDevices[Param1][2]);
-
-						Console.AddLog("Connected to %s at %s:%d", sDetectedDevices[Param1][0], sConnectedIP, wConnectedPort);
-
-						//Start getting some info
-							SendCommandAndWait("?", false);
-							SendCommandAndWait("version", true);
-					}
-					break;
-
 					case MSG_SEND_STRING:	//Send a string to Carvera
 						if (bCommsConnected)
 						{
@@ -121,14 +204,6 @@ void* CommsThreadProc(void* arg)
 							else
 								SendCommand(str, true);
 						}
-
-						//wParam is a string allocated in the other thread.  We can delete it now
-							if (msg.Param1 != 0)
-								free((void*)msg.Param1);
-					break;
-
-					case MSG_DISCONNECT:
-						CommsDisconnect();
 					break;
 				}
 			}
@@ -202,58 +277,7 @@ void* CommsThreadProc(void* arg)
 
 				continue;
 			}
-
-
-		//We are connected to Carvera
-
-		//Listen for anything coming in
-			fd_set stReadFDS;
-			FD_ZERO(&stReadFDS);
-			FD_SET(sckCarvera, &stReadFDS);
-
-			//Set the timeout time.  This has to be done every time because of linux
-				tv.tv_sec = 0;
-				tv.tv_usec = 10000; //10ms
-
-			int t = select(sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
-			if (t < 0)
-			{
-				DisplaySocketError();
-				CommsDisconnect();
-			}
-			else if (t > 0) //Something is available
-			{
-				iBytes = recv(sckCarvera, sRecv, iRecvBufferLen, 0); //Read it
-				if (iBytes > 0)
-				{
-					//Process the received data
-					TerminateString(sRecv, iBytes);
-					ProcessIncomingMessage(sRecv);
-				}
-				else if (iBytes == 0)
-				{
-					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection Closed");
-					CommsDisconnect();
-				}
-				else
-				{
-					DisplaySocketError();
-					CommsDisconnect();
-				}
-			}
-
-		//Periodic updates
-			if (iLoopCounter > 15) //TODO: This should be based on how long since our last update, not a loop counter
-			{
-				SendCommandAndWait("?", false);
-
-				if (MachineStatus.Status == Carvera::Status::Idle)
-					SendCommandAndWait("$G", false);
-
-				iLoopCounter = 0;
-			}
-			
-		iLoopCounter++;
+		
 		ThreadSleep(25);
 	}
 
@@ -300,8 +324,9 @@ int CommsInit()
 		tv.tv_sec = 0;
 		tv.tv_usec = 10000; //10ms
 
-	//Events
-		NewEvent(&hProbeResponseEvent);
+	//Events and mutexes
+		//NewEvent(&hProbeResponseEvent);
+		NewMutex(&hBufferMutex);
 
 	//Create the communications thread
 		CloutCreateThread(&hCommsThread, CommsThreadProc);
@@ -309,200 +334,86 @@ int CommsInit()
 		return 1;
 }
 
-void CommsDisconnect()
-{
-	Console.AddLog("Disconnected");
-	CloseSocket(&sckCarvera);
-	bCommsConnected = false;
-}
-
-bool SendCommand(const char *c, bool bShowOnLog)
-{
-	if (!bCommsConnected)
-		return false;
-
-	//Make sure it's got the terminator or Carvera won't recognize it
-		char s[500];
-		strcpy(s, c);
-		int x = (int)strlen(s);
-		if (x > 1)
-		{					
-			if (s[x] != '\n')
-			{
-				s[x+1] = 0x0;
-				s[x] = '\n';
-			}
-
-			x = x + 1;
-		}
-
-	int n_bytes = send(sckCarvera, s, x, 0);
-	if (n_bytes < 0)
-	{
-		//Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error sending command: %d", WSAGetLastError());
-		DisplaySocketError();
-		CommsDisconnect();
-		return false;
-	}
-
-	if (bShowOnLog)
-		Console.AddLog(CommsConsole::ITEM_TYPE_SENT, ">%s", c);
-
-	return true;
-}
-
-bool SendCommandAndWait(const char* c, bool bShowOnLog)
-{
-	int iBytes;
-	char sRecv[5000];
-	BYTE bResult;
-
-	//Should we listen for an OK response?
-		bool bWaitForOK = false;
-		if (c[0] == 'G' || c[0] == 'g')
-			bWaitForOK = true;
-		if (c[0] == 'M' || c[0] == 'm')
-			bWaitForOK = true;
-		else if (c[0] == '$')
-			bWaitForOK = true;
-
-	//Send the command
-		if (!SendCommand(c, bShowOnLog))
-			return false;
-
-	//Listen for a response
-		do
-		{
-			//Console.AddLog("Call Recv");
-
-			iBytes = recv(sckCarvera, sRecv, 5000, 0);
-
-			//Console.AddLog("Finish Recv");
-
-			if (iBytes > 0)
-				TerminateString(sRecv, iBytes);
-			else if (iBytes == 0)
-			{
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection Closed");
-				CommsDisconnect();
-				return false;
-			}
-			else
-			{
-				//Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Receive error: %d", WSAGetLastError());
-				DisplaySocketError();
-				CommsDisconnect();
-				return false;
-			}
-
-		//Process the response
-			bResult = ProcessIncomingMessage(sRecv, c, bShowOnLog);
-		} while (bWaitForOK && bResult); //Keep going until we get "ok"
-
-	return true;
-}
-
-
-BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, bool bShowOnLog)
+//Called from the main loop.  Do some processing of incoming messages
+void Comms_Update()
 {
 	char *c;
-	BYTE bRetVal = 1;
+	char *data;
 
-	if (strncmp(sRecv, "ok", 2) == 0)
+	if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 	{
-		bRetVal = 0;
-
-		if (bOperationRunning)
-			bShowOnLog = false;
+		//TODO: Error message
+		return;
 	}
-	else if (_strnicmp(sRecv, "G28 means goto", 14) == 0) //Annoying messages in response to a G28 command
-		bShowOnLog = false;
-	else if (strncmp(sRecv, "<Idle|MPos", 10) == 0 || strncmp(sRecv, "<Run|MPos", 9) == 0 || strncmp(sRecv, "<Home|MPos", 10 || strncmp(sRecv, "<Alarm|MPos", 11)) == 0)
-	{
-		if (bOperationRunning)
-			bShowOnLog = false;
 
-		//https://smoothieware.github.io/Webif-pack/documentation/web/html/configuring-grbl-v0.html
-		if (strncmp(sRecv, "<Idle|MPos", 10) == 0)
-			MachineStatus.Status = Carvera::Status::Idle;
-		else if (strncmp(sRecv, "<Run|MPos", 9) == 0)
-			MachineStatus.Status = Carvera::Status::Busy;
-		else if (strncmp(sRecv, "<Home|MPos", 10) == 0)
-			MachineStatus.Status = Carvera::Status::Homing;
-		else if (strncmp(sRecv, "<Alarm|MPos", 11) == 0)
-			MachineStatus.Status = Carvera::Status::Alarm;
-
-		//Read WCS coords
-			c = strstr(sRecv, "WPos:");
-			if (c != 0)
-			{
-				c += 5; //The start of X pos
-				CommaStringTo3Doubles(c, &MachineStatus.Coord.Working.x, &MachineStatus.Coord.Working.y, &MachineStatus.Coord.Working.z);
-			}
-		
-		//Read machine coords
-			c = strstr(sRecv, "MPos:");
-			if (c != 0)
-			{
-				c += 5; //The start of X pos
-				CommaStringTo3Doubles(c, &MachineStatus.Coord.Machine.x, &MachineStatus.Coord.Machine.y, &MachineStatus.Coord.Machine.z);
-			}
-
-		//Read feed rates
-			c = strstr(sRecv, "F:");
-			if (c != 0)
-			{
-				c += 2; //The start of X feed rate
-				CommaStringTo3Doubles(c, &MachineStatus.FeedRates.x, &MachineStatus.FeedRates.y, &MachineStatus.FeedRates.z);
-
-				//Actually the first one isn't X feedrate.  Y feedrate is shared with X.  The first value always seems to be 0?
-				MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
-			}
-	}
-	else if (strncmp(sRecv, "[PRB:", 5) == 0) //Response to a probing operation	eg: [PRB:-227.990, -1.000, -1.000 : 1]
-	{
-		if (sProbeReplyMessage == 0)
+	//Loop through all messages in the recv queue
+		for (int x = 0; x < RecvMessageQueue.size(); x++)
 		{
-			sProbeReplyMessage = (char*)malloc(strlen(sRecv) + 1);
-			strcpy(sProbeReplyMessage, sRecv);
-			TriggerEvent(&hProbeResponseEvent); //Alert any probing operations about this message
-		}
-		else
-		{
-			//This means we got another probe reply before the previous one was process.  This shouldn't happen.
-		}
-	}		
-	else	if (sSent != 0) //Process based on what we sent, if available
-	{
-		if (strncmp(sSent, "$G", 2) == 0) //We asked for gcode parser state
-		{
-			//Make sure we got what we're expecting
-			if (sRecv[0] != '[') //Uh oh, don't recognize this message
-				c = 0;
-				//return 1;
+			data = RecvMessageQueue[x].cData;
 
-			if (strstr(sRecv, "G90") != 0)
-				MachineStatus.Positioning = Carvera::Positioning::Absolute;
-			else if (strstr(sRecv, "G91") != 0)
-				MachineStatus.Positioning = Carvera::Positioning::Relative;
+			if (RecvMessageQueue[x].iType == CARVERA_MSG_STATUS)
+			{
+				//https://smoothieware.github.io/Webif-pack/documentation/web/html/configuring-grbl-v0.html
+				if (strncmp(data, "<Idle|MPos", 10) == 0)
+					MachineStatus.Status = Carvera::Status::Idle;
+				else if (strncmp(data, "<Run|MPos", 9) == 0)
+					MachineStatus.Status = Carvera::Status::Busy;
+				else if (strncmp(data, "<Home|MPos", 10) == 0)
+					MachineStatus.Status = Carvera::Status::Homing;
+				else if (strncmp(data, "<Alarm|MPos", 11) == 0)
+					MachineStatus.Status = Carvera::Status::Alarm;
 
-			
-			//Current WCS
+				//Read WCS coords
+					c = strstr(data, "WPos:");
+					if (c != 0)
+					{
+						c += 5; //The start of X pos
+						CommaStringTo3Doubles(c, &MachineStatus.Coord.Working.x, &MachineStatus.Coord.Working.y, &MachineStatus.Coord.Working.z);
+					}
+
+				//Read machine coords
+					c = strstr(data, "MPos:");
+					if (c != 0)
+					{
+						c += 5; //The start of X pos
+						CommaStringTo3Doubles(c, &MachineStatus.Coord.Machine.x, &MachineStatus.Coord.Machine.y, &MachineStatus.Coord.Machine.z);
+					}
+
+				//Read feed rates
+					c = strstr(data, "F:");
+					if (c != 0)
+					{
+						c += 2; //The start of X feed rate
+						CommaStringTo3Doubles(c, &MachineStatus.FeedRates.x, &MachineStatus.FeedRates.y, &MachineStatus.FeedRates.z);
+
+						//Actually the first one isn't X feedrate.  Y feedrate is shared with X.  The first value always seems to be 0?
+						MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
+					}
+			}
+			else if (RecvMessageQueue[x].iType == CARVERA_MSG_PARSER)
+			{
+				if (strstr(data, "G90") != 0)
+					MachineStatus.Positioning = Carvera::Positioning::Absolute;
+				else if (strstr(data, "G91") != 0)
+					MachineStatus.Positioning = Carvera::Positioning::Relative;
+
+
+				//Current WCS
 				Carvera::CoordSystem::eCoordSystem NewWCS = Carvera::CoordSystem::Unknown;
 
-				if (strstr(sRecv, "G53") != 0)
+				if (strstr(data, "G53") != 0)
 					NewWCS = Carvera::CoordSystem::G53;
-				else if (strstr(sRecv, "G54") != 0)
+				else if (strstr(data, "G54") != 0)
 					NewWCS = Carvera::CoordSystem::G54;
-				else if (strstr(sRecv, "G55") != 0)
+				else if (strstr(data, "G55") != 0)
 					NewWCS = Carvera::CoordSystem::G55;
-				else if (strstr(sRecv, "G56") != 0)
+				else if (strstr(data, "G56") != 0)
 					NewWCS = Carvera::CoordSystem::G56;
-				else if (strstr(sRecv, "G57") != 0)
+				else if (strstr(data, "G57") != 0)
 					NewWCS = Carvera::CoordSystem::G57;
-				else if (strstr(sRecv, "G58") != 0)
+				else if (strstr(data, "G58") != 0)
 					NewWCS = Carvera::CoordSystem::G58;
-				else if (strstr(sRecv, "G59") != 0)
+				else if (strstr(data, "G59") != 0)
 					NewWCS = Carvera::CoordSystem::G59;
 
 				if (MachineStatus.WCS != NewWCS) //It's changed
@@ -521,46 +432,140 @@ BYTE ProcessIncomingMessage(char *sRecv, const char *sSent, bool bShowOnLog)
 						strcat(szWCSChoices[NewWCS], " (Active)");
 				}
 
-			if (strstr(sRecv, "G20") != 0)
-				MachineStatus.Units = Carvera::Units::inch;
-			else if (strstr(sRecv, "G21") != 0)
-				MachineStatus.Units = Carvera::Units::mm;
+				if (strstr(data, "G20") != 0)
+					MachineStatus.Units = Carvera::Units::inch;
+				else if (strstr(data, "G21") != 0)
+					MachineStatus.Units = Carvera::Units::mm;
 
-			if (strstr(sRecv, "G17") != 0)
-				MachineStatus.Plane = Carvera::Plane::XYZ;
-			else if (strstr(sRecv, "G18") != 0)
+				if (strstr(data, "G17") != 0)
+					MachineStatus.Plane = Carvera::Plane::XYZ;
+				else if (strstr(data, "G18") != 0)
 					MachineStatus.Plane = Carvera::Plane::XZY;
-			else if (strstr(sRecv, "G19") != 0)
-				MachineStatus.Plane = Carvera::Plane::YZX;
+				else if (strstr(data, "G19") != 0)
+					MachineStatus.Plane = Carvera::Plane::YZX;
+			}
+
+			//Show it on the log
+			//	if (bShowOnLog)
+			//		Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<%s", sRecv);
+
+			RecvMessageQueue[x].iProcessed++;
+
+			//If this message has been here through 2 loops and nobody's removed it, ignore it
+				if (RecvMessageQueue[x].iProcessed > 2)
+				{
+					RecvMessageQueue.erase(RecvMessageQueue.begin() + x); //TODO: Change this whole loop to use the iterator
+					x--;
+				}		
 		}
-	}
 
-	if (bShowOnLog)
-		Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<%s", sRecv);
+	ReleaseMutex(&hBufferMutex);
+}
 
-	return bRetVal;
+void CommsDisconnect()
+{
+	//Console.AddLog("Disconnecting");
+	CloseSocket(&sckCarvera); //This alone will alert the sockets thread to shutdown and clean things up
 }
 
 
+void DetermineMsgType(CarveraMessage &msg)
+{
+	msg.iType = CARVERA_MSG_UNKNOWN;
+
+	if (strncmp(msg.cData, "ok", 2) == 0)
+		msg.iType = CARVERA_MSG_OK;
+	else if (_strnicmp(msg.cData, "G28 means goto", 14) == 0) //Annoying messages in response to a G28 command
+		msg.iType = CARVERA_MSG_G28;
+	else if (strncmp(msg.cData, "<Idle|MPos", 10) == 0 || strncmp(msg.cData, "<Run|MPos", 9) == 0 || strncmp(msg.cData, "<Home|MPos", 10 || strncmp(msg.cData, "<Alarm|MPos", 11)) == 0)
+		msg.iType = CARVERA_MSG_STATUS;
+	else if (strncmp(msg.cData, "[PRB:", 5) == 0) //Response to a probing operation	eg: [PRB:-227.990, -1.000, -1.000 : 1]
+		msg.iType = CARVERA_MSG_PROBE;
+	else if (strncmp(msg.cData, "[G", 2) == 0)  //Response to G Code parser status request
+		msg.iType = CARVERA_MSG_PARSER;
+}
 
 void Comms_ConnectDevice(BYTE bDeviceIdx)
 {
-	//Post a message to the comms thread to connect to this device
-		SendThreadMessage(&hCommsThread, MSG_CONNECT_DEVICE, (void*)bDeviceIdx, 0);
+	//Create the socket for communicating with Carvera
+		sckCarvera = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (sckCarvera < 0)
+		{
+			DisplaySocketError();
+			return;
+		}
+
+	//Get the address
+		BuildAddress(&addrCarvera, sDetectedDevices[bDeviceIdx][1], sDetectedDevices[bDeviceIdx][2]);
+
+	//Connect
+		if (connect(sckCarvera, (sockaddr*)&addrCarvera, sizeof(addrCarvera)) != 0)
+		{
+			if (!DisplaySocketError())
+				return;
+		}
+
+	//Connection established
+
+		bCommsConnected = true;
+
+		send(sckCarvera, "?", 2, 0);
+		send(sckCarvera, "version", 8, 0);
+
+	//Create the communications thread
+		CloutCreateThread(&hSocketsThread, SocketThreadProc);
+
+	//Save the info to display on the screen
+		strcpy(sConnectedIP, sDetectedDevices[bDeviceIdx][1]);
+		wConnectedPort = atoi(sDetectedDevices[bDeviceIdx][2]);
+
+		Console.AddLog("Connected to %s at %s:%d", sDetectedDevices[bDeviceIdx][0], sConnectedIP, wConnectedPort);
 }
 void Comms_Disconnect()
 {
-	//Post a message to the comms thread to disconnect from the device
-		SendThreadMessage(&hCommsThread, MSG_DISCONNECT, 0, 0);
+	CommsDisconnect();
 }
 void Comms_SendString(const char* sString)
 {
-	//Send a message to the comms thread to send this string to Carvera
+	CarveraMessage msg;
 
-	//First save the string for that thread to access
-		char* c = (char*)malloc(strlen(sString) + 2); //This will get free'd by the comms thread
-		strcpy(c, sString);
+	//msg.Time = steady_clock::now();
+	strcpy(msg.cData, sString);
+	
+	if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
+	{
+		//TODO: Error message
+		return;
+	}
 
-	//Now post the message to the thread
-		SendThreadMessage(&hCommsThread, MSG_SEND_STRING, (void*)c, 0);
+	XmitMessageQueue.push_back(msg);
+
+	ReleaseMutex(&hBufferMutex);
+}
+
+int Comms_PopMessageOfType(CarveraMessage* msg, int iType) //Removes the first message of the desired type from the queue (FIFO)
+{
+	int iRes = 0; //Not found
+
+	if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
+	{
+		//TODO: Error message
+		return -1; //Error
+	}
+
+	//Loop through all messages in the recv queue looking for a certain reply, ie a probe result
+		for (int x = 0; x < RecvMessageQueue.size(); x++)
+		{
+			if (RecvMessageQueue[x].iType == iType) //Found this message
+			{
+				*msg = RecvMessageQueue[x];
+				RecvMessageQueue.erase(RecvMessageQueue.begin() + x); //TODO: Change this whole loop to use the iterator
+				iRes = 1; //Success
+				break;
+			}
+		}
+
+	ReleaseMutex(&hBufferMutex);
+
+	return iRes;
 }
