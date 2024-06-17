@@ -36,11 +36,16 @@ using namespace std::chrono;
 	std::vector<CarveraMessage> RecvMessageQueue;
 	void DetermineMsgType(CarveraMessage& msg);
 
+	struct sHiddenReplies
+	{
+		int iType;
+		std::chrono::steady_clock::time_point Time;		//Time this one was ignore.  It'll time out after a bit
+	};
+	std::vector<sHiddenReplies> HiddenReplies; //List of replies from Carvera that we will ignore and not show on console.  Ie, response to regular ? and $G updates
+
 //Inter-thread comms
 	CloutThreadHandle hCommsThread;
-	bool bOperationRunning = false;		//Set by other modules when a complex operation is running, and we should limit what we show in the console (like "ok"s)
-
-	CloutThreadHandle hSocketsThread;
+	bool bOperationRunning = false;		//Set by other modules when a complex operation is running, and we should limit what we show in the console (like "ok"s).  TODO: This may no longer be necessary, revisit later
 
 	CloutMutex hBufferMutex;  //Mutex for accessing send and recv buffers
 
@@ -52,14 +57,51 @@ void TerminateString(char *s, int iBytes)
 		s[iBytes] = 0x0;
 }
 
+bool IsMessageIgnored(int iType)
+{
+	std::vector<sHiddenReplies>::iterator iter;
+
+	//First remove any old ones
+		for (iter = HiddenReplies.begin(); iter != HiddenReplies.end();)
+		{
+			if (TimeSince_ms(iter->Time) > 500) //If we haven't gotten this reply in 500ms, it's not coming
+				iter = HiddenReplies.erase(iter);
+			else
+				iter++;
+		}
+
+	//Loop through all messages in the ignore list looking for this type
+		for (iter = HiddenReplies.begin(); iter != HiddenReplies.end(); iter++)
+		{
+			if (iter->iType == iType) //Found this type
+			{
+				iter = HiddenReplies.erase(iter);
+				return true;
+			}
+		}
+
+	return false; //Didn't find one in the list
+}
+
+void HideReply(int iType)
+{
+	sHiddenReplies hide;
+	hide.iType = iType;
+	hide.Time = steady_clock::now();
+	HiddenReplies.push_back(hide);
+}
+
 //Sockets thread.  This handles direct socket comms stuff
-THREADPROC_DEC SocketThreadProc(THREADPROC_ARG lpParameter)
+THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 {
 	int n;
+	int s;
+	char buf[MAX_DATA_LENGTH];
 
 	steady_clock::time_point LastStatusRqst = steady_clock::now();
 	XmitMessageQueue.clear();
 	RecvMessageQueue.clear();
+	HiddenReplies.clear();
 
 	//Start getting some info
 		//SendCommandAndWait("?", false);
@@ -76,30 +118,49 @@ THREADPROC_DEC SocketThreadProc(THREADPROC_ARG lpParameter)
 				tv.tv_sec = 0;
 				tv.tv_usec = 10000; //10ms
 
-			n = select(sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
-			if (n > 0) //Something is available to read
-			{
-				char buf[MAX_DATA_LENGTH];
+			s = select(sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+			if (s > 0) //Something is available to read
+			{					
 				n = recv(sckCarvera, buf, MAX_DATA_LENGTH, 0); //Read it
 				if (n > 0)
 				{
 					//Place this message on the receive queue
 						TerminateString(buf, n);
 
-						CarveraMessage msg;
-						msg.iProcessed = 0;
-						memcpy(msg.cData, buf, n);
-						//msg.Time = steady_clock::now();						
-
-						DetermineMsgType(msg);
-
 						if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 						{
 							//TODO: Error message
+							Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error waiting for receive buffer access");
 							continue;
 						}
 
-						RecvMessageQueue.push_back(msg);
+						//Sometimes multiple messages come in at once, delimited by \n.  Split them up
+							char *c = buf;
+							while (c < buf+n && c != 0)
+							{
+								CarveraMessage msg;
+								memset(&msg, 0x0, sizeof(msg));
+
+								msg.iProcessed = 0;
+								strcpy(msg.cData, c);
+
+								char *z = strstr(msg.cData, "\n");
+								if (z != 0)
+									*z = 0x0;
+
+								DetermineMsgType(msg);
+
+								RecvMessageQueue.push_back(msg);
+
+								//Display on the console
+									if (!IsMessageIgnored(msg.iType) && msg.iType != CARVERA_MSG_OK)
+										Console.AddLog(CommsConsole::ITEM_TYPE_RECV, msg.cData);
+
+								//Move on to the next one
+									c = strstr(c, "\n");
+									if (c != 0)
+										c++; //Move past it
+							}
 
 						ReleaseMutex(&hBufferMutex);
 				}
@@ -112,12 +173,11 @@ THREADPROC_DEC SocketThreadProc(THREADPROC_ARG lpParameter)
 					break;
 				
 			}
-			else if (n < 0) //Error
+			else if (s < 0) //Error
 			{
 				DisplaySocketError();
 				break;
 			}
-
 
 		//Send any messages in the queue
 			if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
@@ -128,12 +188,29 @@ THREADPROC_DEC SocketThreadProc(THREADPROC_ARG lpParameter)
 
 			while (XmitMessageQueue.size() > 0)
 			{
-				n = send(sckCarvera, XmitMessageQueue.at(0).cData, strlen(XmitMessageQueue.at(0).cData)+1, 0); //Send the first message in the queue
+				//Make sure it's got the terminator or Carvera won't recognize it
+					strcpy(buf, XmitMessageQueue.at(0).cData);
+					n = strlen(buf);
+					if (n > 1)
+					{
+						if (buf[n] != '\n')
+						{
+							buf[n + 1] = 0x0;
+							buf[n] = '\n';
+						}
+
+						n = n + 1;
+					}
+
+				n = send(sckCarvera,buf, n, 0); //Send the first message in the queue
 				if (n < 0)
 				{
 					DisplaySocketError();
 					break;
 				}
+
+				if (!XmitMessageQueue.at(0).bHidden)
+					Console.AddLog(CommsConsole::ITEM_TYPE_SENT, XmitMessageQueue.at(0).cData);
 
 				XmitMessageQueue.erase(XmitMessageQueue.begin()); //Delete the message we just sent
 			}
@@ -143,21 +220,31 @@ THREADPROC_DEC SocketThreadProc(THREADPROC_ARG lpParameter)
 		//Send status request if it's time
 			if (TimeSince_ms(LastStatusRqst) > 500)
 			{
-				n = send(sckCarvera, "?", 2, 0);
-				if (n < 0)
+				if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 				{
-					DisplaySocketError();
-					break;
+					//TODO: Error message
+					continue;
 				}
 
-				n = send(sckCarvera, "$G", 3, 0);
-				if (n < 0)
+				CarveraMessage msg;
+				msg.bHidden = true;
+
+				strcpy(msg.cData, "?");
+				XmitMessageQueue.push_back(msg);
+				HideReply(CARVERA_MSG_STATUS);
+
+				if (MachineStatus.Status == Carvera::Status::Idle)
 				{
-					DisplaySocketError();
-					break;
-				}
+					strcpy(msg.cData, "$G");
+					XmitMessageQueue.push_back(msg);
+
+					HideReply(CARVERA_MSG_PARSER);
+					HideReply(CARVERA_MSG_OK);
+				}				
 
 				LastStatusRqst = steady_clock::now();
+
+				ReleaseMutex(&hBufferMutex);
 			}
 
 			Sleep(25);
@@ -165,121 +252,6 @@ THREADPROC_DEC SocketThreadProc(THREADPROC_ARG lpParameter)
 
 	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection Closed");
 	bCommsConnected = false;
-
-	return 0;
-}
-
-//Main communications thread
-THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
-{
-	//Receive buffer
-		const int iRecvBufferLen = 5000;
-		char sRecv[iRecvBufferLen];
-		int iBytes;
-	
-	int x;
-	//int iLoopCounter = 0;
-
-	while (1)
-	{
-		//Process incoming messages
-			CloutThreadMessage msg;
-			while (GetThreadMessage(&hCommsThread , &msg))
-			{
-				switch (msg.iType)
-				{
-					case MSG_SEND_STRING:	//Send a string to Carvera
-						if (bCommsConnected)
-						{
-							const char *str = (const char*)msg.Param1;
-
-							//Some message we don't want to wait for a response at all.  Homing doesn't give us any response until it's finished
-							bool bWait = true;
-								if (_strnicmp(str, "$H", 2) == 0)
-									bWait = false;
-
-									bWait = false;
-							if (bWait)
-								SendCommandAndWait(str, true);
-							else
-								SendCommand(str, true);
-						}
-					break;
-				}
-			}
-
-			if (!bCommsConnected)
-			{
-				//Listen for broadcast messages from Carvera
-				fd_set stReadFDS;
-				FD_ZERO(&stReadFDS);
-				FD_SET(sckBroadcast, &stReadFDS);
-
-				//Set the timeout time.  This has to be done every time because of linux
-				tv.tv_sec = 0;
-				tv.tv_usec = 10000; //10ms
-
-				int t = select(sckBroadcast+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
-
-				if (t > 0)
-				{
-					iBytes = recv(sckBroadcast, sRecv, iRecvBufferLen, 0);
-					if (iBytes > 0)
-					{
-						TerminateString(sRecv, iBytes);
-
-						//Get the Name, IP, and Port from the message
-							char sName[20]="";
-							char sIP[20]="";
-							char sPort[20]="";
-
-							char *token=0;
-							char* next_token = 0;
-							token = strtok_r(sRecv, ",", &next_token);
-							if (token != 0)
-								strcpy(sName, token);
-							token = strtok_r(0, ",", &next_token);
-							if (token != 0)
-								strcpy(sIP, token);
-							token = strtok_r(0, ",", &next_token);
-							if (token != 0)
-								strcpy(sPort, token);
-
-						//Check if it's already in our list
-						BYTE bSearch1 = 0;
-						BYTE bSearch2 = 0;
-						for (x = 0; x < bDetectedDevices; x++)
-						{
-							bSearch1 = strcmp(sName, sDetectedDevices[x][0]);
-							bSearch2 = strcmp(sIP, sDetectedDevices[x][1]);
-							bSearch2 += strcmp(sPort, sDetectedDevices[x][2]);
-
-							if (bSearch1 == 0 && bSearch2 == 0) //Perfect match
-								break;
-						}
-						if (x == bDetectedDevices) //We went through the list and it's a new one, so add it
-						{
-							if (bDetectedDevices < MAX_DEVICES)
-							{				
-								strcpy(sDetectedDevices[x][0], sName);
-								strcpy(sDetectedDevices[x][1], sIP);
-								strcpy(sDetectedDevices[x][2], sPort);
-								bDetectedDevices++;
-							}
-						}
-						else if (bSearch2 != 0) //We found a duplicate, but the IP or Port has changed, so update that one
-						{
-							strcpy(sDetectedDevices[x][1], sIP);
-							strcpy(sDetectedDevices[x][2], sPort);
-						}
-					}
-				}
-
-				continue;
-			}
-		
-		ThreadSleep(25);
-	}
 
 	return 0;
 }
@@ -325,13 +297,87 @@ int CommsInit()
 		tv.tv_usec = 10000; //10ms
 
 	//Events and mutexes
-		//NewEvent(&hProbeResponseEvent);
 		NewMutex(&hBufferMutex);
 
-	//Create the communications thread
-		CloutCreateThread(&hCommsThread, CommsThreadProc);
-
 		return 1;
+}
+
+void Comms_ListenForCarveras()
+{
+	int x;
+	
+	//Receive buffer
+		const int iRecvBufferLen = 5000;
+		char sRecv[iRecvBufferLen];
+		int iBytes;
+
+	if (!bCommsConnected)
+	{
+		//Listen for broadcast messages from Carvera
+			fd_set stReadFDS;
+			FD_ZERO(&stReadFDS);
+			FD_SET(sckBroadcast, &stReadFDS);
+
+		//Set the timeout time.  This has to be done every time because of linux
+			tv.tv_sec = 0;
+			tv.tv_usec = 10000; //10ms
+
+		int t = select(sckBroadcast + 1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+
+		if (t > 0)
+		{
+			iBytes = recv(sckBroadcast, sRecv, iRecvBufferLen, 0);
+			if (iBytes > 0)
+			{
+				TerminateString(sRecv, iBytes);
+
+				//Get the Name, IP, and Port from the message
+					char sName[20] = "";
+					char sIP[20] = "";
+					char sPort[20] = "";
+
+					char* token = 0;
+					char* next_token = 0;
+					token = strtok_r(sRecv, ",", &next_token);
+					if (token != 0)
+						strcpy(sName, token);
+					token = strtok_r(0, ",", &next_token);
+					if (token != 0)
+						strcpy(sIP, token);
+					token = strtok_r(0, ",", &next_token);
+					if (token != 0)
+						strcpy(sPort, token);
+
+				//Check if it's already in our list
+					BYTE bSearch1 = 0;
+					BYTE bSearch2 = 0;
+					for (x = 0; x < bDetectedDevices; x++)
+					{
+						bSearch1 = strcmp(sName, sDetectedDevices[x][0]);
+						bSearch2 = strcmp(sIP, sDetectedDevices[x][1]);
+						bSearch2 += strcmp(sPort, sDetectedDevices[x][2]);
+
+						if (bSearch1 == 0 && bSearch2 == 0) //Perfect match
+							break;
+					}
+					if (x == bDetectedDevices) //We went through the list and it's a new one, so add it
+					{
+						if (bDetectedDevices < MAX_DEVICES)
+						{
+							strcpy(sDetectedDevices[x][0], sName);
+							strcpy(sDetectedDevices[x][1], sIP);
+							strcpy(sDetectedDevices[x][2], sPort);
+							bDetectedDevices++;
+						}
+					}
+					else if (bSearch2 != 0) //We found a duplicate, but the IP or Port has changed, so update that one
+					{
+						strcpy(sDetectedDevices[x][1], sIP);
+						strcpy(sDetectedDevices[x][2], sPort);
+					}
+			}
+		}
+	}
 }
 
 //Called from the main loop.  Do some processing of incoming messages
@@ -340,6 +386,8 @@ void Comms_Update()
 	char *c;
 	char *data;
 
+	Comms_ListenForCarveras();
+
 	if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 	{
 		//TODO: Error message
@@ -347,11 +395,12 @@ void Comms_Update()
 	}
 
 	//Loop through all messages in the recv queue
-		for (int x = 0; x < RecvMessageQueue.size(); x++)
+		//for (int x = 0; x < RecvMessageQueue.size(); x++)
+		for (auto iter = RecvMessageQueue.begin(); iter != RecvMessageQueue.end();)
 		{
-			data = RecvMessageQueue[x].cData;
+			data = iter->cData;
 
-			if (RecvMessageQueue[x].iType == CARVERA_MSG_STATUS)
+			if (iter->iType == CARVERA_MSG_STATUS)
 			{
 				//https://smoothieware.github.io/Webif-pack/documentation/web/html/configuring-grbl-v0.html
 				if (strncmp(data, "<Idle|MPos", 10) == 0)
@@ -390,7 +439,7 @@ void Comms_Update()
 						MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
 					}
 			}
-			else if (RecvMessageQueue[x].iType == CARVERA_MSG_PARSER)
+			else if (iter->iType == CARVERA_MSG_PARSER)
 			{
 				if (strstr(data, "G90") != 0)
 					MachineStatus.Positioning = Carvera::Positioning::Absolute;
@@ -445,18 +494,13 @@ void Comms_Update()
 					MachineStatus.Plane = Carvera::Plane::YZX;
 			}
 
-			//Show it on the log
-			//	if (bShowOnLog)
-			//		Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<%s", sRecv);
+			iter->iProcessed++;
 
-			RecvMessageQueue[x].iProcessed++;
-
-			//If this message has been here through 2 loops and nobody's removed it, ignore it
-				if (RecvMessageQueue[x].iProcessed > 2)
-				{
-					RecvMessageQueue.erase(RecvMessageQueue.begin() + x); //TODO: Change this whole loop to use the iterator
-					x--;
-				}		
+			//If this message has been here through 2 loops and nobody's come looking for it, ignore it
+				if (iter->iProcessed > 2)
+					iter = RecvMessageQueue.erase(iter);
+				else
+					iter++;
 		}
 
 	ReleaseMutex(&hBufferMutex);
@@ -506,14 +550,10 @@ void Comms_ConnectDevice(BYTE bDeviceIdx)
 		}
 
 	//Connection established
-
 		bCommsConnected = true;
 
-		send(sckCarvera, "?", 2, 0);
-		send(sckCarvera, "version", 8, 0);
-
 	//Create the communications thread
-		CloutCreateThread(&hSocketsThread, SocketThreadProc);
+		CloutCreateThread(&hCommsThread, CommsThreadProc);
 
 	//Save the info to display on the screen
 		strcpy(sConnectedIP, sDetectedDevices[bDeviceIdx][1]);
@@ -528,6 +568,8 @@ void Comms_Disconnect()
 void Comms_SendString(const char* sString)
 {
 	CarveraMessage msg;
+
+	msg.bHidden = false;
 
 	//msg.Time = steady_clock::now();
 	strcpy(msg.cData, sString);
@@ -554,12 +596,13 @@ int Comms_PopMessageOfType(CarveraMessage* msg, int iType) //Removes the first m
 	}
 
 	//Loop through all messages in the recv queue looking for a certain reply, ie a probe result
-		for (int x = 0; x < RecvMessageQueue.size(); x++)
+		for (auto iter = RecvMessageQueue.begin(); iter != RecvMessageQueue.end(); iter++)
 		{
-			if (RecvMessageQueue[x].iType == iType) //Found this message
+			if (iter->iType == iType)
 			{
-				*msg = RecvMessageQueue[x];
-				RecvMessageQueue.erase(RecvMessageQueue.begin() + x); //TODO: Change this whole loop to use the iterator
+				*msg = *iter;
+				RecvMessageQueue.erase(iter);
+
 				iRes = 1; //Success
 				break;
 			}

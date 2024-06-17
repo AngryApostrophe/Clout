@@ -175,8 +175,7 @@ bool ProbeOperation::DrawPopup()
 			//ImGui::CloseCurrentPopup();
 			iState = PROBE_STATE_START;
 		}
-
-		if (iState != PROBE_STATE_IDLE)
+		else if (iState != PROBE_STATE_IDLE)
 			ImGui::EndDisabled();
 
 		ImGui::SetItemDefaultFocus();

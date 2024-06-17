@@ -16,7 +16,7 @@ using namespace std;
 //Return time elapsed (in ms) since a previous time
 double TimeSince_ms(const std::chrono::steady_clock::time_point StartTime)
 {
-	const std::chrono::duration<double, std::milli> ElapsedTime = StartTime - std::chrono::steady_clock::now();
+	const std::chrono::duration<double, std::milli> ElapsedTime = std::chrono::steady_clock::now() - StartTime;
 	return ElapsedTime.count();
 }
 

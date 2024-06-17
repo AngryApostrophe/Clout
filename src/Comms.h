@@ -4,8 +4,6 @@
 
 int CommsInit();
 void CommsDisconnect();
-bool SendCommand(const char *c, bool bShowOnLog = true);
-bool SendCommandAndWait(const char* c, bool bShowOnLog = true);
 unsigned char ProcessIncomingMessage(char* sRecv, const char* sSent=0, bool bShowOnLog = true);
 
 extern bool bCommsConnected;
@@ -15,9 +13,6 @@ extern unsigned short wConnectedPort;
 
 extern unsigned char bDetectedDevices;
 extern char sDetectedDevices[MAX_DEVICES][3][20];
-
-//extern CloutEventHandle hProbeResponseEvent;
-//extern char* sProbeReplyMessage;
 
 extern bool bOperationRunning;
 
@@ -40,6 +35,7 @@ struct CarveraMessage
 	char cData[MAX_DATA_LENGTH];
 
 	int iProcessed; //After a message is received, it's placed on the recv queue.  If we loop through the main loop a couple times and nobody has removed this message, it is ignored
+	bool bHidden; //True if we don't want to show this on the console
 };
 //#endif
 
