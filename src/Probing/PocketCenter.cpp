@@ -42,414 +42,141 @@ void ProbeOperation_PocketCenter::StateMachine()
 	char sCmd[50];
 	CarveraMessage msg;
 	int iRet;
+	DOUBLE_XYZ xyz;
 
 
 	switch (iState)
 	{
-	case PROBE_STATE_IDLE:
-		bOperationRunning = false;
+		case PROBE_STATE_IDLE:
+			bOperationRunning = false;
 		break;
 
-	case PROBE_STATE_START:
-		//Save the feedrates for later
-		StartFeedrate.x = MachineStatus.FeedRates.x;
-		StartFeedrate.y = MachineStatus.FeedRates.y;
-		StartFeedrate.z = MachineStatus.FeedRates.z;
+		case PROBE_STATE_START:
+			//Save the feedrates for later
+				StartFeedrate.x = MachineStatus.FeedRates.x;
+				StartFeedrate.y = MachineStatus.FeedRates.y;
+				StartFeedrate.z = MachineStatus.FeedRates.z;
 
-		//Save the starting position
-		StartPos.x = MachineStatus.Coord.Working.x;
-		StartPos.y = MachineStatus.Coord.Working.y;
-		StartPos.z = MachineStatus.Coord.Working.z;
+			//Save the starting position
+				StartPos.x = MachineStatus.Coord.Working.x;
+				StartPos.y = MachineStatus.Coord.Working.y;
+				StartPos.z = MachineStatus.Coord.Working.z;
 
-		bOperationRunning = true; //Limit what we show on the console (from comms module)
+			bOperationRunning = true; //Limit what we show on the console (from comms module)
 
-		bStepIsRunning = false;
+			bStepIsRunning = false;
 
-		if (iAxisIndex == 0) //X axis
-			iState = PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST;
-		else if (iAxisIndex == 1) //Y axis
-			iState = PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST;
-		else
-		{
-			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unexpected axis selected.  Aborted.");
-			iState = PROBE_STATE_IDLE;
-		}
+			if (iAxisIndex == 0) //X axis
+				iState = PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST;
+			else if (iAxisIndex == 1) //Y axis
+				iState = PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST;
+			else
+			{
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unexpected axis selected.  Aborted.");
+				iState = PROBE_STATE_IDLE;
+			}
 		break;
 
-	case PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST:
 			sprintf(sCmd, "G38.3 X-%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedFast);
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_PROBE_MIN_X_SLOW:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MIN_X_SLOW:
 			sprintf(sCmd, "G38.5 X%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData, &ProbePos1))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd, &ProbePos1);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_START_X:
-		if (!bStepIsRunning)
-		{
-			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
-
+		case PROBE_STATE_POCKETCENTER_START_X:
 			sprintf(sCmd, "G0 X%0.2f F%d", StartPos.x, iProbingSpeedFast); //All the way back to center
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.x - StartPos.x) < 0.1)
-			{
-				bStepIsRunning = 0;
-				iState++;
-			}
-		}
+			xyz = { StartPos.x,  MachineStatus.Coord.Working.y,  MachineStatus.Coord.Working.z }; //We only really care about X
+			RunMoveStep(sCmd, xyz);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_PROBE_MAX_X_FAST:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MAX_X_FAST:
 			sprintf(sCmd, "G38.3 X%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedFast);
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_PROBE_MAX_X_SLOW:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MAX_X_SLOW:
 			sprintf(sCmd, "G38.5 X-%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData, &ProbePos2))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd, &ProbePos2);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_CENTER_X:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_CENTER_X:
 			//Calculate center in Machine coords
-			EndPos.x = (ProbePos1.x + ProbePos2.x) / 2.0;
+				EndPos.x = (ProbePos1.x + ProbePos2.x) / 2.0;
+				EndPos.y = MachineStatus.Coord.Machine.y; //Not used
+				EndPos.z = MachineStatus.Coord.Machine.z; //Not used
 
-			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning. 
 			sprintf(sCmd, "G53 G0 X%0.2f F%d", EndPos.x, iProbingSpeedFast); //Move back to the real center, in MCS
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Machine.x - EndPos.x) < 0.1) //Wait until we get to the center X position
-			{
-				bStepIsRunning = 0;
+			
+			if (RunMoveStep(sCmd, EndPos, true))
 				iState = PROBE_STATE_POCKETCENTER_FINISH;
-			}
-		}
-		break;
 		break;
 
-
-	case PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST:
 			sprintf(sCmd, "G38.3 Y-%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedFast);
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_SLOW:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_SLOW:
 			sprintf(sCmd, "G38.5 Y%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData, &ProbePos3))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd, &ProbePos3);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_START_Y:
-		if (!bStepIsRunning)
-		{
-			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning.  
-
+		case PROBE_STATE_POCKETCENTER_START_Y:
 			sprintf(sCmd, "G0 Y%0.2f F%d", StartPos.y, iProbingSpeedFast); //All the way back to center
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Working.y - StartPos.y) < 0.1)
-			{
-				bStepIsRunning = 0;
-				iState++;
-			}
-		}
+			xyz = { MachineStatus.Coord.Working.x,  StartPos.y,  MachineStatus.Coord.Working.z }; //We only really care about Y
+			RunMoveStep(sCmd, xyz);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_FAST:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_FAST:
 			sprintf(sCmd, "G38.3 Y%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedFast);
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_SLOW:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_SLOW:
 			sprintf(sCmd, "G38.5 Y-%0.2f F%d", (fPocketWidth / 2.0f) + fOvertravel, iProbingSpeedSlow); //Back towards center, at slow speed
-			Comms_SendString(sCmd);
-
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
-
-			if (iRet > 0) //We've received a probing event from Carvera
-			{
-				if (ProbingSuccessOrFail(msg.cData, &ProbePos4))
-				{
-					bStepIsRunning = 0;
-					iState++;
-				}
-			}
-			else if (iRet < 0) //Error while waiting for response
-			{
-				//Abort anything going on, just in case it's running away
-				sCmd[0] = 0x18; //Abort command
-				sCmd[1] = 0x0;
-				Comms_SendString(sCmd);
-
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
-				iState = PROBE_STATE_IDLE;
-			}
-		}
+			RunProbeStep(sCmd, &ProbePos4);
 		break;
 
-	case PROBE_STATE_POCKETCENTER_CENTER_Y:
-		if (!bStepIsRunning)
-		{
+		case PROBE_STATE_POCKETCENTER_CENTER_Y:
 			//Calculate center in Machine coords
-			EndPos.y = (ProbePos3.y + ProbePos4.y) / 2.0;
+				EndPos.x = MachineStatus.Coord.Machine.x; //Not used
+				EndPos.y = (ProbePos3.y + ProbePos4.y) / 2.0;
+				EndPos.z = MachineStatus.Coord.Machine.z; //Not used
 
-			Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning. 
-			sprintf(sCmd, "G53 G0 Y%0.2f F%d", EndPos.y, iProbingSpeedFast); //All the way back to center, in MCS
-			Comms_SendString(sCmd);
+				sprintf(sCmd, "G53 G0 Y%0.2f F%d", EndPos.y, iProbingSpeedFast); //All the way back to center, in MCS
 
-			bStepIsRunning = true;
-		}
-		else //Step is running.  Monitor for completion
-		{
-			if (MachineStatus.Status == Carvera::Status::Idle && fabs(MachineStatus.Coord.Machine.y - EndPos.y) < 0.1) //Wait to get to the target position
-			{
-				bStepIsRunning = 0;
+			if (RunMoveStep(sCmd, EndPos, true))
 				iState = PROBE_STATE_POCKETCENTER_FINISH;
-			}
-		}
 		break;
 
-	case PROBE_STATE_POCKETCENTER_FINISH:
-		sprintf(sCmd, "G0 F%f", StartFeedrate.x); //Restore the feedrate to what it was
-		Comms_SendString(sCmd);
+		case PROBE_STATE_POCKETCENTER_FINISH:
+			sprintf(sCmd, "G0 F%f", StartFeedrate.x); //Restore the feedrate to what it was
+			Comms_SendString(sCmd);
 
-		if (iAxisIndex == 0) //X axis
-		{
-			//Zero the WCS if requested
-			if (bZeroWCS)
-				ZeroWCS(true, false, false);	//Set this location to X0
+			if (iAxisIndex == 0) //X axis
+			{
+				//Zero the WCS if requested
+				if (bZeroWCS)
+					ZeroWCS(true, false, false);	//Set this location to X0
 
-			EndPos.x = MachineStatus.Coord.Working.x;
-			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Pocket center X: %0.03f", EndPos.x);
-		}
-		else if (iAxisIndex == 1) //Y axis
-		{
-			//Zero the WCS if requested
-			if (bZeroWCS)
-				ZeroWCS(false, true, false);	//Set this location to X0
+				EndPos.x = MachineStatus.Coord.Working.x;
+				Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Pocket center X: %0.03f", EndPos.x);
+			}
+			else if (iAxisIndex == 1) //Y axis
+			{
+				//Zero the WCS if requested
+				if (bZeroWCS)
+					ZeroWCS(false, true, false);	//Set this location to X0
 
-			EndPos.y = MachineStatus.Coord.Working.y;
-			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Pocket center Y: %0.03f", EndPos.y);
-		}
+				EndPos.y = MachineStatus.Coord.Working.y;
+				Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Pocket center Y: %0.03f", EndPos.y);
+			}
 
-		iState = PROBE_STATE_COMPLETE;
+			iState = PROBE_STATE_COMPLETE;
 		break;
 	}
 }

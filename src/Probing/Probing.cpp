@@ -99,6 +99,85 @@ void ProbeOperation::ZeroWCS(bool x, bool y, bool z, float x_val, float y_val, f
 	Comms_SendString(szCmd);
 }
 
+//Run a single probing step from the state machine
+void ProbeOperation::RunProbeStep(const char* szCmd, DOUBLE_XYZ* ResultXYZ, bool bFailOnTouch)
+{
+	if (!bStepIsRunning)
+	{
+		Comms_SendString(szCmd);
+
+		bStepIsRunning = true;
+	}
+	else //Step is running.  Monitor for completion
+	{
+		CarveraMessage msg;
+		int iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
+
+		if (iRet > 0) //We've received a probing event from Carvera
+		{
+			iRet = ProbingSuccessOrFail(msg.cData, ResultXYZ, !bFailOnTouch);
+
+			if (!bFailOnTouch) //This is the normal mode
+			{
+				if (iRet)
+				{
+					bStepIsRunning = 0;
+					iState++;
+				}
+			}
+			else //In this mode, we're hoping it doesn't touch anything
+			{	
+				if (iRet == 0) //Didn't touch anyting, that's good
+				{
+					bStepIsRunning = 0;
+					iState++;
+				}
+				else //We hit something when we shouldn't have, abort
+				{
+					Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Probe unexpectedly triggered.  Aborted.");
+					iState = PROBE_STATE_IDLE;
+				}
+			}
+		}
+		else if (iRet < 0) //Error while waiting for response
+		{
+			//Abort anything going on, just in case it's running away
+				char szOut[3];
+				szOut[0] = 0x18; //Abort command
+				szOut[1] = 0x0;
+				Comms_SendString(szOut);
+
+			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unknown error waiting for probe response.  Aborted.");
+			iState = PROBE_STATE_IDLE;
+		}
+	}
+}
+
+bool ProbeOperation::RunMoveStep(const char* szCmd, DOUBLE_XYZ LocationWCS, bool bUseMCS)
+{
+	DOUBLE_XYZ *CurPos = &MachineStatus.Coord.Working;
+	if (bUseMCS)
+		CurPos = &MachineStatus.Coord.Machine;
+	
+	if (!bStepIsRunning)
+	{
+		Comms_SendString("G90"); //G38 puts us in relative positioning.  Switch back to absolute positioning. 
+		Comms_SendString(szCmd);
+		bStepIsRunning = true;
+	}
+	else //Step is running.  Monitor for completion
+	{
+		if (MachineStatus.Status == Carvera::Status::Idle && fabs(CurPos->y - LocationWCS.y) < 0.1 && fabs(CurPos->x - LocationWCS.x) < 0.1 && fabs(CurPos->z - LocationWCS.z) < 0.1)
+		{
+			bStepIsRunning = 0;
+			iState++;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 int ProbeOperation::ProbingSuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOnFail)
 {
 	int iResult = 0;
