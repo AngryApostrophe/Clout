@@ -45,7 +45,7 @@ public:
 	BYTE bProbingType;								//What type of probing operation is this?
 
 protected:
-	char *szWindowIdent;							//Identifier of the window for ImGui
+	const char *szWindowIdent;						//Identifier of the window for ImGui
 
 	GLuint imgPreview;								//Image to preview the operation
 

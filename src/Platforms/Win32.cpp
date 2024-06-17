@@ -112,7 +112,7 @@ void BuildAddress(sockaddr_in *addr, char* szAddress, char* szPort)
 	addr->sin_addr.s_addr = inet_addr(szAddress);
 }
 
-bool DisplaySocketError(char *s)	//Returns true if it was an acceptable error and we can continue
+bool DisplaySocketError(const char *s)	//Returns true if it was an acceptable error and we can continue
 {
 	int iError = WSAGetLastError();
 

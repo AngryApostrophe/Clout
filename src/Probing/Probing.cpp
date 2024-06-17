@@ -115,8 +115,6 @@ int ProbeOperation::ProbingSuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOn
 	char* c = strstr(s, "]");
 	if (c == 0)
 	{
-		free(sProbeReplyMessage);
-		sProbeReplyMessage = 0;
 		Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unexpected response from Carvera.  Aborted.");
 		iState = PROBE_STATE_IDLE;
 
@@ -129,7 +127,7 @@ int ProbeOperation::ProbingSuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOn
 	{
 		//Save these values if requested
 		if (xyz != 0)
-			CommaStringTo3Doubles(sProbeReplyMessage + 5, &xyz->x, &xyz->y, &xyz->z);
+			CommaStringTo3Doubles(s + 5, &xyz->x, &xyz->y, &xyz->z);
 
 		iResult = 1;
 	}
@@ -144,9 +142,6 @@ int ProbeOperation::ProbingSuccessOrFail(char* s, DOUBLE_XYZ* xyz, bool bAbortOn
 			iState = PROBE_STATE_IDLE;
 		}
 	}
-
-	free(sProbeReplyMessage);
-	sProbeReplyMessage = 0;
 
 	return iResult;
 }
@@ -180,8 +175,7 @@ bool ProbeOperation::DrawPopup()
 			//ImGui::CloseCurrentPopup();
 			iState = PROBE_STATE_START;
 		}
-
-		if (iState != PROBE_STATE_IDLE)
+		else if (iState != PROBE_STATE_IDLE)
 			ImGui::EndDisabled();
 
 		ImGui::SetItemDefaultFocus();

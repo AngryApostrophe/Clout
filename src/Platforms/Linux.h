@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -31,6 +31,8 @@
 	};
 
 	void CloutCreateThread(CloutThreadHandle* handle, void* func (void*));
+	#define THREADPROC_DEC void*
+	#define THREADPROC_ARG void*
 
 //Socket stuff
 	typedef int CloutSocket;

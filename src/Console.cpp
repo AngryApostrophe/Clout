@@ -204,7 +204,7 @@ void CommsConsole::ExecCommand(const char* command_line)
 	// Process command
 	if (command_line[0] != '>') //Send strings to carvera
 	{
-		Comms_SendString(command_line + 1); // +1 so we don't send the >
+		Comms_SendString(command_line);
 	}
 	else
 	{

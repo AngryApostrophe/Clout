@@ -423,6 +423,9 @@ bool Clout_MainLoop()
 	const BYTE bSlen = 20;
 	char s[bSlen];	//General purpose string
 
+	//Process comms stuff
+		Comms_Update();
+
 	//Process the operations queue
 		OperationQueue.Run();
 
@@ -580,7 +583,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 
 
 						ImGui::TableSetColumnIndex(2);
@@ -647,7 +650,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 
 					
 
@@ -701,7 +704,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 					}
 					
 				//Plane
@@ -731,7 +734,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 					}
 
 				ImGui::EndTable();

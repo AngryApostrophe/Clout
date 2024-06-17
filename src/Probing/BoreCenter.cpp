@@ -33,6 +33,8 @@ ProbeOperation_BoreCenter::ProbeOperation_BoreCenter()
 void ProbeOperation_BoreCenter::StateMachine()
 {
 	char sCmd[50];
+	CarveraMessage msg;
+	int iRet;
 
 	switch (iState)
 	{
@@ -67,24 +69,24 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage))
+				if (ProbingSuccessOrFail(msg.cData))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
 				sCmd[1] = 0x0;
 				Comms_SendString(sCmd);
 
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Windows error waiting for probe response.  Aborted.");
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unknown error waiting for probe response.  Aborted.");
 				iState = PROBE_STATE_IDLE;
 			}
 		}
@@ -100,17 +102,17 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos1))
+				if (ProbingSuccessOrFail(msg.cData, &ProbePos1))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -153,17 +155,17 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage))
+				if (ProbingSuccessOrFail(msg.cData))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -186,17 +188,17 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos2))
+				if (ProbingSuccessOrFail(msg.cData, &ProbePos2))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -239,17 +241,17 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage))
+				if (ProbingSuccessOrFail(msg.cData))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -272,17 +274,17 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos3))
+				if (ProbingSuccessOrFail(msg.cData, &ProbePos3))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -325,17 +327,17 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage))
+				if (ProbingSuccessOrFail(msg.cData))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
@@ -358,17 +360,17 @@ void ProbeOperation_BoreCenter::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			int iRet = IsEventSet(&hProbeResponseEvent);
+			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
 
-			if (iRet == EVENT_RESULT_SUCCESS) //Comms thread has triggered the event
+			if (iRet > 0) //We've received a probing event from Carvera
 			{
-				if (ProbingSuccessOrFail(sProbeReplyMessage, &ProbePos4))
+				if (ProbingSuccessOrFail(msg.cData, &ProbePos4))
 				{
 					bStepIsRunning = 0;
 					iState++;
 				}
 			}
-			else if (iRet != EVENT_RESULT_TIMEOUT) //Windows error while waiting for response
+			else if (iRet < 0) //Error while waiting for response
 			{
 				//Abort anything going on, just in case it's running away
 				sCmd[0] = 0x18; //Abort command
