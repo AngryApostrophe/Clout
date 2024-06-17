@@ -583,7 +583,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 
 
 						ImGui::TableSetColumnIndex(2);
@@ -650,7 +650,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 
 					
 
@@ -704,7 +704,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 					}
 					
 				//Plane
@@ -734,7 +734,7 @@ bool Clout_MainLoop()
 								ImGui::SetCursorPosX(posX);
 
 						//Show it
-							ImGui::Text(s);
+							ImGui::Text("%s", s);
 					}
 
 				ImGui::EndTable();

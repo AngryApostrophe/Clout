@@ -19,7 +19,7 @@ ImVec2 ScaledByWindowScale(float x, float y);
 ImVec2 ScaledByWindowScale(ImVec2 size);
 float ScaledByWindowScale(float in);
 
-#ifdef _CHRONO_
+#ifdef _GLIBCXX_CHRONO
 double TimeSince_ms(const std::chrono::steady_clock::time_point StartTime);
 #endif
 

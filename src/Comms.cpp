@@ -247,7 +247,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 				ReleaseMutex(&hBufferMutex);
 			}
 
-			Sleep(25);
+			ThreadSleep(25);
 	}
 
 	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection Closed");

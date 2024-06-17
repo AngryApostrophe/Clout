@@ -42,5 +42,5 @@
 //Socket stuff
 	int StartupSockets();
 	void BuildAddress(sockaddr_in* addr, char *szAddress, char *szPort);
-	bool DisplaySocketError(char *s = "");
+	bool DisplaySocketError(const char *s = "");
 	void CloseSocket(CloutSocket *sock);

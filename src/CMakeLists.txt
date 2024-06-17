@@ -157,7 +157,7 @@ ENDIF()
 # set_property(TARGET Clout PROPERTY FOLDER "Clout")
 
 # Set C++ version
-set_property(TARGET Clout PROPERTY CXX_STANDARD 17)
+set_property(TARGET Clout PROPERTY CXX_STANDARD 20)
 
 # Properties->General->Output Directory
 set_target_properties(Clout PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build/bin)

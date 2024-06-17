@@ -142,9 +142,9 @@ void BuildAddress(sockaddr_in* addr, char* szAddress, char* szPort)
 	//bcopy((char*)server->h_addr, (char*)&serv_addr.sin_addr.s_addr, server->h_length);
 }
 
-bool DisplaySocketError(char *s)	//TODO: Get error info
+bool DisplaySocketError(const char *s)	//TODO: Get error info
 {
-	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error at %s: &d", s, errno);
+	Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Connection error at %s: %d", s, errno);
 
 	return false;
 }
