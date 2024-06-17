@@ -41,6 +41,230 @@ ProbeOperation_WebCenter::ProbeOperation_WebCenter()
 
 void ProbeOperation_WebCenter::StateMachine()
 {
+	char sCmd[50];
+	CarveraMessage msg;
+	int iRet;
+	DOUBLE_XYZ xyz;
+
+	switch (iState)
+	{
+		case PROBE_STATE_IDLE:
+			bOperationRunning = false;
+		break;
+
+		case PROBE_STATE_START:
+			//Save the feedrates for later
+			StartFeedrate.x = MachineStatus.FeedRates.x;
+			StartFeedrate.y = MachineStatus.FeedRates.y;
+			StartFeedrate.z = MachineStatus.FeedRates.z;
+
+			//Save the starting position
+			StartPos.x = MachineStatus.Coord.Working.x;
+			StartPos.y = MachineStatus.Coord.Working.y;
+			StartPos.z = MachineStatus.Coord.Working.z;
+
+			bOperationRunning = true; //Limit what we show on the console (from comms module)
+
+			bStepIsRunning = false;
+		
+			if (iAxisIndex == 0) //X axis
+				iState = PROBE_STATE_WEBCENTER_TO_MIN_X;
+			else if (iAxisIndex == 1) //Y axis
+				iState = PROBE_STATE_WEBCENTER_TO_MIN_Y;
+			else
+			{
+				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Unexpected axis selected.  Aborted.");
+				iState = PROBE_STATE_IDLE;
+			}
+		break;
+
+		case PROBE_STATE_WEBCENTER_TO_MIN_X:
+			sprintf(sCmd, "G38.3 X-%0.2f F%d", (fWebWidth / 2.0f) + fClearance, iProbingSpeedFast); //Move to the min x.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+
+		case PROBE_STATE_WEBCENTER_LOWER_MIN_X:
+			sprintf(sCmd, "G38.3 Z%0.2f F%d", fZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MIN_X_FAST:
+			sprintf(sCmd, "G38.3 X%0.2f F%d", fClearance + fOvertravel, iProbingSpeedFast); //Probe in towards the center
+			RunProbeStep(sCmd);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MIN_X_SLOW:
+			sprintf(sCmd, "G38.5 X-%0.2f F%d", fOvertravel, iProbingSpeedSlow); //Back off to the left, at slow speed
+			RunProbeStep(sCmd, &ProbePos1);
+		break;
+
+		case PROBE_STATE_WEBCENTER_CLEAR_MIN_X:
+			sprintf(sCmd, "G38.3 X-%0.2f F%d", fClearance, iProbingSpeedFast); //Move to clearance x pos
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_RAISE_MIN_X:
+			sprintf(sCmd, "G0 Z%0.2f F%d", StartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+			xyz = { MachineStatus.Coord.Working.x,  MachineStatus.Coord.Working.y,  StartPos.z }; //We only really care about Z
+			RunMoveStep(sCmd, xyz);
+		break;
+
+		case PROBE_STATE_WEBCENTER_START_X:
+			sprintf(sCmd, "G0 X%0.2f F%d", StartPos.x, iProbingSpeedFast); //All the way back to center
+			xyz = { StartPos.x,  MachineStatus.Coord.Working.y,  MachineStatus.Coord.Working.z }; //We only really care about X
+			RunMoveStep(sCmd, xyz);
+		break;
+
+		case PROBE_STATE_WEBCENTER_TO_MAX_X:
+			sprintf(sCmd, "G38.3 X%0.2f F%d", (fWebWidth / 2.0f) + fClearance, iProbingSpeedFast); //Move to the max x.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_LOWER_MAX_X:
+			sprintf(sCmd, "G38.3 Z%0.2f F%d", fZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MAX_X_FAST:
+			sprintf(sCmd, "G38.3 X-%0.2f F%d", fClearance + fOvertravel, iProbingSpeedFast); //Probe in towards the center
+			RunProbeStep(sCmd);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MAX_X_SLOW:
+			sprintf(sCmd, "G38.5 X%0.2f F%d", fOvertravel, iProbingSpeedSlow); //Back off to the right, at slow speed
+			RunProbeStep(sCmd, &ProbePos2);
+		break;
+
+		case PROBE_STATE_WEBCENTER_CLEAR_MAX_X:
+			sprintf(sCmd, "G38.3 X%0.2f F%d", fClearance, iProbingSpeedFast); //Move to clearance x pos
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_RAISE_MAX_X:
+			sprintf(sCmd, "G0 Z%0.2f F%d", StartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+			xyz = { MachineStatus.Coord.Working.x,  MachineStatus.Coord.Working.y,  StartPos.z }; //We only really care about Z
+			RunMoveStep(sCmd, xyz);
+		break;
+
+		case PROBE_STATE_WEBCENTER_CENTER_X:
+			//Calculate center in Machine coords
+				EndPos.x = (ProbePos1.x + ProbePos2.x) / 2.0;
+				EndPos.y = MachineStatus.Coord.Machine.y; //Not used
+				EndPos.z = MachineStatus.Coord.Machine.z; //Not used
+
+			sprintf(sCmd, "G53 G0 X%0.2f F%d", EndPos.x, iProbingSpeedFast); //Move back to the real center, in MCS
+
+			if (RunMoveStep(sCmd, EndPos, true))
+				iState = PROBE_STATE_WEBCENTER_FINISH;
+		break;
+
+		case PROBE_STATE_WEBCENTER_TO_MIN_Y:
+			sprintf(sCmd, "G38.3 Y-%0.2f F%d", (fWebWidth / 2.0f) + fClearance, iProbingSpeedFast); //Move to the min y.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_LOWER_MIN_Y:
+			sprintf(sCmd, "G38.3 Z%0.2f F%d", fZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MIN_Y_FAST:
+			sprintf(sCmd, "G38.3 Y%0.2f F%d", fClearance + fOvertravel, iProbingSpeedFast); //Probe forward towards the center
+			RunProbeStep(sCmd);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MIN_Y_SLOW:
+			sprintf(sCmd, "G38.5 Y-%0.2f F%d", fOvertravel, iProbingSpeedSlow); //Back off to the rear, at slow speed
+			RunProbeStep(sCmd, &ProbePos3);
+		break;
+
+		case PROBE_STATE_WEBCENTER_CLEAR_MIN_Y:
+			sprintf(sCmd, "G38.3 Y-%0.2f F%d", fClearance, iProbingSpeedFast); //Move to clearance y pos
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_RAISE_MIN_Y:
+			sprintf(sCmd, "G0 Z%0.2f F%d", StartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+			xyz = { MachineStatus.Coord.Working.x,  MachineStatus.Coord.Working.y,  StartPos.z }; //We only really care about Z
+			RunMoveStep(sCmd, xyz);
+		break;
+
+		case PROBE_STATE_WEBCENTER_START_Y:
+			sprintf(sCmd, "G0 Y%0.2f F%d", StartPos.y, iProbingSpeedFast); //All the way back to center
+			xyz = { MachineStatus.Coord.Working.x,  StartPos.y,  MachineStatus.Coord.Working.z }; //We only really care about Y
+			RunMoveStep(sCmd, xyz);
+		break;
+
+		case PROBE_STATE_WEBCENTER_TO_MAX_Y:
+			sprintf(sCmd, "G38.3 Y%0.2f F%d", (fWebWidth / 2.0f) + fClearance, iProbingSpeedFast); //Move to the max y.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_LOWER_MAX_Y:
+			sprintf(sCmd, "G38.3 Z%0.2f F%d", fZDepth, iProbingSpeedFast); //Lower to the probing depth.  Treat it as a probe just in case we hit something we shouldn't
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MAX_Y_FAST:
+			sprintf(sCmd, "G38.3 Y-%0.2f F%d", fClearance + fOvertravel, iProbingSpeedFast); //Probe rearwards towards the center
+			RunProbeStep(sCmd);
+		break;
+
+		case PROBE_STATE_WEBCENTER_PROBE_MAX_Y_SLOW:
+			sprintf(sCmd, "G38.5 Y%0.2f F%d", fOvertravel, iProbingSpeedSlow); //Back off forward, at slow speed
+			RunProbeStep(sCmd, &ProbePos4);
+		break;
+
+		case PROBE_STATE_WEBCENTER_CLEAR_MAX_Y:
+			sprintf(sCmd, "G38.3 Y%0.2f F%d", fClearance, iProbingSpeedFast); //Move to clearance y pos
+			RunProbeStep(sCmd, 0, true);
+		break;
+
+		case PROBE_STATE_WEBCENTER_RAISE_MAX_Y:
+			sprintf(sCmd, "G0 Z%0.2f F%d", StartPos.z, iProbingSpeedFast); //Raise back up to the start Z
+			xyz = { MachineStatus.Coord.Working.x,  MachineStatus.Coord.Working.y,  StartPos.z }; //We only really care about Z
+			RunMoveStep(sCmd, xyz);
+		break;
+
+		case PROBE_STATE_WEBCENTER_CENTER_Y:
+			//Calculate center in Machine coords
+				EndPos.x = MachineStatus.Coord.Machine.x; //Not used
+				EndPos.y = (ProbePos3.y + ProbePos4.y) / 2.0;
+				EndPos.z = MachineStatus.Coord.Machine.z; //Not used
+
+			sprintf(sCmd, "G53 G0 Y%0.2f F%d", EndPos.y, iProbingSpeedFast); //All the way back to center, in MCS
+
+			if (RunMoveStep(sCmd, EndPos, true))
+				iState = PROBE_STATE_WEBCENTER_FINISH;
+		break;
+
+		case PROBE_STATE_WEBCENTER_FINISH:
+			sprintf(sCmd, "G0 F%f", StartFeedrate.x); //Restore the feedrate to what it was
+			Comms_SendString(sCmd);
+
+			if (iAxisIndex == 0) //X axis
+			{
+				//Zero the WCS if requested
+				if (bZeroWCS)
+					ZeroWCS(true, false, false);	//Set this location to X0
+
+				EndPos.x = MachineStatus.Coord.Working.x;
+				Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Feature center X: %0.03f", EndPos.x);
+			}
+			else if (iAxisIndex == 1) //Y axis
+			{
+				//Zero the WCS if requested
+				if (bZeroWCS)
+					ZeroWCS(false, true, false);	//Set this location to X0
+
+				EndPos.y = MachineStatus.Coord.Working.y;
+				Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  Feature center Y: %0.03f", EndPos.y);
+			}
+
+			iState = PROBE_STATE_COMPLETE;
+		break;
+	}
 }
 
 

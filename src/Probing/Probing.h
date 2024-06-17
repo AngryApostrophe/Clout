@@ -121,17 +121,17 @@ public:
 //Pocket center
 #define PROBE_STATE_POCKETCENTER_PROBE_MIN_X_FAST	2	//Probing left until we find the minimum x
 #define PROBE_STATE_POCKETCENTER_PROBE_MIN_X_SLOW	3	//Moving slowly to the right until we de-trigger
-#define PROBE_STATE_POCKETCENTER_START_X		4	//Moving to start x
+#define PROBE_STATE_POCKETCENTER_START_X			4	//Moving to start x
 #define PROBE_STATE_POCKETCENTER_PROBE_MAX_X_FAST	5	//Probing right until we find the maximum x
 #define PROBE_STATE_POCKETCENTER_PROBE_MAX_X_SLOW	6	//Moving slowly to the left until we de-trigger
-#define PROBE_STATE_POCKETCENTER_CENTER_X		7	//Move to center x, done proving
+#define PROBE_STATE_POCKETCENTER_CENTER_X			7	//Move to center x, done proving
 #define PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_FAST	8	//Probing back until we find the minimum y
 #define PROBE_STATE_POCKETCENTER_PROBE_MIN_Y_SLOW	9	//Moving forward slowly until we de-trigger
-#define PROBE_STATE_POCKETCENTER_START_Y		10	//Moving to start y
+#define PROBE_STATE_POCKETCENTER_START_Y			10	//Moving to start y
 #define PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_FAST	11	//Probing forward until we find the maximum y
 #define PROBE_STATE_POCKETCENTER_PROBE_MAX_Y_SLOW	12	//Moving slowly back until we de-trigger
-#define PROBE_STATE_POCKETCENTER_CENTER_Y		13	//Move to center y, done probing
-#define PROBE_STATE_POCKETCENTER_FINISH			14	//Update any WCS offsets, inform user, etc.
+#define PROBE_STATE_POCKETCENTER_CENTER_Y			13	//Move to center y, done probing
+#define PROBE_STATE_POCKETCENTER_FINISH				14	//Update any WCS offsets, inform user, etc.
 
 class ProbeOperation_PocketCenter : public ProbeOperation
 {
@@ -194,6 +194,36 @@ public:
 };
 
 //Web center
+#define PROBE_STATE_WEBCENTER_TO_MIN_X			2	//Travel to the min X (still at clearance height)
+#define PROBE_STATE_WEBCENTER_LOWER_MIN_X		3	//Lower to probing height
+#define PROBE_STATE_WEBCENTER_PROBE_MIN_X_FAST	4	//Probing right until we find the minimum x
+#define PROBE_STATE_WEBCENTER_PROBE_MIN_X_SLOW	5	//Moving slowly to the left until we de-trigger
+#define PROBE_STATE_WEBCENTER_CLEAR_MIN_X		6	//Moving further away before we raise up
+#define PROBE_STATE_WEBCENTER_RAISE_MIN_X		7	//Raise back up to clearance height
+#define PROBE_STATE_WEBCENTER_START_X			8	//Move back to starting point
+#define PROBE_STATE_WEBCENTER_TO_MAX_X			9	//Travel to the max X (still at clearance height)
+#define PROBE_STATE_WEBCENTER_LOWER_MAX_X		10	//Lower to probing height
+#define PROBE_STATE_WEBCENTER_PROBE_MAX_X_FAST	11	//Probing left until we find the maximum x
+#define PROBE_STATE_WEBCENTER_PROBE_MAX_X_SLOW	12	//Moving slowly to the right until we de-trigger
+#define PROBE_STATE_WEBCENTER_CLEAR_MAX_X		13	//Moving further away before we raise up
+#define PROBE_STATE_WEBCENTER_RAISE_MAX_X		14	//Raise back up to clearance height
+#define PROBE_STATE_WEBCENTER_CENTER_X			15	//Move to center x, done probing
+#define PROBE_STATE_WEBCENTER_TO_MIN_Y			16	//Travel to the min Y (still at clearance height)
+#define PROBE_STATE_WEBCENTER_LOWER_MIN_Y		17	//Lower to probing height
+#define PROBE_STATE_WEBCENTER_PROBE_MIN_Y_FAST	18	//Probing forward until we find the minimum y
+#define PROBE_STATE_WEBCENTER_PROBE_MIN_Y_SLOW	19	//Moving back slowly until we de-trigger
+#define PROBE_STATE_WEBCENTER_CLEAR_MIN_Y		20	//Moving further away before we raise up
+#define PROBE_STATE_WEBCENTER_RAISE_MIN_Y		21	//Raise back up to clearance height
+#define PROBE_STATE_WEBCENTER_START_Y			22	//Moving to start y
+#define PROBE_STATE_WEBCENTER_TO_MAX_Y			23	//Travel to the max Y (still at clearance height)
+#define PROBE_STATE_WEBCENTER_LOWER_MAX_Y		24	//Lower to probing height
+#define PROBE_STATE_WEBCENTER_PROBE_MAX_Y_FAST	25	//Probing back until we find the maximum y
+#define PROBE_STATE_WEBCENTER_PROBE_MAX_Y_SLOW	26	//Moving slowly foward until we de-trigger
+#define PROBE_STATE_WEBCENTER_CLEAR_MAX_Y		27	//Moving further away before we raise up
+#define PROBE_STATE_WEBCENTER_RAISE_MAX_Y		28	//Raise back up to clearance height
+#define PROBE_STATE_WEBCENTER_CENTER_Y			29	//Moving to the center Y, done probing
+#define PROBE_STATE_WEBCENTER_FINISH			30	//Update any WCS offsets, inform user, etc.
+
 class ProbeOperation_WebCenter : public ProbeOperation
 {
 public:
