@@ -44,6 +44,7 @@ ProbeOperation_SingleAxis::ProbeOperation_SingleAxis()
 
 	iAxisDirectionIndex = 0;
 	fTravel = 5.0f;
+	fProbeTipDiameter = 2.0f;
 }
 
 void ProbeOperation_SingleAxis::StateMachine()
@@ -212,18 +213,47 @@ void ProbeOperation_SingleAxis::StateMachine()
 		Comms_SendString(sCmd);
 
 		//Get the end position in WCS
-		EndPos.x = MachineStatus.Coord.Working.x;
-		EndPos.y = MachineStatus.Coord.Working.y;
-		EndPos.z = MachineStatus.Coord.Working.z;
+			EndPos.x = MachineStatus.Coord.Working.x;
+			EndPos.y = MachineStatus.Coord.Working.y;
+			EndPos.z = MachineStatus.Coord.Working.z;
 
 		sCmd[0] = 0x0;
 
-		if (iAxisDirectionIndex == 0 || iAxisDirectionIndex == 1)
-			sprintf(sCmd, "Edge at X: %0.03f", EndPos.x);
-		if (iAxisDirectionIndex == 2 || iAxisDirectionIndex == 3)
-			sprintf(sCmd, "Edge at Y: %0.03f", EndPos.y);
-		if (iAxisDirectionIndex == 4)
+		if (iAxisDirectionIndex == 0)
+		{
+			sprintf(sCmd, "Edge at X: %0.03f", EndPos.x - (fProbeTipDiameter/2.0f));
+
+			if (bZeroWCS)
+				ZeroWCS(true, false, false, (fProbeTipDiameter / 2.0f));
+		}
+		else if (iAxisDirectionIndex == 1)
+		{
+			sprintf(sCmd, "Edge at X: %0.03f", EndPos.x + (fProbeTipDiameter / 2.0f));
+
+			if (bZeroWCS)
+				ZeroWCS(true, false, false, 0 - (fProbeTipDiameter / 2.0f));
+		}
+		else if (iAxisDirectionIndex == 2)
+		{
+			sprintf(sCmd, "Edge at Y: %0.03f", EndPos.y - (fProbeTipDiameter / 2.0f));
+
+			if (bZeroWCS)
+				ZeroWCS(false, true, false, 0, (fProbeTipDiameter / 2.0f));
+		}
+		else if (iAxisDirectionIndex == 3)
+		{
+			sprintf(sCmd, "Edge at Y: %0.03f", EndPos.y + (fProbeTipDiameter / 2.0f));
+
+			if (bZeroWCS)
+				ZeroWCS(false, true, false, 0, 0 - (fProbeTipDiameter / 2.0f));
+		}
+		else if (iAxisDirectionIndex == 4)
+		{
 			sprintf(sCmd, "Bottom at Z: %0.03f", EndPos.z);
+
+			if (bZeroWCS)
+				ZeroWCS(false, false, true);
+		}
 
 		Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Probe operation completed successfuly.  %s", sCmd);
 		iState = PROBE_STATE_COMPLETE;
@@ -389,15 +419,20 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Travel Distance
-	sprintf(sString, "%%0.2f%s", sUnits);
-	ImGui::InputFloat("Travel distance", &fTravel, 0.1f, 1.0f, sString);
-	ImGui::SameLine(); HelpMarker("How far to probe in the desired direction before failing.");
+		sprintf(sString, "%%0.2f%s", sUnits);
+		ImGui::InputFloat("Travel distance", &fTravel, 0.1f, 1.0f, sString);
+		ImGui::SameLine(); HelpMarker("How far to probe in the desired direction before failing.");
+
+	//Probe size
+		sprintf(sString, "%%0.2f%s", sUnits);
+		ImGui::InputFloat("Probe tip diameter", &fProbeTipDiameter, 0.1f, 1.0f, sString);
+		ImGui::SameLine(); HelpMarker("Diameter of the tip of the probe, required to accurately calculate the edge");
 
 	//Feed rate
-	ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
-	ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
-	ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
-	ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
+		ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
+		ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
+		ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
+		ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
 
 	ImGui::PopItemWidth();
 
@@ -405,58 +440,41 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 	ImGui::SeparatorText("Completion");
 
 	//Zero WCS?
-	ImGui::BeginDisabled(); //TODO: Need to know probe size so we can accurately set 0
-	ImGui::Checkbox("Zero WCS", &bZeroWCS);
-	ImGui::EndDisabled();
+		ImGui::Checkbox("Zero WCS", &bZeroWCS);
 
-	ImGui::SameLine();
+		ImGui::SameLine();
 
 	//Disable the combo if the option isn't selected
-	if (!bZeroWCS)
-		ImGui::BeginDisabled();
+		if (!bZeroWCS)
+			ImGui::BeginDisabled();
 
 	//The combo box
 				//iWCSIndex = MachineStatus.WCS;					//TODO: Default to the current mode
-	if (iWCSIndex < Carvera::CoordSystem::G54)
-		iWCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
+		if (iWCSIndex < Carvera::CoordSystem::G54)
+			iWCSIndex = Carvera::CoordSystem::G54; //If we're in an unknown WCS or G53, show G54 as default
 
-	if (ImGui::BeginCombo("##ProbingSingleAxis_WCS", szWCSChoices[iWCSIndex]))
-	{
-		x = Carvera::CoordSystem::G54;
-		while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+		if (ImGui::BeginCombo("##ProbingSingleAxis_WCS", szWCSChoices[iWCSIndex]))
 		{
-			//Add the item
-			const bool is_selected = (iWCSIndex == (x));
-			if (ImGui::Selectable(szWCSChoices[x], is_selected))
-				iWCSIndex = (x);
+			x = Carvera::CoordSystem::G54;
+			while (szWCSChoices[x][0] != 0x0) //Add all available WCSs (starting at G54)
+			{
+				//Add the item
+				const bool is_selected = (iWCSIndex == (x));
+				if (ImGui::Selectable(szWCSChoices[x], is_selected))
+					iWCSIndex = (x);
 
-			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();
-			x++;
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+				x++;
+			}
+
+			ImGui::EndCombo();
 		}
 
-		ImGui::EndCombo();
-	}
+		if (!bZeroWCS)
+			ImGui::EndDisabled();
 
-	if (!bZeroWCS)
-		ImGui::EndDisabled();
-
-	ImGui::SameLine();
-	HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
+		ImGui::SameLine();
+		HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 }
-/*
-bool ProbeOperation_SingleAxis::DrawPopup()
-{
-	bool bRetVal = TRUE;	//The operation continues to run
-
-	BeginPopup();
-
-	DrawSubwindow();
-
-	bRetVal = EndPopup();
-
-	StateMachine(); //Run the state machine if an operation is going
-
-	return bRetVal;
-}*/

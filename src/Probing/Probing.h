@@ -114,7 +114,8 @@ public:
 	GLuint imgPreview[5] = { 0,0,0,0,0 };		//One for each axis and direction
 
 	int    iAxisDirectionIndex;	//0 = x-,  1 = x+,  2 = y+,  3 = y-,  4 = z-
-	float  fTravel;			//How far to travel while looking for the edge
+	float  fTravel;				//How far to travel while looking for the edge
+	float  fProbeTipDiameter;	//Diameter of the probe tip.  When setting WCS we need to adjust for this
 };
 
 
