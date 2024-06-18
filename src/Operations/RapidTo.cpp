@@ -16,9 +16,11 @@
 
 CloutProgram_Op_RapidTo::CloutProgram_Op_RapidTo()
 {
-	bUseAxis[0] = 0;
-	bUseAxis[1] = 0;
-	bUseAxis[2] = 0;
+	CloutProgram_Op();
+
+	bUseAxis[0] = false;
+	bUseAxis[1] = false;
+	bUseAxis[2] = false;
 	Coords = {0,0,0};
 
 	bUseFeedrate = 0;
@@ -135,7 +137,7 @@ void CloutProgram_Op_RapidTo::DrawDetailTab()
 
 	//const char szWCSChoices[9][20] = { "Unknown", "G53", "G54", "G55", "G56", "G57", "G58", "G59", "" };
 	if (ImGui::BeginCombo("##DrawTab_RapidTo_WCS", szWCSChoices[WCS - 1]))
-	{
+	{ 
 		for (int x = 1; x < 8; x++)
 		{
 			//Add the item
@@ -173,31 +175,50 @@ void CloutProgram_Op_RapidTo::ParseFromJSON(const json& j)
 	Coords.y = j.value("Y", 0.0f);
 	Coords.z = j.value("Z", 0.0f);
 
-	bUseAxis[0] = j.value("Use_X", false);
-	bUseAxis[1] = j.value("Use_Y", false);
-	bUseAxis[2] = j.value("Use_Z", false);
+	bUseAxis[0] = j.value("Use X", false);
+	bUseAxis[1] = j.value("Use Y", false);
+	bUseAxis[2] = j.value("Use Z", false);
 
-	bUseFeedrate = j.value("Supply_Feedrate", false);
+	bUseFeedrate = j.value("Supply Feedrate", false);
 	fFeedrate = j.value("Feedrate", 300.0f);
 
-	bUseWCS = j.value("Supply_WCS", false);
+	bUseWCS = j.value("Supply WCS", false);
 
-	std::string WCS = j.value("WCS", "G54");
+	std::string strWCS = j.value("WCS", "G54");
 
-	if (WCS == "G53")
+	if (strWCS == "G53")
 		WCS = Carvera::CoordSystem::G53;
-	else if (WCS == "G54")
+	else if (strWCS == "G54")
 		WCS = Carvera::CoordSystem::G54;
-	else if (WCS == "G55")
+	else if (strWCS == "G55")
 		WCS = Carvera::CoordSystem::G55;
-	else if (WCS == "G56")
+	else if (strWCS == "G56")
 		WCS = Carvera::CoordSystem::G56;
-	else if (WCS == "G57")
+	else if (strWCS == "G57")
 		WCS = Carvera::CoordSystem::G57;
-	else if (WCS == "G58")
+	else if (strWCS == "G58")
 		WCS = Carvera::CoordSystem::G58;
-	else if (WCS == "G59")
+	else if (strWCS == "G59")
 		WCS = Carvera::CoordSystem::G59;
 
 	GenerateFullTitle();
+}
+
+void CloutProgram_Op_RapidTo::ParseToJSON(json& j)
+{
+	CloutProgram_Op::ParseToJSON(j);
+
+	j["X"] = Coords.x;
+	j["Y"] = Coords.y;
+	j["Z"] = Coords.z;
+
+	j["Use X"] = bUseAxis[0];
+	j["Use Y"] = bUseAxis[1];
+	j["Use Z"] = bUseAxis[2];
+
+	j["Supply Feedrate"] = bUseFeedrate;
+	j["Feedrate"] = fFeedrate;
+
+	j["Supply WCS"] = bUseWCS;
+	j["WCS"] = szWCSNames[WCS];
 }

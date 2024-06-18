@@ -71,6 +71,8 @@ set  (CLOUT_SOURCES_OPERATIONS
       "${PROJECT_SOURCE_DIR}/src/Operations/InstallTouchProbe.cpp"
       "${PROJECT_SOURCE_DIR}/src/Operations/RapidTo.cpp"
       "${PROJECT_SOURCE_DIR}/src/Operations/CustomGCode.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Operations/OpenCollet.cpp"
+      "${PROJECT_SOURCE_DIR}/src/Operations/CloseCollet.cpp"
       )
 	
 set  (CLOUT_HEADERS

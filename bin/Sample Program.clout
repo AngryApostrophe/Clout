@@ -1,0 +1,46 @@
+{
+    "File Version": [
+        1,
+        0
+    ],
+    "Name": "Clout Program",
+    "Operations": [
+        {
+            "End": 69,
+            "Filename": ".\\test.nc",
+            "Start": 3,
+            "Type": "Run G Code File"
+        },
+        {
+            "Tool": -1,
+            "Type": "ATC Tool Change"
+        },
+        {
+            "Confirm Function": true,
+            "Type": "Install Touch Probe"
+        },
+        {
+            "Feedrate": 300.0,
+            "Supply Feedrate": false,
+            "Supply WCS": false,
+            "Type": "Rapid To",
+            "Use X": true,
+            "Use Y": true,
+            "Use Z": true,
+            "WCS": "G54",
+            "X": 40.0,
+            "Y": 140.0,
+            "Z": 10.0
+        },
+        {
+            "Bore Diameter": 25.0,
+            "Fast Speed": 300,
+            "Overtravel": 5.0,
+            "Probe Op Type": "Bore Center",
+            "Slow Speed": 10,
+            "Type": "Run Probe Operation",
+            "WCS": "G54",
+            "Zero WCS": true
+        }
+    ]
+}

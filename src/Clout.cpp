@@ -15,8 +15,6 @@ using namespace std;
 #include "OperationQueue.h"
 
 
-extern CloutProgram prog;
-
 //Global vars
 	ImGuiIO* io = 0;
 	extern ImGuiID dockspace_id;	//winmain.cpp
@@ -24,6 +22,7 @@ extern CloutProgram prog;
 //Machine status
 	MACHINE_STATUS MachineStatus;
 	char szWCSChoices[9][20] = { "Unknown", "G53", "G54", "G55", "G56", "G57", "G58", "G59", "" }; //The active one will have (Active) appended to it
+	const char szWCSNames[9][10] = { "Unknown", "G53", "G54", "G55", "G56", "G57", "G58", "G59", "" };
 
 
 //Show the tooltip Help marker
@@ -351,8 +350,6 @@ void Window_Control_Draw()
 void Clout_Init()
 {
 	Console.AddLog("Starting up");
-
-	prog.jData.get_to(prog); //TODO: Temp.
 
 	//Setup the global machine status
 		MachineStatus.Status = Carvera::Status::Idle;

@@ -40,5 +40,12 @@ void CloutProgram_Op_InstallTouchProbe::DrawEditorSummaryInfo()
 
 void CloutProgram_Op_InstallTouchProbe::ParseFromJSON(const json& j)
 {
-	bConfirmFunction = j.value("Confirm_Function", true);
+	bConfirmFunction = j.value("Confirm Function", true);
+}
+
+void CloutProgram_Op_InstallTouchProbe::ParseToJSON(json& j)
+{
+	CloutProgram_Op::ParseToJSON(j);
+
+	j["Confirm Function"] = bConfirmFunction;
 }

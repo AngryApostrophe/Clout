@@ -40,8 +40,6 @@ ProbeOperation_PocketCenter::ProbeOperation_PocketCenter()
 void ProbeOperation_PocketCenter::StateMachine()
 {
 	char sCmd[50];
-	CarveraMessage msg;
-	int iRet;
 	DOUBLE_XYZ xyz;
 
 
@@ -284,18 +282,32 @@ void ProbeOperation_PocketCenter::DrawSubwindow()
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 }
-/*
-bool ProbeOperation_PocketCenter::DrawPopup()
+
+void ProbeOperation_PocketCenter::ParseToJSON(json& j)
 {
-	bool bRetVal = true;	//The operation continues to run
+	ProbeOperation::ParseToJSON(j);
 
-	BeginPopup();
+	j["Pocket Width"] = fPocketWidth;
+	j["Overtravel"] = fOvertravel;
+	
+	if (iAxisIndex == 0)
+		j["Axis"] = "X";
+	else if (iAxisIndex == 1)
+		j["Axis"] = "Y";
+}
 
-	DrawSubwindow();
+void ProbeOperation_PocketCenter::ParseFromJSON(const json& j)
+{
+	ProbeOperation::ParseFromJSON(j);
 
-	bRetVal = EndPopup();
+	fPocketWidth = j.value("Pocket Width", 0);
+	fOvertravel = j.value("Overtravel", 5);
 
-	StateMachine(); //Run the state machine if an operation is going
+	std::string strAxis = j.value("Axis", "");
 
-	return bRetVal;
-}*/
+	iAxisIndex = -1;
+	if (strAxis == "X")
+		iAxisIndex = 0;
+	else if (strAxis == "Y")
+		iAxisIndex = 1;
+}

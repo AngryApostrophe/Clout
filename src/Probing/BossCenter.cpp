@@ -37,8 +37,6 @@ ProbeOperation_BossCenter::ProbeOperation_BossCenter()
 void ProbeOperation_BossCenter::StateMachine()
 {
 	char sCmd[50];
-	CarveraMessage msg;
-	int iRet;
 	DOUBLE_XYZ xyz;
 
 	switch (iState)
@@ -332,18 +330,23 @@ void ProbeOperation_BossCenter::DrawSubwindow()	//Could be drawn in either its o
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 }
-/*
-bool ProbeOperation_BossCenter::DrawPopup()
+
+void ProbeOperation_BossCenter::ParseToJSON(json& j)
 {
-	bool bRetVal = true;	//The operation continues to run
+	ProbeOperation::ParseToJSON(j);
 
-	BeginPopup();
+	j["Boss Diameter"] = fBossDiameter;
+	j["Overtravel"] = fOvertravel;
+	j["Clearance"] = fClearance;
+	j["Z Depth"] = fZDepth;
+}
 
-	DrawSubwindow();
+void ProbeOperation_BossCenter::ParseFromJSON(const json& j)
+{
+	ProbeOperation::ParseFromJSON(j);
 
-	bRetVal = EndPopup();
-
-	StateMachine(); //Run the state machine if an operation is going
-
-	return bRetVal;
-}*/
+	fBossDiameter = j.value("Boss Diameter", 0);
+	fOvertravel = j.value("Overtravel", 5);
+	fClearance = j.value("Clearance", 5);
+	fZDepth = j.value("Z Depth", -5);
+}

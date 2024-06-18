@@ -3,6 +3,9 @@
 #include <vector>
 #include <memory> //shared_ptr
 
+#include <json.hpp>
+using json = nlohmann::json;
+
 //Foward declare
 class ProbeOperation;
 class ProbeOperation_BoreCenter;
@@ -17,21 +20,17 @@ void Probing_Draw();
 void Probing_InstantiateNewOp(std::shared_ptr<ProbeOperation>& Op, int iOpType);	//Create a new Probing operation of type iOpType;
 
 //Define probe operation types
-#define PROBE_OP_TYPE_BOSS		0
-#define PROBE_OP_TYPE_BORE		1
+#define PROBE_OP_TYPE_BOSS			0
+#define PROBE_OP_TYPE_BORE			1
 #define PROBE_OP_TYPE_POCKET		2
-#define PROBE_OP_TYPE_WEB		3
+#define PROBE_OP_TYPE_WEB			3
 #define PROBE_OP_TYPE_SINGLEAXIS	4
 extern const std::vector<const char*> szProbeOpNames;	//GUI names of each of the above
-
-//Common settings
-extern int iProbingSpeedFast;
-extern int iProbingSpeedSlow;
 
 class ProbeOperation
 {
 public:
-	ProbeOperation() { iState=0; bStepIsRunning=false; szWindowIdent=0; bZeroWCS=true; iWCSIndex=0;};
+	ProbeOperation() { iState=0; bStepIsRunning=false; szWindowIdent=0; bZeroWCS=true; iWCSIndex=Carvera::CoordSystem::G54; iProbingSpeedFast=300; iProbingSpeedSlow=10; };
 	virtual ~ProbeOperation(){};
 
 	void ZeroWCS(bool x, bool y, bool z, float x_val = -10000.0f, float y_val = -10000.0f, float z_val = -10000.0f);
@@ -41,6 +40,9 @@ public:
 	virtual void StateMachine(){};
 	virtual void DrawSubwindow(){};
 	bool DrawPopup();								//Returns FALSE if this operation has completed and can be deleted
+
+	virtual void ParseToJSON(json& j);
+	virtual void ParseFromJSON(const json& j);
 
 	BYTE bProbingType;								//What type of probing operation is this?
 
@@ -62,13 +64,16 @@ protected:
 
 	bool bZeroWCS;									//Do we want to zero out a WCS when we're done?
 	int iWCSIndex;									//Which WCS to zero on completion
+
+	int iProbingSpeedFast;
+	int iProbingSpeedSlow;
 };
 
 
 
-#define PROBE_STATE_IDLE			0	//Not currently running
+#define PROBE_STATE_IDLE		0	//Not currently running
 #define PROBE_STATE_START		1	//User just clicked Run
-#define PROBE_STATE_COMPLETE		255	//All done, close the window
+#define PROBE_STATE_COMPLETE	255	//All done, close the window
 
 //Bore center
 #define PROBE_STATE_BORECENTER_PROBE_MIN_X_FAST	2	//Probing left until we find the minimum x
@@ -93,6 +98,9 @@ public:
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
 
+	virtual void ParseToJSON(json& j);
+	virtual void ParseFromJSON(const json& j);
+
 	float  fBoreDiameter;
 	float  fOvertravel;
 };
@@ -110,6 +118,9 @@ public:
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
+
+	virtual void ParseToJSON(json& j);
+	virtual void ParseFromJSON(const json& j);
 
 	GLuint imgPreview[5] = { 0,0,0,0,0 };		//One for each axis and direction
 
@@ -141,6 +152,9 @@ public:
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
+
+	virtual void ParseToJSON(json& j);
+	virtual void ParseFromJSON(const json& j);
 
 	GLuint imgPreview[2] = { 0,0 };	//One for X and Y
 
@@ -188,6 +202,9 @@ public:
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
 
+	virtual void ParseToJSON(json& j);
+	virtual void ParseFromJSON(const json& j);
+
 	float  fBossDiameter = 25.0f;		//Nominal diameter of the boss feater
 	float  fClearance = 5.0f;		//How far outside of the nominal diameter should we go before we turn back in
 	float  fOvertravel = 5.0f;		//How far inside the nominal diameter we attempt to probe before failing
@@ -232,6 +249,9 @@ public:
 
 	virtual void StateMachine();
 	virtual void DrawSubwindow();
+
+	virtual void ParseToJSON(json& j);
+	virtual void ParseFromJSON(const json& j);
 
 	GLuint imgPreview[2] = { 0,0 };	//One for X and Y
 

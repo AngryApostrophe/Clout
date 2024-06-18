@@ -23,11 +23,6 @@ const std::vector<const char*> szProbeOpNames = { "Boss Center", "Bore Center", 
 
 std::shared_ptr<ProbeOperation> Probing_ManualOp;	//For manual operations (from the utilies menu), this is the one we're currently viewing/doing
 
-//Common settings
-	int iProbingSpeedFast = 300;
-	int iProbingSpeedSlow = 10;
-	
-
 //Start a new manual probing operation from the utility menu.  This deletes any previous op and creates a new one
 template <typename ProbeClass>	//This will carry the datatype of the new class we're going to create
 void Probing_StartManualOp()
@@ -382,4 +377,38 @@ void Probing_Draw() //This is called from inside the main draw code
 
 		ImGui::EndTable();
 	}
+}
+
+void ProbeOperation::ParseToJSON(json& j)
+{
+	j["Zero WCS"] = bZeroWCS;
+	j["WCS"] = szWCSNames[iWCSIndex];
+
+	j["Fast Speed"] = iProbingSpeedFast;
+	j["Slow Speed"] = iProbingSpeedSlow;
+}
+
+void ProbeOperation::ParseFromJSON(const json& j)
+{
+	bZeroWCS = j.value("Zero WCS", false);
+
+	iProbingSpeedFast = j.value("Fast Speed", 300);
+	iProbingSpeedSlow = j.value("Slow Speed", 10);
+
+	std::string strWCS = j.value("WCS", "G54");
+
+	if (strWCS == "G53")
+		iWCSIndex = Carvera::CoordSystem::G53;
+	else if (strWCS == "G54")
+		iWCSIndex = Carvera::CoordSystem::G54;
+	else if (strWCS == "G55")
+		iWCSIndex = Carvera::CoordSystem::G55;
+	else if (strWCS == "G56")
+		iWCSIndex = Carvera::CoordSystem::G56;
+	else if (strWCS == "G57")
+		iWCSIndex = Carvera::CoordSystem::G57;
+	else if (strWCS == "G58")
+		iWCSIndex = Carvera::CoordSystem::G58;
+	else if (strWCS == "G59")
+		iWCSIndex = Carvera::CoordSystem::G59;
 }

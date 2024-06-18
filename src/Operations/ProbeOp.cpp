@@ -96,10 +96,20 @@ void CloutProgram_Op_ProbeOp::ParseFromJSON(const json& j)
 		{
 			iProbeOpType = -1;
 			Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Read invalid probe operation of type: %s", ProbeOpType.c_str());
+			return;
 		}
-
-	//TODO: If not found, abort this operation and alert user
 
 	//Create the ProbeOp object that has all the data
 		Probing_InstantiateNewOp(ProbeOp, iProbeOpType);
+
+	//Have that ProbeOp parse its data
+		ProbeOp->ParseFromJSON(j);
+}
+
+void CloutProgram_Op_ProbeOp::ParseToJSON(json& j)
+{
+	CloutProgram_Op::ParseToJSON(j);
+
+	j["Probe Op Type"] = szProbeOpNames[ProbeOp->bProbingType];
+	ProbeOp->ParseToJSON(j);
 }

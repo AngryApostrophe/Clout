@@ -10,6 +10,7 @@ typedef unsigned long DWORD;
 	extern GLFWwindow* glfwWindow;	//The main glfw Window object in Main.cpp
 
 extern char szWCSChoices[9][20]; //List of all available WCSs, and which one is active
+extern const char szWCSNames[9][10]; //List of the WCS names, but none of them are marked as active
 
 void HelpMarker(const char* sString);
 

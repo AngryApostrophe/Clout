@@ -42,8 +42,6 @@ ProbeOperation_WebCenter::ProbeOperation_WebCenter()
 void ProbeOperation_WebCenter::StateMachine()
 {
 	char sCmd[50];
-	CarveraMessage msg;
-	int iRet;
 	DOUBLE_XYZ xyz;
 
 	switch (iState)
@@ -381,19 +379,36 @@ void ProbeOperation_WebCenter::DrawSubwindow()
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 }
-/*
-bool ProbeOperation_WebCenter::DrawPopup()
+
+void ProbeOperation_WebCenter::ParseToJSON(json& j)
 {
-	bool bRetVal = TRUE;	//The operation continues to run
+	ProbeOperation::ParseToJSON(j);
 
-	BeginPopup();
+	j["Feature Width"] = fWebWidth;
+	j["Clearance"] = fClearance;
+	j["Overtravel"] = fOvertravel;
+	j["Z Depth"] = fZDepth;
 
-	DrawSubwindow();
-
-	bRetVal = EndPopup();
-
-	StateMachine(); //Run the state machine if an operation is going
-
-	return bRetVal;
+	if (iAxisIndex == 0)
+		j["Axis"] = "X";
+	else if (iAxisIndex == 1)
+		j["Axis"] = "Y";
 }
-*/
+
+void ProbeOperation_WebCenter::ParseFromJSON(const json& j)
+{
+	ProbeOperation::ParseFromJSON(j);
+
+	fWebWidth = j.value("Feature Width", 0);
+	fClearance = j.value("Clearance", 5);
+	fOvertravel = j.value("Overtravel", 5);
+	fZDepth = j.value("Z Depth", -5);
+
+	std::string strAxis = j.value("Axis", "");
+
+	iAxisIndex = -1;
+	if (strAxis == "X")
+		iAxisIndex = 0;
+	else if (strAxis == "Y")
+		iAxisIndex = 1;
+}

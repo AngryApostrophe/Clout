@@ -13,29 +13,28 @@
 #include "../Console.h"
 #include "../CloutProgram.h"
 
-CloutProgram_Op_Custom_GCode::CloutProgram_Op_Custom_GCode()
-{
-	szGCode.clear();
-}
-
-void CloutProgram_Op_Custom_GCode::StateMachine()
+CloutProgram_Op_CloseCollet::CloutProgram_Op_CloseCollet()
 {
 }
 
-void CloutProgram_Op_Custom_GCode::DrawDetailTab()
+void CloutProgram_Op_CloseCollet::StateMachine()
 {
 }
 
-void CloutProgram_Op_Custom_GCode::DrawEditorSummaryInfo()
+void CloutProgram_Op_CloseCollet::DrawDetailTab()
 {
 }
 
-void CloutProgram_Op_Custom_GCode::ParseFromJSON(const json& j)
+void CloutProgram_Op_CloseCollet::DrawEditorSummaryInfo()
+{
+}
+
+void CloutProgram_Op_CloseCollet::ParseFromJSON(const json& j)
 {
 	CloutProgram_Op::ParseFromJSON(j);
 }
 
-void CloutProgram_Op_Custom_GCode::ParseToJSON(json& j)
+void CloutProgram_Op_CloseCollet::ParseToJSON(json& j)
 {
 	CloutProgram_Op::ParseToJSON(j);
 }

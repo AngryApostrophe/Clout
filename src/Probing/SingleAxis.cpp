@@ -478,3 +478,44 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 		ImGui::SameLine();
 		HelpMarker("If selected, after completion of the probing operation the desired WCS axis will be zero'd");
 }
+
+void ProbeOperation_SingleAxis::ParseToJSON(json& j)
+{
+	ProbeOperation::ParseToJSON(j);
+
+	j["Probe Diameter"] = fProbeTipDiameter;
+	j["Travel"] = fTravel;
+
+	if (iAxisDirectionIndex == 0)
+		j["Axis"] = "X-";
+	else if (iAxisDirectionIndex == 1)
+		j["Axis"] = "X+";
+	else if (iAxisDirectionIndex == 2)
+		j["Axis"] = "Y-";
+	else if (iAxisDirectionIndex == 3)
+		j["Axis"] = "Y+";
+	else if (iAxisDirectionIndex == 4)
+		j["Axis"] = "Z-";
+}
+
+void ProbeOperation_SingleAxis::ParseFromJSON(const json& j)
+{
+	ProbeOperation::ParseFromJSON(j);
+
+	fProbeTipDiameter = j.value("Probe Diameter", 2.0f);
+	fTravel = j.value("Travel", 5.0f);
+
+	std::string strAxis = j.value("Axis", "");
+
+	iAxisDirectionIndex = -1;
+	if (strAxis == "X-")
+		iAxisDirectionIndex = 0;
+	else if (strAxis == "X+")
+		iAxisDirectionIndex = 1;
+	else if (strAxis == "Y-")
+		iAxisDirectionIndex = 2;
+	else if (strAxis == "Y+")
+		iAxisDirectionIndex = 3;
+	else if (strAxis == "Z-")
+		iAxisDirectionIndex = 4;
+}

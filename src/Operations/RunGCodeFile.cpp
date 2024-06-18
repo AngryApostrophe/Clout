@@ -119,3 +119,12 @@ void CloutProgram_Op_Run_GCode_File::ParseFromJSON(const json& j)
 	sFilename = j.value("Filename", "");
 	sGCode_Line.clear();
 }
+
+void CloutProgram_Op_Run_GCode_File::ParseToJSON(json& j)
+{
+	CloutProgram_Op::ParseToJSON(j);
+
+	j["Start"] = iStartLineNum;
+	j["End"] = iLastLineNum;
+	j["Filename"] = sFilename;
+}

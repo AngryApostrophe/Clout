@@ -35,8 +35,6 @@ ProbeOperation_BoreCenter::ProbeOperation_BoreCenter()
 void ProbeOperation_BoreCenter::StateMachine()
 {
 	char sCmd[50];
-	CarveraMessage msg;
-	int iRet;
 	DOUBLE_XYZ xyz;
 
 	switch (iState)
@@ -232,18 +230,19 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 	ImGui::SameLine();
 	HelpMarker("If selected, after completion of the probing operation the desired WCS coordinates will be reset to (0,0)");
 }
-/*
-bool ProbeOperation_BoreCenter::DrawPopup()
+
+void ProbeOperation_BoreCenter::ParseToJSON(json& j)
 {
-	bool bRetVal = true;	//The operation continues to run
+	ProbeOperation::ParseToJSON(j);
 
-	BeginPopup();
+	j["Bore Diameter"] = fBoreDiameter;
+	j["Overtravel"] = fOvertravel;
+}
 
-	DrawSubwindow();
+void ProbeOperation_BoreCenter::ParseFromJSON(const json& j)
+{
+	ProbeOperation::ParseFromJSON(j);
 
-	bRetVal = EndPopup();
-
-	StateMachine(); //Run the state machine if an operation is going
-
-	return bRetVal;
-}*/
+	fBoreDiameter = j.value("Bore Diameter", 0);
+	fOvertravel = j.value("Overtravel", 5);
+}

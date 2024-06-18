@@ -9,17 +9,27 @@ using json = nlohmann::json;
 #define OpBaseClass(var) std::visit([](CloutProgram_Op& outputvar) -> CloutProgram_Op& { return outputvar; }, var)
 
 
-#define CLOUT_OP_NULL			0
-#define CLOUT_OP_ATC_TOOL_CHANGE	1	//Use the ATC to change to a new tool (or drop current tool and not replace it)
-#define CLOUT_OP_RAPID_TO		2	//Rapid to a new location
-#define CLOUT_OP_HOME_XY			3	//Home X and Y axes
-#define CLOUT_OP_INSTALL_PROBE	4	//Work with the user to install the touch probe
-#define CLOUT_OP_PROBE_OP		5	//Run a probe operation
-#define CLOUT_OP_RUN_GCODE_FILE	6	//Run G Code from a file
-#define CLOUT_OP_CUSTOM_GCODE		7	//Run custom G code
-#define CLOUT_OP_ALERT_USER		8	//Alert the user to something
+#define CLOUT_JSON_VER_MAJ	1	//JSON file major version
+#define CLOUT_JSON_VER_MIN	0	//JSON file minor version
 
-extern const char* szOperationName[];	//Array of strings describing the above
+
+
+#define CLOUT_OP_NULL				0
+#define CLOUT_OP_ATC_TOOL_CHANGE	1	//Use the ATC to change to a new tool (or drop current tool and not replace it)
+#define CLOUT_OP_RAPID_TO			2	//Rapid to a new location
+#define CLOUT_OP_HOME_XY			3	//Home X and Y axes
+#define CLOUT_OP_INSTALL_PROBE		4	//Work with the user to install the touch probe
+#define CLOUT_OP_PROBE_OP			5	//Run a probe operation
+#define CLOUT_OP_RUN_GCODE_FILE		6	//Run G Code from a file
+#define CLOUT_OP_CUSTOM_GCODE		7	//Run custom G code
+#define CLOUT_OP_ALERT_USER			8	//Alert the user to something
+#define CLOUT_OP_OPEN_COLLET		9	//Open the collet to release the tool
+#define CLOUT_OP_CLOSE_COLLET		10	//Open the collet to grab the tool
+
+extern std::vector<const char*> strOperationName;	//Array of strings describing the above
+
+extern std::vector<std::string> strOpsSections;
+extern std::vector<std::vector<int>> OrganizedOps;
 
 
 //Forward declare types
@@ -30,21 +40,21 @@ class CloutProgram_Op_RapidTo;
 class CloutProgram_Op_Custom_GCode;
 class CloutProgram_Op_ProbeOp;
 class CloutProgram_Op_Run_GCode_File;
+class CloutProgram_Op_OpenCollet;
+class CloutProgram_Op_CloseCollet;
 
-using CloutProgram_Op_Datatypes = std::variant<CloutProgram_Op, CloutProgram_Op_ATC_Tool_Change, CloutProgram_Op_InstallTouchProbe, CloutProgram_Op_RapidTo, CloutProgram_Op_Custom_GCode, CloutProgram_Op_ProbeOp, CloutProgram_Op_Run_GCode_File>;
+using CloutProgram_Op_Datatypes = std::variant<CloutProgram_Op, CloutProgram_Op_ATC_Tool_Change, CloutProgram_Op_InstallTouchProbe, CloutProgram_Op_RapidTo, CloutProgram_Op_Custom_GCode, CloutProgram_Op_ProbeOp, CloutProgram_Op_Run_GCode_File, CloutProgram_Op_OpenCollet, CloutProgram_Op_CloseCollet>;
 
 
 
 class CloutProgram_Op
 {
 public:
-	CloutProgram_Op() { iType = CLOUT_OP_NULL; bEditorExpanded = false; FullText.clear(); };
+	CloutProgram_Op() { iType = CLOUT_OP_NULL; bEditorExpanded = false; FullText.clear(); bKeepItem = true; };
 
 	int iType; //What type of operation is this?
 
 	std::string FullText;	//The full text of this operation.  Eg:  Type is "Rapid To" and full text would be "Rapid To (400,134) @ 300"
-
-	bool bEditorExpanded; //Used for the Program Editor.  True if this operation is expanded.
 
 	//For running the operation:
 		int iState;
@@ -54,8 +64,15 @@ public:
 		virtual void DrawDetailTab(){};
 		virtual void DrawEditorSummaryInfo() {};
 
+		bool bEditorExpanded; //Used for the Program Editor.  True if this operation is expanded.
+		bool bKeepItem; //Set to false if the user has clicked X to delete this from the editor.
+
 	//JSON stuff
 		virtual void ParseFromJSON(const json& j) {};
+		virtual void ParseToJSON(json& j) 
+		{
+			j["Type"] = strOperationName[iType];
+		};
 };
 
 
@@ -73,6 +90,7 @@ public:
 		virtual void DrawDetailTab();
 		virtual void DrawEditorSummaryInfo();
 		virtual void ParseFromJSON(const json& j);
+		virtual void ParseToJSON(json& j);
 };
 
 
@@ -88,6 +106,7 @@ public:
 		virtual void DrawDetailTab();
 		virtual void DrawEditorSummaryInfo();
 		virtual void ParseFromJSON(const json& j);
+		virtual void ParseToJSON(json& j);
 };
 
 class CloutProgram_Op_RapidTo : public CloutProgram_Op
@@ -111,6 +130,7 @@ public:
 		virtual void DrawDetailTab();
 		virtual void DrawEditorSummaryInfo();
 		virtual void ParseFromJSON(const json& j);
+		virtual void ParseToJSON(json& j);
 };
 
 class CloutProgram_Op_Custom_GCode : public CloutProgram_Op
@@ -125,6 +145,7 @@ public:
 		virtual void DrawDetailTab();
 		virtual void DrawEditorSummaryInfo();
 		virtual void ParseFromJSON(const json& j);
+		virtual void ParseToJSON(json& j);
 };
 
 class CloutProgram_Op_ProbeOp : public CloutProgram_Op
@@ -141,6 +162,7 @@ public:
 		virtual void DrawDetailTab();
 		virtual void DrawEditorSummaryInfo();
 		virtual void ParseFromJSON(const json& j);
+		virtual void ParseToJSON(json& j);
 };
 
 class CloutProgram_Op_Run_GCode_File : public CloutProgram_Op
@@ -161,7 +183,44 @@ public:
 		virtual void DrawDetailTab();
 		virtual void DrawEditorSummaryInfo();
 		virtual void ParseFromJSON(const json& j);
+		virtual void ParseToJSON(json& j);
 };
+
+class CloutProgram_Op_OpenCollet : public CloutProgram_Op
+{
+public:
+	CloutProgram_Op_OpenCollet();
+	~CloutProgram_Op_OpenCollet() {};
+
+	bool bConfirmWithOperator;	//True if we want to ask the operator if he's ready, so we don't drop something important
+
+	//Inherited
+	virtual void StateMachine();
+	virtual void DrawDetailTab();
+	virtual void DrawEditorSummaryInfo();
+	virtual void ParseFromJSON(const json& j);
+	virtual void ParseToJSON(json& j);
+};
+
+class CloutProgram_Op_CloseCollet : public CloutProgram_Op
+{
+public:
+	CloutProgram_Op_CloseCollet();
+	~CloutProgram_Op_CloseCollet() {};
+
+	bool bConfirmWithOperator;	//True if we want to ask the operator if he's ready
+
+	//Inherited
+	virtual void StateMachine();
+	virtual void DrawDetailTab();
+	virtual void DrawEditorSummaryInfo();
+	virtual void ParseFromJSON(const json& j);
+	virtual void ParseToJSON(json& j);
+};
+
+
+
+
 
 
 
@@ -174,8 +233,12 @@ public:
 	~CloutProgram(){};
 
 	void LoadFromFile(const char *szFilename);
+	void SaveToFile(const char* szFilename);
+	
 	void AddOperation(std::shared_ptr<CloutProgram_Op> NewOp); //Add a new operation to the program
 	void AddOperation(CloutProgram_Op_Datatypes NewOp); //Add a new operation to the program
+	void AddNewOperation(int iType); //Create a new operation of the given type and add it to the program
+
 	void DeleteOperation(int iIndex); //Delete an operation from the program
 
 	void MoveOperationUp(int iIdx);
@@ -192,7 +255,9 @@ public:
 
 
 //JSON import/export handlers
-void to_json(json& j, const CloutProgram_Op Op);
-void from_json(const json& j, CloutProgram_Op& Op);
+//void to_json(json& j, const CloutProgram_Op Op);
+//void from_json(const json& j, CloutProgram_Op& Op);
+void to_json(json& j, CloutProgram_Op_Datatypes& refOp);
+void from_json(const json& j, CloutProgram_Op_Datatypes& refOp);
 void to_json(json& j, const CloutProgram& C);
 void from_json(const json& j, CloutProgram& Prog);

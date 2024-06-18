@@ -47,7 +47,11 @@ void _OperationQueue::DrawList()
 		if (bIsRunning)
 			ImGui::BeginDisabled();
 
-		if (ImGui::Button("Run"))
+		if (ImGui::Button("Load##Queue"))
+		{
+		}
+
+		if (ImGui::Button("Run##Queue"))
 			Start();
 
 		if (bIsRunning)
@@ -58,7 +62,7 @@ void _OperationQueue::DrawList()
 		if (!bIsRunning)
 			ImGui::BeginDisabled();
 
-		ImGui::Button("Pause");
+		ImGui::Button("Pause##Queue");
 
 		if (!bIsRunning)
 			ImGui::EndDisabled();

@@ -79,3 +79,10 @@ void CloutProgram_Op_ATC_Tool_Change::ParseFromJSON(const json& j)
 
 	GenerateFullTitle();
 }
+
+void CloutProgram_Op_ATC_Tool_Change::ParseToJSON(json& j)
+{
+	CloutProgram_Op::ParseToJSON(j);
+
+	j["Tool"] = iNewTool;
+}
