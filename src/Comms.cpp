@@ -5,6 +5,7 @@
 
 #include <imgui.h>
 
+#include <deque>
 #include <chrono>
 using namespace std::chrono;
 
@@ -32,8 +33,8 @@ using namespace std::chrono;
 	char sDetectedDevices[MAX_DEVICES][3][20];
 
 //Message Queue
-	std::vector<CarveraMessage> XmitMessageQueue;
-	std::vector<CarveraMessage> RecvMessageQueue;
+	std::deque<CarveraMessage> XmitMessageQueue;
+	std::deque<CarveraMessage> RecvMessageQueue;
 	void DetermineMsgType(CarveraMessage& msg);
 
 	struct sHiddenReplies
@@ -189,7 +190,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 			while (XmitMessageQueue.size() > 0)
 			{
 				//Make sure it's got the terminator or Carvera won't recognize it
-					strcpy(buf, XmitMessageQueue.at(0).cData);
+					strcpy(buf, XmitMessageQueue[0].cData);
 					n = strlen(buf);
 					if (n > 1)
 					{
@@ -212,7 +213,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 				if (!XmitMessageQueue.at(0).bHidden)
 					Console.AddLog(CommsConsole::ITEM_TYPE_SENT, XmitMessageQueue.at(0).cData);
 
-				XmitMessageQueue.erase(XmitMessageQueue.begin()); //Delete the message we just sent
+				XmitMessageQueue.pop_front();  //Delete the message we just sent
 			}
 
 			ReleaseMutex(&hBufferMutex);
