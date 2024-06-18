@@ -24,6 +24,7 @@
 #include "Resources/modelCarveraSpindle.h"
 #include "Resources/modelCarveraCarriage.h"
 #include "Resources/modelCarveraBed.h"
+#include "Resources/modelEndMill.h"
 
 
 //The main Model viewer object
@@ -286,16 +287,13 @@ void MODEL_VIEWER::Init()
 		bg_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	//Load models
-		//BodyModel = new Model("./res/CarveraBody.3mf");
 		BodyModel = new Model("modelBody", modelCarveraBody_compressed_data, modelCarveraBody_compressed_size);
 		CarriageModel = new Model("modelCarriage", modelCarveraCarriage_compressed_data, modelCarveraCarriage_compressed_size);
 		SpindleModel = new Model("modelSpindle", modelCarveraSpindle_compressed_data, modelCarveraSpindle_compressed_size);
 		BedModel = new Model("modelSpindle", modelCarveraBed_compressed_data, modelCarveraBed_compressed_size);
+		EndMillModel = new Model("modelEndMill", modelEndMill_compressed_data, modelEndMill_compressed_size);
 
 	//Load shaders
-		//Shader_Main = new Shader("./res/MainView_Vert.glsl", "./res/MainView_Frag.glsl");
-		//Shader_ShadowMap = new Shader("./res/ShadowMap_Vert.glsl", 0); //No fragment shader needed since we're not rendering any color data
-		//Shader_ShadowMapViewer = new Shader("./res/ShadowMapViewer_Vert.glsl", "./res/ShadowMapViewer_Frag.glsl");
 		Shader_Main = new Shader("shaderMain", shaderMainV_compressed_data, shaderMainV_compressed_size, shaderMainF_compressed_data, shaderMainF_compressed_size);
 		Shader_ShadowMap = new Shader("shaderShadow", shaderShadowV_compressed_data, shaderShadowV_compressed_size, 0,0);
 		Shader_ShadowMapViewer = new Shader("shaderShadowMapViewer", shaderShadowMapViewerV_compressed_data, shaderShadowMapViewerV_compressed_size, shaderShadowMapViewerF_compressed_data, shaderShadowMapViewerF_compressed_size);
@@ -372,6 +370,8 @@ void MODEL_VIEWER::Destroy()
 		delete CarriageModel;
 	if (BedModel != 0)
 		delete BedModel;
+	if (EndMillModel != 0)
+		delete EndMillModel;
 	if (SpindleModel != 0)
 		delete SpindleModel;
 	if (Shader_Main != 0)
@@ -442,6 +442,20 @@ void MODEL_VIEWER::RenderScene(Shader* shader)
 		shader->setVec3("objectColor", glm::vec3(0.2f, 0.2f, 0.2f));
 
 		BedModel->Draw(*shader);
+
+	//Draw End Mill
+		if (MachineStatus.iCurrentTool > 0)
+		{
+			ModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(OriginOffset.x, OriginOffset.z-(MachineStatus.fToolLengthOffset * 10), 0));
+			ModelMatrix = glm::rotate(ModelMatrix, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		
+			shader->setMat4("model", ModelMatrix);
+
+			shader->setVec3("objectColor", glm::vec3(0.9f, 0.9f, 0.9f));
+			shader->setFloat("Lighting_Specular", 0.7f);
+
+			EndMillModel->Draw(*shader);
+		}
 }
 
 //Draw the model viewer page in ImGui

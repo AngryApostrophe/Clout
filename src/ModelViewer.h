@@ -631,6 +631,7 @@ public:
 		Model* CarriageModel;
 		Model* BedModel;
 		Model* SpindleModel;
+		Model* EndMillModel;
 	
 	//Shaders
 		Shader *Shader_Main;
