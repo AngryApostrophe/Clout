@@ -116,7 +116,7 @@ void ProbeOperation_SingleAxis::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
+			iRet = Comms_PopMessageOfType(CARVERA_MSG_PROBE , &msg);
 
 			if (iRet > 0) //We've received a probing event from Carvera
 			{
@@ -178,7 +178,7 @@ void ProbeOperation_SingleAxis::StateMachine()
 		}
 		else //Step is running.  Monitor for completion
 		{
-			iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
+			iRet = Comms_PopMessageOfType(CARVERA_MSG_PROBE , &msg);
 
 			if (iRet > 0) //We've received a probing event from Carvera
 			{

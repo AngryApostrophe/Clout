@@ -243,6 +243,6 @@ void ProbeOperation_BoreCenter::ParseFromJSON(const json& j)
 {
 	ProbeOperation::ParseFromJSON(j);
 
-	fBoreDiameter = j.value("Bore Diameter", 0);
-	fOvertravel = j.value("Overtravel", 5);
+	fBoreDiameter = j.value("Bore Diameter", 0.0f);
+	fOvertravel = j.value("Overtravel", 5.0f);
 }

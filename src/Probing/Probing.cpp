@@ -106,7 +106,7 @@ void ProbeOperation::RunProbeStep(const char* szCmd, DOUBLE_XYZ* ResultXYZ, bool
 	else //Step is running.  Monitor for completion
 	{
 		CarveraMessage msg;
-		int iRet = Comms_PopMessageOfType(&msg, CARVERA_MSG_PROBE);
+		int iRet = Comms_PopMessageOfType(CARVERA_MSG_PROBE , &msg);
 
 		if (iRet > 0) //We've received a probing event from Carvera
 		{

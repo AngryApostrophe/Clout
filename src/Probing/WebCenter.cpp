@@ -399,10 +399,10 @@ void ProbeOperation_WebCenter::ParseFromJSON(const json& j)
 {
 	ProbeOperation::ParseFromJSON(j);
 
-	fWebWidth = j.value("Feature Width", 0);
-	fClearance = j.value("Clearance", 5);
-	fOvertravel = j.value("Overtravel", 5);
-	fZDepth = j.value("Z Depth", -5);
+	fWebWidth = j.value("Feature Width", 0.0f);
+	fClearance = j.value("Clearance", 5.0f);
+	fOvertravel = j.value("Overtravel", 5.0f);
+	fZDepth = j.value("Z Depth", -5.0f);
 
 	std::string strAxis = j.value("Axis", "");
 

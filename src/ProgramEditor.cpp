@@ -71,7 +71,7 @@ void ProgramEditor_Draw()
 			{
 				CloutProgram_Op &BaseOp = EditorProg.GetOp(x);
 
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, ScaledByWindowScale(OP_TITLE_PADDING)));
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ScaledByWindowScale(0.0, OP_TITLE_PADDING));
 			
 				ImGui::SetNextItemOpen(BaseOp.bEditorExpanded);
 				//ImGui::SetNextItemOpen(true);
@@ -229,8 +229,8 @@ void ProgramEditor_Draw()
 		
 		ImGui::EndTable();
 
-		ImGui::Text("Active:  %d", iActive);
-		ImGui::Text("Hovered:  %d", iHovered);
+		//ImGui::Text("Active:  %d", iActive);
+		//ImGui::Text("Hovered:  %d", iHovered);
 
 		
 

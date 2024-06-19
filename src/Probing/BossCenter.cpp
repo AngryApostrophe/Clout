@@ -345,8 +345,8 @@ void ProbeOperation_BossCenter::ParseFromJSON(const json& j)
 {
 	ProbeOperation::ParseFromJSON(j);
 
-	fBossDiameter = j.value("Boss Diameter", 0);
-	fOvertravel = j.value("Overtravel", 5);
-	fClearance = j.value("Clearance", 5);
-	fZDepth = j.value("Z Depth", -5);
+	fBossDiameter = j.value("Boss Diameter", 0.0f);
+	fOvertravel = j.value("Overtravel", 5.0f);
+	fClearance = j.value("Clearance", 5.0f);
+	fZDepth = j.value("Z Depth", -5.0f);
 }

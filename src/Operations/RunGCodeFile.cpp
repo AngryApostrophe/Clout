@@ -13,16 +13,110 @@
 #include "../Console.h"
 #include "../CloutProgram.h"
 
+#include "../FileTransfer.h"
+
+
 CloutProgram_Op_Run_GCode_File::CloutProgram_Op_Run_GCode_File()
 {
 	sFilename.clear();
 	iStartLineNum = 0;
 	iLastLineNum = 0;
+	iState = 0;
 	sGCode_Line.clear();
 }
 
 void CloutProgram_Op_Run_GCode_File::StateMachine()
 {
+	switch (iState)
+	{
+		case STATE_RUNFILE_START:
+			ReadFromFile();
+			FileTransfer_BeginUpload(sFilename.c_str(), iStartLineNum, iLastLineNum);
+			iState = STATE_RUNFILE_UPLOAD;
+		break;
+
+		case STATE_RUNFILE_UPLOAD:
+			if (FileTransfer_DoTransfer())
+			{
+				iState = STATE_RUNFILE_RUNNING;
+				Comms_SendString("play sd/gcodes/Clout.nc -v");	//Start running that file
+			}
+		break;
+
+		case STATE_RUNFILE_RUNNING:
+			if (MachineStatus.Status == Carvera::Status::Idle)
+				iState = STATE_OP_COMPLETE;
+		break;
+		
+		/*
+		* This old way uses M28/M29 to save to a file.  It's easy but much slower.  It may still be useful in other circumstances so I'm leaving it here for now for documentation
+		* 
+		case STATE_RUNFILE_STARTUPLOAD:
+			Comms_SendString("M28 gcodes/Clout.nc");	//Start writing file
+			Comms_HideReply(CARVERA_MSG_OK);
+			iState++;
+		break;
+
+
+		case STATE_RUNFILE_UPLOADLINE:
+		{
+			int count = sGCode_Line.size() - iUploaded;
+			if (count > 5)
+				count = 5;
+			
+			for (int x = 0; x < count; x++)
+			{
+				sentID = Comms_SendString(sGCode_Line[iUploaded+x].c_str(), false);
+
+				//Hide all replies except for the last one
+					if (count - x > 1)
+						Comms_HideReply(CARVERA_MSG_OK);
+			}
+
+			iUploaded += count;
+
+			Console.AddLog(CommsConsole::ITEM_TYPE_NONE, "Uploading file: %0.2f%%", ((float)iUploaded/(float)sGCode_Line.size())*100);
+
+			iState++;
+		}
+		break;
+
+		case STATE_RUNFILE_UPLOADWAIT:
+			if (Comms_PopMessageOfType(CARVERA_MSG_OK, 0, sentID))
+			{
+				if (iUploaded >= sGCode_Line.size())
+					iState = STATE_RUNFILE_ENDUPLOAD;
+				else
+					iState = STATE_RUNFILE_UPLOADLINE;
+			}
+		break;
+
+		case STATE_RUNFILE_ENDUPLOAD:
+			Comms_SendString("M29");	//Close the file
+			iState++;
+		break;
+
+		*/
+	}
+}
+
+void CloutProgram_Op_Run_GCode_File::ReadFromFile()
+{
+	std::ifstream file(sFilename);
+	if (file.is_open())
+	{
+		std::string line;
+		while (getline(file, line))
+		{
+			if (line.size() > 0)
+				sGCode_Line.push_back(line);
+		}
+		file.close();
+	}
+	else
+	{
+		Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error loading file %s", sFilename.c_str());
+	}
 }
 
 void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
@@ -52,30 +146,14 @@ void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 	{
 		if (GuiFileDialog->IsOk())
 		{
+			sGCode_Line.clear();
 			sFilename = GuiFileDialog->GetFilePathName();
-
-			//Read in the file
-			std::ifstream file(sFilename);
-			if (file.is_open())
-			{
-				std::string line;
-				while (getline(file, line))
-				{
-					sGCode_Line.push_back(line);
-				}
-				file.close();
-			}
-			else
-			{
-				Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error loading file");
-			}
+			ReadFromFile();			
 		}
 
 		// Close it
 		GuiFileDialog->Close();
 	}
-
-
 
 	ImGui::InputInt("Start Line##RunGCodeFile", &iStartLineNum);
 	HelpMarker("First line in this G Code file to begin executing.");
@@ -90,15 +168,28 @@ void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, fLineNumWidth);
 		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, TextViewSize.x - fLineNumWidth);
 
+		
 		for (x = 0; x < sGCode_Line.size(); x++)
 		{
+			bool bGrayText = false;
+			if (iStartLineNum > 0 && x < iStartLineNum)
+				bGrayText = true;
+			else if (iLastLineNum > -1 && x > iLastLineNum)
+				bGrayText = true;
+
 			ImGui::TableNextRow();
+
+			if (bGrayText)
+				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 100, 100, 255));
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("%d", x);
 
 			ImGui::TableSetColumnIndex(1);
 			ImGui::Text("%s", sGCode_Line.at(x).c_str());
+
+			if (bGrayText)
+				ImGui::PopStyleColor();
 		}
 
 		ImGui::EndTable();
@@ -114,10 +205,13 @@ void CloutProgram_Op_Run_GCode_File::DrawEditorSummaryInfo()
 
 void CloutProgram_Op_Run_GCode_File::ParseFromJSON(const json& j)
 {
-	iStartLineNum = j.value("Start", -1);
+	iStartLineNum = j.value("Start", 0);
 	iLastLineNum = j.value("End", -1);
 	sFilename = j.value("Filename", "");
 	sGCode_Line.clear();
+
+	if (!sFilename.empty())
+		ReadFromFile();
 }
 
 void CloutProgram_Op_Run_GCode_File::ParseToJSON(json& j)

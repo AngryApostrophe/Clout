@@ -300,8 +300,8 @@ void ProbeOperation_PocketCenter::ParseFromJSON(const json& j)
 {
 	ProbeOperation::ParseFromJSON(j);
 
-	fPocketWidth = j.value("Pocket Width", 0);
-	fOvertravel = j.value("Overtravel", 5);
+	fPocketWidth = j.value("Pocket Width", 0.0f);
+	fOvertravel = j.value("Overtravel", 5.0f);
 
 	std::string strAxis = j.value("Axis", "");
 

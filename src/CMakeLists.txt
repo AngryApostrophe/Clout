@@ -40,6 +40,8 @@ set  (MISC_LIB_SOURCES
       "${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog/ImGuiFileDialog.cpp"
 	"${PROJECT_SOURCE_DIR}/src/external/ImGuiFileDialog/ImGuiFileDialog.h"
 	"${PROJECT_SOURCE_DIR}/src/ImGuiFileDialogConfig.h"
+	"${PROJECT_SOURCE_DIR}/src/md5.cpp"
+	"${PROJECT_SOURCE_DIR}/src/md5.h"
 	)
 
 set  (CLOUT_SOURCES
@@ -52,6 +54,7 @@ set  (CLOUT_SOURCES
 	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.cpp"
 	"${PROJECT_SOURCE_DIR}/src/CloutProgram.cpp"
 	"${PROJECT_SOURCE_DIR}/src/OperationQueue.cpp"
+	"${PROJECT_SOURCE_DIR}/src/FileTransfer.cpp"
 	)
 	
 set  (CLOUT_SOURCES_PROBING
@@ -84,6 +87,7 @@ set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.h"
 	"${PROJECT_SOURCE_DIR}/src/CloutProgram.h"
 	"${PROJECT_SOURCE_DIR}/src/OperationQueue.h"
+	"${PROJECT_SOURCE_DIR}/src/FileTransfer.h"
 	)
 	
 file(GLOB CLOUT_RESOURCES

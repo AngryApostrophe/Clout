@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include <ImGuiFileDialog.h>
+
 #include "Clout.h"
 #include "Helpers.h"
 #include "Comms.h"
@@ -30,8 +32,21 @@ void _OperationQueue::Start()
 
 void _OperationQueue::Run()
 {
-	if (!bIsRunning)
+	if (!bIsRunning || Ops.empty())
 		return;
+
+	CloutProgram_Op &op = GetOp(0);
+
+	if (op.iState != STATE_OP_COMPLETE)
+		op.StateMachine();
+
+	if (op.iState == STATE_OP_COMPLETE)
+	{
+		Ops.pop_front(); //Remove this op, since it's complete
+	}
+
+	if (Ops.empty())
+		bIsRunning = false;
 }
 
 void _OperationQueue::DrawList()
@@ -39,32 +54,56 @@ void _OperationQueue::DrawList()
 	int x;
 	char szString[50];
 
+	bool bDisabled = bIsRunning;	//This can't be updated in the middle of the draw or we'll corrupt the BeginDisabled/EndDisabled stack
+
 	ImGui::Begin("Queue");
 
 	//Control
 		ImGui::SeparatorText("Control");
 
-		if (bIsRunning)
+		if (bDisabled)
 			ImGui::BeginDisabled();
 
-		if (ImGui::Button("Load##Queue"))
-		{
-		}
+		//Load button
+			if (ImGui::Button("Load##Queue"))
+			{
+				//Setup the file dialog
+				IGFD::FileDialogConfig config;
+				config.path = ".";
+				config.flags = ImGuiFileDialogFlags_Modal;
+				const char* filters = "Clout Program (*.clout){.clout},All files (*.*){.*}";
+				GuiFileDialog->OpenDialog("OpQueueLoadFileDlgKey", "Load File", filters, config);
+			}
 
-		if (ImGui::Button("Run##Queue"))
-			Start();
+			// Show the File dialog
+			ImVec2 MinSize(ScaledByWindowScale(750, 450));
+			if (GuiFileDialog->Display("OpQueueLoadFileDlgKey", ImGuiWindowFlags_NoCollapse, MinSize))
+			{
+				if (GuiFileDialog->IsOk())
+				{
+					CloutProgram Prog(GuiFileDialog->GetFilePathName().c_str());
+					AddProgramToQueue(Prog);
+				}
 
-		if (bIsRunning)
+				// Close it
+				GuiFileDialog->Close();
+			}
+
+		//Run button
+			if (ImGui::Button("Run##Queue"))
+				Start();
+
+		if (bDisabled)
 			ImGui::EndDisabled();
 
 		ImGui::SameLine();
 
-		if (!bIsRunning)
+		if (!bDisabled)
 			ImGui::BeginDisabled();
 
 		ImGui::Button("Pause##Queue");
 
-		if (!bIsRunning)
+		if (!bDisabled)
 			ImGui::EndDisabled();
 
 	//Operations list
@@ -73,7 +112,7 @@ void _OperationQueue::DrawList()
 	//Draw each item
 		if (ImGui::BeginTable("table_OpsList", 1, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY))
 		{
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 15));
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ScaledByWindowScale(0.0, 15));
 
 			for (x = 0; x < Ops.size(); x++)
 			{
@@ -100,8 +139,13 @@ void _OperationQueue::AddOpToQueue(CloutProgram_Op_Datatypes& NewOp)
 
 void _OperationQueue::AddProgramToQueue(CloutProgram& Program)
 {
-	std::for_each(Program.Ops.begin(), Program.Ops.end(), [this](const CloutProgram_Op_Datatypes NewOp)
+	/*std::for_each(Program.Ops.begin(), Program.Ops.end(), [this](const CloutProgram_Op_Datatypes NewOp)
 	{ 
 		Ops.push_back(NewOp);
-	});
+	});*/
+
+	for (int x = 0; x < Program.Ops.size(); x++)
+	{
+		Ops.push_back(Program.Ops.at(x));
+	}
 }

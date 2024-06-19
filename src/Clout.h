@@ -96,7 +96,7 @@ struct MACHINE_STATUS
 	Carvera::Units::eUnits Units;
 	Carvera::Plane::ePlane Plane;
 
-	unsigned char bCurrentTool;
+	int iCurrentTool;
 	float fToolLengthOffset; //Length of the installed tool. 0 if none.
 };
 

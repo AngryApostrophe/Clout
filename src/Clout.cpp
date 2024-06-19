@@ -357,7 +357,7 @@ void Clout_Init()
 		MachineStatus.Coord.Machine = { -1, -1, -1 };
 		MachineStatus.FeedRates = { 0, 0, 0 };
 
-		MachineStatus.bCurrentTool = 0;
+		MachineStatus.iCurrentTool = -1;
 		MachineStatus.fToolLengthOffset = 0;
 		MachineStatus.Positioning = Carvera::Positioning::Absolute;
 
@@ -371,15 +371,7 @@ void Clout_Init()
 		ModelViewer.Init();
 
 	//Other init stuff
-		OperationQueue.Init();
-
-	/*OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);
-	OperationQueue.AddProgramToQueue(prog);*/		
+		OperationQueue.Init();	
 }
 
 
@@ -752,8 +744,6 @@ bool Clout_MainLoop()
 
 			if (ImGui::Button("Program Editor"))
 				ImGui::OpenPopup("Program Editor");
-			ImGui::SameLine();
-			ImGui::Text("<Not Functional>");
 			ProgramEditor_Draw();
 
 		

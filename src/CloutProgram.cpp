@@ -62,7 +62,9 @@ std::vector<std::vector<int>> OrganizedOps = {
 		 Op = CloutProgram_Op_CloseCollet();
 
 	 //Setup the base stuff
-		 OpBaseClass(Op).FullText = strOperationName[iOpType];
+		 //if(OpBaseClass(Op).FullText.empty())
+			OpBaseClass(Op).FullText = strOperationName[iOpType];
+		 
 		 OpBaseClass(Op).iType = iOpType;
  }
  

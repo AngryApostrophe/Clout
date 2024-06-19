@@ -61,6 +61,67 @@ void CloutProgram_Op_RapidTo::GenerateFullTitle()
 
 void CloutProgram_Op_RapidTo::StateMachine()
 {
+	char sCmd[50];
+	char sTmp[20];
+
+	switch (iState)
+	{
+		case STATE_RAPIDTO_START:
+			Comms_SendString("G90"); //Ensure we're in absolute positioning
+			if (bUseWCS && WCS >= Carvera::CoordSystem::G53)
+				Comms_SendString(szWCSNames[WCS]);
+
+			sprintf(sCmd, "G0 ");
+
+			if (bUseAxis[0])
+			{
+				sprintf(sTmp, "X%0.0f ", Coords.x);
+				strcat(sCmd, sTmp);
+			}
+
+			if (bUseAxis[1])
+			{
+				sprintf(sTmp, "Y%0.0f ", Coords.y);
+				strcat(sCmd, sTmp);
+			}
+
+			if (bUseAxis[2])
+			{
+				sprintf(sTmp, "Z%0.0f ", Coords.z);
+				strcat(sCmd, sTmp);
+			}
+
+			if (bUseFeedrate)
+			{
+				sprintf(sTmp, "F%0.0f", fFeedrate);
+				strcat(sCmd, sTmp);
+			}
+
+			Comms_SendString(sCmd); //Send the move command
+			iState++;
+		break;
+
+		case STATE_RAPIDTO_MOVING:
+		{
+			bool bArrived = true;
+
+			DOUBLE_XYZ CurCoords = MachineStatus.Coord.Working;
+			if (WCS == Carvera::CoordSystem::G53)
+				CurCoords = MachineStatus.Coord.Machine;
+
+			//Check each active axis to see if we haven't yet arrived
+				if (bUseAxis[0] && fabs(CurCoords.x - Coords.x) > 0.1)
+					bArrived = false;
+				if (bUseAxis[1] && fabs(CurCoords.y - Coords.y) > 0.1)
+					bArrived = false;
+				if (bUseAxis[2] && fabs(CurCoords.z - Coords.z) > 0.1)
+					bArrived = false;
+
+			if (bArrived)
+				iState = STATE_OP_COMPLETE;
+		}
+		break;
+	}
 }
 
 void CloutProgram_Op_RapidTo::DrawDetailTab()

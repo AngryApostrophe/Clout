@@ -1,6 +1,10 @@
 //TODO:  process "<Error:ZProbe triggered before move, aborting command."
 //TODO:    $RST=#   Erases G54 - G59 WCS offsets and G28 / 30 positions stored in EEPROM.
 
+//https://github.com/Smoothieware/smoothieware-website-v1/blob/main/docs/console-commands.md
+//$# could be useful
+//https://smoothieware.github.io/Webif-pack/documentation/web/html/configuring-grbl-v0.html
+
 #include "Platforms/Platforms.h"
 
 #include <imgui.h>
@@ -44,6 +48,10 @@ using namespace std::chrono;
 	};
 	std::vector<sHiddenReplies> HiddenReplies; //List of replies from Carvera that we will ignore and not show on console.  Ie, response to regular ? and $G updates
 
+	unsigned long XmitID;	//Basically a running total of all messages sent.  Used for ignoring replies received before a message was sent.  Could also switch to time
+
+	void ProcessUpdateMsg(CarveraMessage& msg);
+
 //Inter-thread comms
 	CloutThreadHandle hCommsThread;
 	bool bOperationRunning = false;		//Set by other modules when a complex operation is running, and we should limit what we show in the console (like "ok"s).  TODO: This may no longer be necessary, revisit later
@@ -84,7 +92,7 @@ bool IsMessageIgnored(int iType)
 	return false; //Didn't find one in the list
 }
 
-void HideReply(int iType)
+void Comms_HideReply(int iType)
 {
 	sHiddenReplies hide;
 	hide.iType = iType;
@@ -119,7 +127,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 				tv.tv_sec = 0;
 				tv.tv_usec = 10000; //10ms
 
-			s = select(sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+			s = select((int)sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
 			if (s > 0) //Something is available to read
 			{					
 				n = recv(sckCarvera, buf, MAX_DATA_LENGTH, 0); //Read it
@@ -144,18 +152,37 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 
 								msg.iProcessed = 0;
 								strcpy(msg.cData, c);
+								msg.iLen = strlen(msg.cData);
 
 								char *z = strstr(msg.cData, "\n");
 								if (z != 0)
+								{
 									*z = 0x0;
+									msg.iLen = z-c;
+								}
+
+								msg.markpoint = XmitID;
 
 								DetermineMsgType(msg);
-
-								RecvMessageQueue.push_back(msg);
+								
+								if (msg.iType == CARVERA_MSG_STATUS || msg.iType == CARVERA_MSG_PARSER)
+									ProcessUpdateMsg(msg);
 
 								//Display on the console
-									if (!IsMessageIgnored(msg.iType) && msg.iType != CARVERA_MSG_OK)
-										Console.AddLog(CommsConsole::ITEM_TYPE_RECV, msg.cData);
+									if (!IsMessageIgnored(msg.iType)/* && msg.iType != CARVERA_MSG_OK*/)
+									{
+										/*if (msg.iType == CARVERA_MSG_UNKNOWN && msg.iLen == 1)
+											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "0x%x", msg.cData[0]);
+										else if (msg.iType == CARVERA_MSG_XMODEM_ACK)
+											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Ack>");
+										else if (msg.iType == CARVERA_MSG_XMODEM_NAK)
+											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Nak>");
+										else*/ if (msg.iType != CARVERA_MSG_OK && msg.iType != CARVERA_MSG_XMODEM_C && msg.iType != CARVERA_MSG_XMODEM_NAK && msg.iType != CARVERA_MSG_XMODEM_ACK)
+											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, msg.cData);
+										
+										
+										RecvMessageQueue.push_back(msg);
+									}
 
 								//Move on to the next one
 									c = strstr(c, "\n");
@@ -189,19 +216,27 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 
 			while (XmitMessageQueue.size() > 0)
 			{
-				//Make sure it's got the terminator or Carvera won't recognize it
-					strcpy(buf, XmitMessageQueue[0].cData);
-					n = strlen(buf);
-					if (n > 1)
-					{
-						if (buf[n] != '\n')
+				if (XmitMessageQueue[0].iType == CARVERA_OUTBOUND_STRING)
+				{
+					//Make sure it's got the terminator or Carvera won't recognize it
+						strcpy(buf, XmitMessageQueue[0].cData);
+						n = (int)strlen(buf);
+						if (n > 1)
 						{
-							buf[n + 1] = 0x0;
-							buf[n] = '\n';
-						}
+							if (buf[n] != '\n')
+							{
+								buf[n + 1] = 0x0;
+								buf[n] = '\n';
+							}
 
-						n = n + 1;
-					}
+							n = n + 1;
+						}
+				}
+				else
+				{
+					n = XmitMessageQueue[0].iLen;
+					memcpy(buf, XmitMessageQueue[0].cData, n);
+				}
 
 				n = send(sckCarvera,buf, n, 0); //Send the first message in the queue
 				if (n < 0)
@@ -228,19 +263,22 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 				}
 
 				CarveraMessage msg;
+				msg.iType = CARVERA_OUTBOUND_STRING;
 				msg.bHidden = true;
 
 				strcpy(msg.cData, "?");
+				XmitID++; //This is kinda hacky since we're skipping Comms_SendString
 				XmitMessageQueue.push_back(msg);
-				HideReply(CARVERA_MSG_STATUS);
+				Comms_HideReply(CARVERA_MSG_STATUS);
 
 				if (MachineStatus.Status == Carvera::Status::Idle)
 				{
 					strcpy(msg.cData, "$G");
+					XmitID++; //This is kinda hacky since we're skipping Comms_SendString
 					XmitMessageQueue.push_back(msg);
 
-					HideReply(CARVERA_MSG_PARSER);
-					HideReply(CARVERA_MSG_OK);
+					Comms_HideReply(CARVERA_MSG_PARSER);
+					Comms_HideReply(CARVERA_MSG_OK);
 				}				
 
 				LastStatusRqst = steady_clock::now();
@@ -260,8 +298,6 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 //Setup communications
 int CommsInit()
 {
-	int iResult;
-
 	bCommsConnected = false;
 	bDetectedDevices = 0;
 
@@ -323,7 +359,7 @@ void Comms_ListenForCarveras()
 			tv.tv_sec = 0;
 			tv.tv_usec = 10000; //10ms
 
-		int t = select(sckBroadcast + 1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+		int t = select((int)sckBroadcast + 1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
 
 		if (t > 0)
 		{
@@ -381,6 +417,122 @@ void Comms_ListenForCarveras()
 	}
 }
 
+void ProcessUpdateMsg(CarveraMessage &msg)
+{
+	char *data = msg.cData;
+	char *c;
+
+	if (msg.iType == CARVERA_MSG_STATUS)
+	{
+		//https://smoothieware.github.io/Webif-pack/documentation/web/html/configuring-grbl-v0.html
+		if (strncmp(data, "<Idle|MPos", 10) == 0)
+			MachineStatus.Status = Carvera::Status::Idle;
+		else if (strncmp(data, "<Run|MPos", 9) == 0)
+			MachineStatus.Status = Carvera::Status::Busy;
+		else if (strncmp(data, "<Home|MPos", 10) == 0)
+			MachineStatus.Status = Carvera::Status::Homing;
+		else if (strncmp(data, "<Alarm|MPos", 11) == 0)
+			MachineStatus.Status = Carvera::Status::Alarm;
+
+		//Read WCS coords
+		c = strstr(data, "WPos:");
+		if (c != 0)
+		{
+			c += 5; //The start of X pos
+			CommaStringTo3Doubles(c, &MachineStatus.Coord.Working.x, &MachineStatus.Coord.Working.y, &MachineStatus.Coord.Working.z);
+		}
+
+		//Read machine coords
+		c = strstr(data, "MPos:");
+		if (c != 0)
+		{
+			c += 5; //The start of X pos
+			CommaStringTo3Doubles(c, &MachineStatus.Coord.Machine.x, &MachineStatus.Coord.Machine.y, &MachineStatus.Coord.Machine.z);
+		}
+
+		//Read feed rates
+		c = strstr(data, "F:");
+		if (c != 0)
+		{
+			c += 2; //The start of X feed rate
+			CommaStringTo3Doubles(c, &MachineStatus.FeedRates.x, &MachineStatus.FeedRates.y, &MachineStatus.FeedRates.z);
+
+			//Actually the first one isn't X feedrate.  Y feedrate is shared with X.  The first value always seems to be 0?
+			MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
+		}
+
+		//Tool info
+		MachineStatus.iCurrentTool = -1;
+
+		c = strstr(data, "|T:");
+		if (c != 0)
+		{
+			c += 3; //The number
+			int iTool = atoi(c);
+			if (iTool > 0 && iTool <= 6)
+				MachineStatus.iCurrentTool = iTool;
+
+			c += 2; //To the TLO
+			MachineStatus.fToolLengthOffset = (float)atof(c);
+		}
+	}
+	else if (msg.iType == CARVERA_MSG_PARSER)
+	{
+		if (strstr(data, "G90") != 0)
+			MachineStatus.Positioning = Carvera::Positioning::Absolute;
+		else if (strstr(data, "G91") != 0)
+			MachineStatus.Positioning = Carvera::Positioning::Relative;
+
+
+		//Current WCS
+		Carvera::CoordSystem::eCoordSystem NewWCS = Carvera::CoordSystem::Unknown;
+
+		if (strstr(data, "G53") != 0)
+			NewWCS = Carvera::CoordSystem::G53;
+		else if (strstr(data, "G54") != 0)
+			NewWCS = Carvera::CoordSystem::G54;
+		else if (strstr(data, "G55") != 0)
+			NewWCS = Carvera::CoordSystem::G55;
+		else if (strstr(data, "G56") != 0)
+			NewWCS = Carvera::CoordSystem::G56;
+		else if (strstr(data, "G57") != 0)
+			NewWCS = Carvera::CoordSystem::G57;
+		else if (strstr(data, "G58") != 0)
+			NewWCS = Carvera::CoordSystem::G58;
+		else if (strstr(data, "G59") != 0)
+			NewWCS = Carvera::CoordSystem::G59;
+
+		if (MachineStatus.WCS != NewWCS) //It's changed
+		{
+			MachineStatus.WCS = NewWCS;
+
+			strcpy(szWCSChoices[1], "G53");
+			strcpy(szWCSChoices[2], "G54");
+			strcpy(szWCSChoices[3], "G55");
+			strcpy(szWCSChoices[4], "G56");
+			strcpy(szWCSChoices[5], "G57");
+			strcpy(szWCSChoices[6], "G58");
+			strcpy(szWCSChoices[7], "G59");
+
+			if (NewWCS > Carvera::CoordSystem::G53)
+				strcat(szWCSChoices[NewWCS], " (Active)");
+		}
+
+		if (strstr(data, "G20") != 0)
+			MachineStatus.Units = Carvera::Units::inch;
+		else if (strstr(data, "G21") != 0)
+			MachineStatus.Units = Carvera::Units::mm;
+
+		if (strstr(data, "G17") != 0)
+			MachineStatus.Plane = Carvera::Plane::XYZ;
+		else if (strstr(data, "G18") != 0)
+			MachineStatus.Plane = Carvera::Plane::XZY;
+		else if (strstr(data, "G19") != 0)
+			MachineStatus.Plane = Carvera::Plane::YZX;
+	}
+}
+
+
 //Called from the main loop.  Do some processing of incoming messages
 void Comms_Update()
 {
@@ -396,104 +548,11 @@ void Comms_Update()
 	}
 
 	//Loop through all messages in the recv queue
-		//for (int x = 0; x < RecvMessageQueue.size(); x++)
 		for (auto iter = RecvMessageQueue.begin(); iter != RecvMessageQueue.end();)
 		{
 			data = iter->cData;
 
-			if (iter->iType == CARVERA_MSG_STATUS)
-			{
-				//https://smoothieware.github.io/Webif-pack/documentation/web/html/configuring-grbl-v0.html
-				if (strncmp(data, "<Idle|MPos", 10) == 0)
-					MachineStatus.Status = Carvera::Status::Idle;
-				else if (strncmp(data, "<Run|MPos", 9) == 0)
-					MachineStatus.Status = Carvera::Status::Busy;
-				else if (strncmp(data, "<Home|MPos", 10) == 0)
-					MachineStatus.Status = Carvera::Status::Homing;
-				else if (strncmp(data, "<Alarm|MPos", 11) == 0)
-					MachineStatus.Status = Carvera::Status::Alarm;
-
-				//Read WCS coords
-					c = strstr(data, "WPos:");
-					if (c != 0)
-					{
-						c += 5; //The start of X pos
-						CommaStringTo3Doubles(c, &MachineStatus.Coord.Working.x, &MachineStatus.Coord.Working.y, &MachineStatus.Coord.Working.z);
-					}
-
-				//Read machine coords
-					c = strstr(data, "MPos:");
-					if (c != 0)
-					{
-						c += 5; //The start of X pos
-						CommaStringTo3Doubles(c, &MachineStatus.Coord.Machine.x, &MachineStatus.Coord.Machine.y, &MachineStatus.Coord.Machine.z);
-					}
-
-				//Read feed rates
-					c = strstr(data, "F:");
-					if (c != 0)
-					{
-						c += 2; //The start of X feed rate
-						CommaStringTo3Doubles(c, &MachineStatus.FeedRates.x, &MachineStatus.FeedRates.y, &MachineStatus.FeedRates.z);
-
-						//Actually the first one isn't X feedrate.  Y feedrate is shared with X.  The first value always seems to be 0?
-						MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
-					}
-			}
-			else if (iter->iType == CARVERA_MSG_PARSER)
-			{
-				if (strstr(data, "G90") != 0)
-					MachineStatus.Positioning = Carvera::Positioning::Absolute;
-				else if (strstr(data, "G91") != 0)
-					MachineStatus.Positioning = Carvera::Positioning::Relative;
-
-
-				//Current WCS
-				Carvera::CoordSystem::eCoordSystem NewWCS = Carvera::CoordSystem::Unknown;
-
-				if (strstr(data, "G53") != 0)
-					NewWCS = Carvera::CoordSystem::G53;
-				else if (strstr(data, "G54") != 0)
-					NewWCS = Carvera::CoordSystem::G54;
-				else if (strstr(data, "G55") != 0)
-					NewWCS = Carvera::CoordSystem::G55;
-				else if (strstr(data, "G56") != 0)
-					NewWCS = Carvera::CoordSystem::G56;
-				else if (strstr(data, "G57") != 0)
-					NewWCS = Carvera::CoordSystem::G57;
-				else if (strstr(data, "G58") != 0)
-					NewWCS = Carvera::CoordSystem::G58;
-				else if (strstr(data, "G59") != 0)
-					NewWCS = Carvera::CoordSystem::G59;
-
-				if (MachineStatus.WCS != NewWCS) //It's changed
-				{
-					MachineStatus.WCS = NewWCS;
-
-					strcpy(szWCSChoices[1], "G53");
-					strcpy(szWCSChoices[2], "G54");
-					strcpy(szWCSChoices[3], "G55");
-					strcpy(szWCSChoices[4], "G56");
-					strcpy(szWCSChoices[5], "G57");
-					strcpy(szWCSChoices[6], "G58");
-					strcpy(szWCSChoices[7], "G59");
-
-					if (NewWCS > Carvera::CoordSystem::G53)
-						strcat(szWCSChoices[NewWCS], " (Active)");
-				}
-
-				if (strstr(data, "G20") != 0)
-					MachineStatus.Units = Carvera::Units::inch;
-				else if (strstr(data, "G21") != 0)
-					MachineStatus.Units = Carvera::Units::mm;
-
-				if (strstr(data, "G17") != 0)
-					MachineStatus.Plane = Carvera::Plane::XYZ;
-				else if (strstr(data, "G18") != 0)
-					MachineStatus.Plane = Carvera::Plane::XZY;
-				else if (strstr(data, "G19") != 0)
-					MachineStatus.Plane = Carvera::Plane::YZX;
-			}
+			ProcessUpdateMsg(*iter);
 
 			iter->iProcessed++;
 
@@ -528,6 +587,30 @@ void DetermineMsgType(CarveraMessage &msg)
 		msg.iType = CARVERA_MSG_PROBE;
 	else if (strncmp(msg.cData, "[G", 2) == 0)  //Response to G Code parser status request
 		msg.iType = CARVERA_MSG_PARSER;
+	else if (strncmp(msg.cData, "Homing atc...", 13) == 0)
+		msg.iType = CARVERA_MSG_ATC_HOMING;
+	else if (strncmp(msg.cData, "ATC homed!", 10) == 0)
+		msg.iType = CARVERA_MSG_ATC_HOMED;
+	else if (strncmp(msg.cData, "ATC loosed!", 11) == 0 || strncmp(msg.cData, "Already loosed!", 15) == 0)
+		msg.iType = CARVERA_MSG_ATC_LOOSED;
+	else if (strncmp(msg.cData, "ATC clamped!", 12) == 0 || strncmp(msg.cData, "Already clamped!", 16) == 0)
+		msg.iType = CARVERA_MSG_ATC_CLAMPED;
+	else if (strncmp(msg.cData, "Done ATC", 8) == 0)
+		msg.iType = CARVERA_MSG_ATC_DONE;
+	else if (msg.cData[0] == 'C' && msg.iLen == 1)
+		msg.iType = CARVERA_MSG_XMODEM_C;
+	else if (msg.cData[0] == 0x04 && msg.iLen == 1)
+		msg.iType = CARVERA_MSG_XMODEM_EOT;
+	else if (msg.cData[0] == 0x06 && msg.iLen == 1)
+		msg.iType = CARVERA_MSG_XMODEM_ACK;
+	else if (msg.cData[0] == 0x15 && msg.iLen == 1)
+		msg.iType = CARVERA_MSG_XMODEM_NAK;
+	else if (msg.cData[0] == 0x16 && msg.iLen == 1)
+		msg.iType = CARVERA_MSG_XMODEM_CAN;
+	else if (strncmp(msg.cData, "Info: upload success", 20) == 0)
+		msg.iType = CARVERA_MSG_UPLOAD_SUCCESS;
+
+
 }
 
 void Comms_ConnectDevice(BYTE bDeviceIdx)
@@ -552,6 +635,7 @@ void Comms_ConnectDevice(BYTE bDeviceIdx)
 
 	//Connection established
 		bCommsConnected = true;
+		XmitID = 0;
 
 	//Create the communications thread
 		CloutCreateThread(&hCommsThread, CommsThreadProc);
@@ -566,15 +650,39 @@ void Comms_Disconnect()
 {
 	CommsDisconnect();
 }
-void Comms_SendString(const char* sString)
+unsigned long Comms_SendString(const char* sString, bool bShowInConsole)
 {
 	CarveraMessage msg;
 
-	msg.bHidden = false;
+	msg.bHidden = !bShowInConsole;
+	msg.iType = CARVERA_OUTBOUND_STRING;
 
 	//msg.Time = steady_clock::now();
 	strcpy(msg.cData, sString);
 	
+	if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
+	{
+		//TODO: Error message
+		return 0;
+	}
+
+	XmitMessageQueue.push_back(msg);
+
+	XmitID++;
+
+	ReleaseMutex(&hBufferMutex);
+
+	return XmitID;
+}
+
+void Comms_SendBytes(const char* bytes, int iLen)
+{
+	CarveraMessage msg;
+	msg.iType = CARVERA_OUTBOUND_BYTES;
+
+	memcpy(msg.cData, bytes, iLen);
+	msg.iLen = iLen;
+
 	if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 	{
 		//TODO: Error message
@@ -586,7 +694,7 @@ void Comms_SendString(const char* sString)
 	ReleaseMutex(&hBufferMutex);
 }
 
-int Comms_PopMessageOfType(CarveraMessage* msg, int iType) //Removes the first message of the desired type from the queue (FIFO)
+int Comms_PopMessageOfType(int iType, CarveraMessage *msg, unsigned long EarliestID) //Removes the first message of the desired type from the queue (FIFO)
 {
 	int iRes = 0; //Not found
 
@@ -599,9 +707,11 @@ int Comms_PopMessageOfType(CarveraMessage* msg, int iType) //Removes the first m
 	//Loop through all messages in the recv queue looking for a certain reply, ie a probe result
 		for (auto iter = RecvMessageQueue.begin(); iter != RecvMessageQueue.end(); iter++)
 		{
-			if (iter->iType == iType)
+			if (iter->iType == iType && iter->markpoint >= EarliestID)
 			{
-				*msg = *iter;
+				if (msg != 0)
+					*msg = *iter;
+
 				RecvMessageQueue.erase(iter);
 
 				iRes = 1; //Success

@@ -47,10 +47,12 @@ using CloutProgram_Op_Datatypes = std::variant<CloutProgram_Op, CloutProgram_Op_
 
 
 
+#define STATE_OP_COMPLETE	9999	//Each op will set to this state when it's complete and ready to move on
+
 class CloutProgram_Op
 {
 public:
-	CloutProgram_Op() { iType = CLOUT_OP_NULL; bEditorExpanded = false; FullText.clear(); bKeepItem = true; };
+	CloutProgram_Op() { iType = CLOUT_OP_NULL; iState=0; bEditorExpanded = false; FullText.clear(); bKeepItem = true; };
 
 	int iType; //What type of operation is this?
 
@@ -76,6 +78,9 @@ public:
 };
 
 
+//ATC Tool Change
+#define STATE_ATCCHANGE_START		0
+#define STATE_ATCCHANGE_RUNNING		1
 class CloutProgram_Op_ATC_Tool_Change : public CloutProgram_Op
 {
 public:
@@ -109,6 +114,10 @@ public:
 		virtual void ParseToJSON(json& j);
 };
 
+
+//Rapid To
+#define STATE_RAPIDTO_START		0
+#define STATE_RAPIDTO_MOVING	1
 class CloutProgram_Op_RapidTo : public CloutProgram_Op
 {
 public:
@@ -165,6 +174,10 @@ public:
 		virtual void ParseToJSON(json& j);
 };
 
+//Run a gcode file
+#define STATE_RUNFILE_START			0
+#define STATE_RUNFILE_UPLOAD		1
+#define STATE_RUNFILE_RUNNING		2
 class CloutProgram_Op_Run_GCode_File : public CloutProgram_Op
 {
 public:
@@ -178,6 +191,8 @@ public:
 	int iStartLineNum;	//Line number that we will begin executing at
 	int iLastLineNum;	//Final line number we will execute
 
+	void ReadFromFile();
+
 	//Inherited
 		virtual void StateMachine();
 		virtual void DrawDetailTab();
@@ -186,6 +201,9 @@ public:
 		virtual void ParseToJSON(json& j);
 };
 
+//Open Collet
+#define STATE_OPENCOLLET_START		0
+#define STATE_OPENCOLLET_RUNNING	1
 class CloutProgram_Op_OpenCollet : public CloutProgram_Op
 {
 public:
@@ -202,6 +220,9 @@ public:
 	virtual void ParseToJSON(json& j);
 };
 
+//Close Collet
+#define STATE_CLOSECOLLET_START		0
+#define STATE_CLOSECOLLET_RUNNING	1
 class CloutProgram_Op_CloseCollet : public CloutProgram_Op
 {
 public:
@@ -230,6 +251,7 @@ class CloutProgram
 {
 public:
 	CloutProgram();
+	CloutProgram(const char* szFilename) { CloutProgram(); LoadFromFile(szFilename); };
 	~CloutProgram(){};
 
 	void LoadFromFile(const char *szFilename);

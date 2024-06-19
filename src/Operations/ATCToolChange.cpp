@@ -20,15 +20,40 @@ CloutProgram_Op_ATC_Tool_Change::CloutProgram_Op_ATC_Tool_Change()
 
 void CloutProgram_Op_ATC_Tool_Change::StateMachine()
 {
+	char sCmd[30];
+
+	switch (iState)
+	{
+		case STATE_ATCCHANGE_START:
+			
+			if (iNewTool >= -1 && iNewTool <= 6)
+			{
+				sprintf(sCmd, "M6 T%d", iNewTool);
+				Comms_SendString(sCmd);
+				iState = STATE_ATCCHANGE_RUNNING;
+			}
+			else
+			{
+				//TODO: Error abort
+			}
+		break;
+
+	case STATE_ATCCHANGE_RUNNING:
+		if (Comms_PopMessageOfType(CARVERA_MSG_ATC_DONE))
+			iState = STATE_OP_COMPLETE;
+		break;
+	}
 }
 
 void CloutProgram_Op_ATC_Tool_Change::GenerateFullTitle()
 {
 	FullText.clear();
-	FullText = "ATC Tool Change:  ";
+	FullText = "ATC Tool Change: ";
 
 	if (iNewTool > 0)
-		FullText += "T" + iNewTool;
+	{
+		FullText += "T" + std::to_string(iNewTool);
+	}
 	else if (iNewTool == 0)
 		FullText += "Wireless Probe";
 	else if (iNewTool == -1)
@@ -38,7 +63,7 @@ void CloutProgram_Op_ATC_Tool_Change::GenerateFullTitle()
 void CloutProgram_Op_ATC_Tool_Change::DrawDetailTab()
 {
 	//Description
-	ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
+		ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
 
 	ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space before the setup
 
@@ -51,7 +76,10 @@ void CloutProgram_Op_ATC_Tool_Change::DrawDetailTab()
 			//Add the item
 			const bool is_selected = ((iNewTool + 1) == x);
 			if (ImGui::Selectable(szToolChoices[x], is_selected))
+			{
 				iNewTool = x - 1;
+				GenerateFullTitle();
+			}
 
 			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 			if (is_selected)

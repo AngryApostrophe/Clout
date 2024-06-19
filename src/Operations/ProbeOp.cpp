@@ -23,6 +23,11 @@ CloutProgram_Op_ProbeOp::CloutProgram_Op_ProbeOp()
 void CloutProgram_Op_ProbeOp::Change_ProbeOp_Type(int iNewType)
 {
 	Probing_InstantiateNewOp(ProbeOp, iNewType);
+
+	//Update the text description
+		FullText.clear();
+		FullText = "Probe: ";
+		FullText +=	szProbeOpNames[iNewType];
 }
 
 void CloutProgram_Op_ProbeOp::StateMachine()
@@ -100,7 +105,7 @@ void CloutProgram_Op_ProbeOp::ParseFromJSON(const json& j)
 		}
 
 	//Create the ProbeOp object that has all the data
-		Probing_InstantiateNewOp(ProbeOp, iProbeOpType);
+		Change_ProbeOp_Type(iProbeOpType);
 
 	//Have that ProbeOp parse its data
 		ProbeOp->ParseFromJSON(j);
