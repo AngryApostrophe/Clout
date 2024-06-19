@@ -7,11 +7,17 @@ The **C**arvera **L**ean **O**pen source **UT**ility is a custom controller for 
 The following features are currently available:
 * Home XY
 * Go to clearance
+* Jog axis
 * ATC tool change and TLO calibration
 * Open/Close collet
-* Bore & Boss center probe
-* Pocket center probe
-* Single axis probe (X, Y, or Z)
+* All probing operations except corners
+* Custom Clout programs:
+    * Tool changes
+    * Collet Open/Close
+    * Rapid To
+    * Installing touch probe
+    * Probe operations
+    * Run G Code files
 ## Console
 Commands typed in the console will be sent to Carvera. Example:
  ```bash
