@@ -165,7 +165,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 
 								DetermineMsgType(msg);
 								
-								if (msg.iType == CARVERA_MSG_STATUS || msg.iType == CARVERA_MSG_PARSER)
+								if (msg.iType == CARVERA_MSG_STATUS || msg.iType == CARVERA_MSG_PARSER || msg.iType == CARVERA_MSG_DEBUG)
 									ProcessUpdateMsg(msg);
 
 								//Display on the console
@@ -530,6 +530,18 @@ void ProcessUpdateMsg(CarveraMessage &msg)
 		else if (strstr(data, "G19") != 0)
 			MachineStatus.Plane = Carvera::Plane::YZX;
 	}
+	else if (msg.iType == CARVERA_MSG_DEBUG)
+	{
+		c = strstr(msg.cData, "|P:");
+		if (c != 0)
+		{
+			c += 3;
+			if (*c == '1')
+				MachineStatus.bProbeTriggered = true;
+			else
+				MachineStatus.bProbeTriggered = false;
+		}
+	}
 }
 
 
@@ -579,6 +591,10 @@ void DetermineMsgType(CarveraMessage &msg)
 
 	if (strncmp(msg.cData, "ok", 2) == 0)
 		msg.iType = CARVERA_MSG_OK;
+	else if (strncmp(msg.cData, "[G54:", 5) == 0 && strstr(msg.cData, "[PRB:") != 0)
+		msg.iType = CARVERA_MSG_PARAMETERS;
+	else if (strncmp(msg.cData, "{S:", 3) == 0)
+		msg.iType = CARVERA_MSG_DEBUG;
 	else if (_strnicmp(msg.cData, "G28 means goto", 14) == 0) //Annoying messages in response to a G28 command
 		msg.iType = CARVERA_MSG_G28;
 	else if (strncmp(msg.cData, "<Idle|MPos", 10) == 0 || strncmp(msg.cData, "<Run|MPos", 9) == 0 || strncmp(msg.cData, "<Home|MPos", 10 || strncmp(msg.cData, "<Alarm|MPos", 11)) == 0)

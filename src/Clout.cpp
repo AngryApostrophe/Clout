@@ -360,6 +360,7 @@ void Clout_Init()
 		MachineStatus.iCurrentTool = -1;
 		MachineStatus.fToolLengthOffset = 0;
 		MachineStatus.Positioning = Carvera::Positioning::Absolute;
+		MachineStatus.bProbeTriggered = false;
 
 	//Initialize comms
 		CommsInit();

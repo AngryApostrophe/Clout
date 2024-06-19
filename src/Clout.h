@@ -98,6 +98,8 @@ struct MACHINE_STATUS
 
 	int iCurrentTool;
 	float fToolLengthOffset; //Length of the installed tool. 0 if none.
+
+	bool bProbeTriggered; //True if the touch probe is triggered.  This is only updated in certain operations by a * command
 };
 
 extern MACHINE_STATUS MachineStatus;

@@ -40,6 +40,8 @@ extern bool bOperationRunning;
 #define CARVERA_MSG_XMODEM_NAK		15 //XModem protocol for sending files.  0x15
 #define CARVERA_MSG_XMODEM_CAN		16 //XModem protocol for sending files.  0x16
 #define CARVERA_MSG_UPLOAD_SUCCESS	17 //File upload successful.  "Info: upload success"
+#define CARVERA_MSG_PARAMETERS		18 //A bunch of parameters, response to "$#"
+#define CARVERA_MSG_DEBUG			19 //Debug parameters, response to "*"
 
 
 //#ifdef _CHRONO_

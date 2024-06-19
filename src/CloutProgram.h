@@ -99,12 +99,22 @@ public:
 };
 
 
+//Install touch probe
+#define STATE_INSTALLPROBE_START		0
+#define STATE_INSTALLPROBE_RETURNTOOL	1	//Return a tool currently in the spindle
+#define STATE_INSTALLPROBE_CLEARANCE	2	//Go to clearance position
+#define STATE_INSTALLPROBE_OPENCOLLET	3	//Open the collet
+#define STATE_INSTALLPROBE_CONFIRM		4	//Confirm ready
+#define STATE_INSTALLPROBE_CLOSECOLLET	5	//Close the collet
+#define STATE_INSTALLPROBE_TEST			6	//Test functionality
 class CloutProgram_Op_InstallTouchProbe : public CloutProgram_Op
 {
 public:
 	CloutProgram_Op_InstallTouchProbe();
 
 	bool bConfirmFunction;	//True if we wish to confirm that the touch probe is working before moving on
+
+	bool bProbeStatus; //Current status of touch probe trigger.
 
 	//Inherited
 		virtual void StateMachine();
