@@ -41,7 +41,7 @@ extern bool bFileTransferInProgress;
 #define CARVERA_MSG_XMODEM_CAN		16 //XModem protocol for sending files.  0x16
 #define CARVERA_MSG_UPLOAD_SUCCESS	17 //File upload successful.  "Info: upload success"
 #define CARVERA_MSG_PARAMETERS		18 //A bunch of parameters, response to "$#"
-#define CARVERA_MSG_DEBUG			19 //Debug parameters, response to "*"
+#define CARVERA_MSG_DEBUG			19 //Debug parameters, response to "*"	diagnose_command() in https://github.com/faecorrigan/CarveraCommunityFirmware/blob/makeraCommunity/src/modules/utils/simpleshell/SimpleShell.cpp
 #define CARVERA_MSG_PLAYING			20 //Beginning to play a gcode file
 #define CARVERA_MSG_CLOUTSYNC		21 //A message we insert into custom GCode to sync up with the end of the file
 
