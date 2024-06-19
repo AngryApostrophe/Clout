@@ -42,8 +42,9 @@ class CloutProgram_Op_ProbeOp;
 class CloutProgram_Op_Run_GCode_File;
 class CloutProgram_Op_OpenCollet;
 class CloutProgram_Op_CloseCollet;
+class CloutProgram_Op_HomeXY;
 
-using CloutProgram_Op_Datatypes = std::variant<CloutProgram_Op, CloutProgram_Op_ATC_Tool_Change, CloutProgram_Op_InstallTouchProbe, CloutProgram_Op_RapidTo, CloutProgram_Op_Custom_GCode, CloutProgram_Op_ProbeOp, CloutProgram_Op_Run_GCode_File, CloutProgram_Op_OpenCollet, CloutProgram_Op_CloseCollet>;
+using CloutProgram_Op_Datatypes = std::variant<CloutProgram_Op, CloutProgram_Op_ATC_Tool_Change, CloutProgram_Op_InstallTouchProbe, CloutProgram_Op_RapidTo, CloutProgram_Op_Custom_GCode, CloutProgram_Op_ProbeOp, CloutProgram_Op_Run_GCode_File, CloutProgram_Op_OpenCollet, CloutProgram_Op_CloseCollet, CloutProgram_Op_HomeXY>;
 
 
 
@@ -79,8 +80,6 @@ public:
 
 
 //ATC Tool Change
-#define STATE_ATCCHANGE_START		0
-#define STATE_ATCCHANGE_RUNNING		1
 class CloutProgram_Op_ATC_Tool_Change : public CloutProgram_Op
 {
 public:
@@ -100,13 +99,6 @@ public:
 
 
 //Install touch probe
-#define STATE_INSTALLPROBE_START		0
-#define STATE_INSTALLPROBE_RETURNTOOL	1	//Return a tool currently in the spindle
-#define STATE_INSTALLPROBE_CLEARANCE	2	//Go to clearance position
-#define STATE_INSTALLPROBE_OPENCOLLET	3	//Open the collet
-#define STATE_INSTALLPROBE_CONFIRM		4	//Confirm ready
-#define STATE_INSTALLPROBE_CLOSECOLLET	5	//Close the collet
-#define STATE_INSTALLPROBE_TEST			6	//Test functionality
 class CloutProgram_Op_InstallTouchProbe : public CloutProgram_Op
 {
 public:
@@ -126,8 +118,6 @@ public:
 
 
 //Rapid To
-#define STATE_RAPIDTO_START		0
-#define STATE_RAPIDTO_MOVING	1
 class CloutProgram_Op_RapidTo : public CloutProgram_Op
 {
 public:
@@ -185,9 +175,6 @@ public:
 };
 
 //Run a gcode file
-#define STATE_RUNFILE_START			0
-#define STATE_RUNFILE_UPLOAD		1
-#define STATE_RUNFILE_RUNNING		2
 class CloutProgram_Op_Run_GCode_File : public CloutProgram_Op
 {
 public:
@@ -212,8 +199,6 @@ public:
 };
 
 //Open Collet
-#define STATE_OPENCOLLET_START		0
-#define STATE_OPENCOLLET_RUNNING	1
 class CloutProgram_Op_OpenCollet : public CloutProgram_Op
 {
 public:
@@ -231,8 +216,6 @@ public:
 };
 
 //Close Collet
-#define STATE_CLOSECOLLET_START		0
-#define STATE_CLOSECOLLET_RUNNING	1
 class CloutProgram_Op_CloseCollet : public CloutProgram_Op
 {
 public:
@@ -248,6 +231,25 @@ public:
 	virtual void ParseFromJSON(const json& j);
 	virtual void ParseToJSON(json& j);
 };
+
+//Home XY
+class CloutProgram_Op_HomeXY : public CloutProgram_Op
+{
+public:
+	CloutProgram_Op_HomeXY();
+	~CloutProgram_Op_HomeXY() {};
+
+	bool bRemoveOffsets;	//True if we want to remove all WCS offsets and set 0,0 back to bottom left corner
+
+	//Inherited
+	virtual void StateMachine();
+	virtual void DrawDetailTab();
+	virtual void DrawEditorSummaryInfo();
+	virtual void ParseFromJSON(const json& j);
+	virtual void ParseToJSON(json& j);
+};
+
+
 
 
 

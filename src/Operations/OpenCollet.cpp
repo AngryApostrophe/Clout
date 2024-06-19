@@ -13,6 +13,12 @@
 #include "../Console.h"
 #include "../CloutProgram.h"
 
+
+#define STATE_OPENCOLLET_START		0
+#define STATE_OPENCOLLET_RUNNING	1
+
+
+
 CloutProgram_Op_OpenCollet::CloutProgram_Op_OpenCollet()
 {
 }

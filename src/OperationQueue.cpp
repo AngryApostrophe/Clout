@@ -12,6 +12,8 @@
 #include "CloutProgram.h"
 #include "OperationQueue.h"
 
+#include "ProgramEditor.h"
+
 _OperationQueue OperationQueue;  //The one and only queue for Clout
 
 
@@ -68,8 +70,29 @@ void _OperationQueue::DrawList()
 		if (bDisabled)
 			ImGui::BeginDisabled();
 
+		//Run button
+			if (ImGui::Button("Run##Queue", ScaledByWindowScale(50, 35)))
+				Start();
+
+		if (bDisabled)
+			ImGui::EndDisabled();
+
+		ImGui::SameLine();
+
+		if (!bDisabled || 1) //This button doesn't do anything yet
+			ImGui::BeginDisabled();
+
+		ImGui::Button("Pause##Queue", ScaledByWindowScale(50, 35));
+
+		if (!bDisabled || 1)
+			ImGui::EndDisabled();
+
+		ImGui::SameLine();
+		ImGui::Dummy(ScaledByWindowScale(50.0f, 0.0f)); //Extra empty space between the buttons
+		ImGui::SameLine();
+
 		//Load button
-			if (ImGui::Button("Load##Queue"))
+			if (ImGui::Button("Load##Queue", ScaledByWindowScale(50, 35)))
 			{
 				//Setup the file dialog
 				IGFD::FileDialogConfig config;
@@ -93,22 +116,14 @@ void _OperationQueue::DrawList()
 				GuiFileDialog->Close();
 			}
 
-		//Run button
-			if (ImGui::Button("Run##Queue"))
-				Start();
-
-		if (bDisabled)
-			ImGui::EndDisabled();
-
 		ImGui::SameLine();
 
-		if (!bDisabled)
-			ImGui::BeginDisabled();
+		ImGui::Dummy(ScaledByWindowScale(10.0f, 0.0f)); //Extra empty space between the buttons
+		ImGui::SameLine();
 
-		ImGui::Button("Pause##Queue");
-
-		if (!bDisabled)
-			ImGui::EndDisabled();
+		if (ImGui::Button("Editor", ScaledByWindowScale(50, 35)))
+			ImGui::OpenPopup("Program Editor");
+		ProgramEditor_Draw();
 
 	//Operations list
 		ImGui::SeparatorText("Operation List");

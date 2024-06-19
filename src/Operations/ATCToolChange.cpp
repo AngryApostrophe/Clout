@@ -13,6 +13,11 @@
 #include "../Console.h"
 #include "../CloutProgram.h"
 
+
+#define STATE_ATCCHANGE_START		0
+#define STATE_ATCCHANGE_RUNNING		1
+
+
 CloutProgram_Op_ATC_Tool_Change::CloutProgram_Op_ATC_Tool_Change()
 {
 	iNewTool = -99;

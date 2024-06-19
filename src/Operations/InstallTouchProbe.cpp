@@ -18,7 +18,19 @@ using namespace std::chrono;
 
 #include "../Probing/Probing.h"
 
+
+#define STATE_INSTALLPROBE_START		0
+#define STATE_INSTALLPROBE_RETURNTOOL	1	//Return a tool currently in the spindle
+#define STATE_INSTALLPROBE_CLEARANCE	2	//Go to clearance position
+#define STATE_INSTALLPROBE_OPENCOLLET	3	//Open the collet
+#define STATE_INSTALLPROBE_CONFIRM		4	//Confirm ready
+#define STATE_INSTALLPROBE_CLOSECOLLET	5	//Close the collet
+#define STATE_INSTALLPROBE_CALIBRATE	6	//Calibrate the TLO
+#define STATE_INSTALLPROBE_TEST			7	//Test functionality
+
+
 static steady_clock::time_point LastStatusRqst;
+static bool bStepRunning;
 
 
 CloutProgram_Op_InstallTouchProbe::CloutProgram_Op_InstallTouchProbe()
@@ -92,14 +104,33 @@ void CloutProgram_Op_InstallTouchProbe::StateMachine()
 		case STATE_INSTALLPROBE_CLOSECOLLET:
 			if (Comms_PopMessageOfType(CARVERA_MSG_ATC_CLAMPED))
 			{
-				if (bConfirmFunction)
+				Comms_SendString("M491");
+				bStepRunning = false;
+				iState = STATE_INSTALLPROBE_CALIBRATE;
+			}
+		break;
+
+		case STATE_INSTALLPROBE_CALIBRATE:
+			if (!bStepRunning)
+			{
+				//Wait for the update that shows it's in progress
+					if (MachineStatus.Status == Carvera::Status::Busy)
+						bStepRunning = true;
+			}
+			else
+			{
+				//Wait for the update that shows it's done
+				if (MachineStatus.Status == Carvera::Status::Idle)
 				{
-					ImGui::OpenPopup("Probe Test##InstallTouchProbe");
-					LastStatusRqst = steady_clock::now();
-					iState = STATE_INSTALLPROBE_TEST;
+					if (bConfirmFunction)
+					{
+						ImGui::OpenPopup("Probe Test##InstallTouchProbe");
+						LastStatusRqst = steady_clock::now();
+						iState = STATE_INSTALLPROBE_TEST;
+					}
+					else
+						iState = STATE_OP_COMPLETE;
 				}
-				else
-					iState = STATE_OP_COMPLETE;
 			}
 		break;
 

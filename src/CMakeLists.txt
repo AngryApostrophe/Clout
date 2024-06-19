@@ -67,16 +67,11 @@ set  (CLOUT_SOURCES_PROBING
       "${PROJECT_SOURCE_DIR}/src/Probing/SingleAxis.cpp"
 	)
 	
-set  (CLOUT_SOURCES_OPERATIONS
-      "${PROJECT_SOURCE_DIR}/src/Operations/RunGCodeFile.cpp"
-      "${PROJECT_SOURCE_DIR}/src/Operations/ATCToolChange.cpp"
-      "${PROJECT_SOURCE_DIR}/src/Operations/ProbeOp.cpp"
-      "${PROJECT_SOURCE_DIR}/src/Operations/InstallTouchProbe.cpp"
-      "${PROJECT_SOURCE_DIR}/src/Operations/RapidTo.cpp"
-      "${PROJECT_SOURCE_DIR}/src/Operations/CustomGCode.cpp"
-      "${PROJECT_SOURCE_DIR}/src/Operations/OpenCollet.cpp"
-      "${PROJECT_SOURCE_DIR}/src/Operations/CloseCollet.cpp"
-      )
+file(GLOB CLOUT_SOURCES_OPERATIONS
+     "${PROJECT_SOURCE_DIR}/src/Operations/*.h"
+     "${PROJECT_SOURCE_DIR}/src/Operations/*.cpp"
+)
+
 	
 set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/Clout.h"

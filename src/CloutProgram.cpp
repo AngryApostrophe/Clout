@@ -60,6 +60,8 @@ std::vector<std::vector<int>> OrganizedOps = {
 		 Op = CloutProgram_Op_OpenCollet();
 	 else if (iOpType == CLOUT_OP_CLOSE_COLLET)
 		 Op = CloutProgram_Op_CloseCollet();
+	 else if (iOpType == CLOUT_OP_HOME_XY)
+		 Op = CloutProgram_Op_HomeXY();
 
 	 //Setup the base stuff
 		 //if(OpBaseClass(Op).FullText.empty())

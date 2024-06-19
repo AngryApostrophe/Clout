@@ -188,11 +188,13 @@ void Window_Jog_Draw()
 			if (ImGui::BeginPopup("popup_change_xyval"))
 			{
 				ImGui::SeparatorText("Distance");
+				ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]);
 				for (x = 0; x < JogVals.size(); x++)
 				{
 					if (ImGui::Selectable(JogVals[x]))
 						XYJogIdx = x;
 				}
+				ImGui::PopFont();
 				ImGui::EndPopup();
 			}
 
@@ -221,16 +223,21 @@ void Window_Jog_Draw()
 			if (ImGui::Button(String.c_str(), DistanceButtonSize))
 				ImGui::OpenPopup("popup_change_zval");
 
+			
 			if (ImGui::BeginPopup("popup_change_zval"))
 			{
 				ImGui::SeparatorText("Distance");
+				ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]);
 				for (x = 0; x < JogVals.size(); x++)
 				{
 					if (ImGui::Selectable(JogVals[x]))
 						ZJogIdx = x;
 				}
+				ImGui::PopFont();
 				ImGui::EndPopup();
+				
 			}
+			
 
 		// Y-
 		ImGui::TableNextRow();
@@ -416,12 +423,15 @@ void Window_Connection_Draw()
 void Window_Status_Draw()
 {
 	int x;		//General purpose int
-	const BYTE bSlen = 20;
-	char s[bSlen];	//General purpose string
+	char s[50];	//General purpose string
 	ImVec2 vec;
 	float fColWidth;
 
 	ImVec2 TextSize;
+
+	//Used for zeroing an axis
+		int iAxisHover = -1;
+		static int iAxisZero;
 
 	//Create the status window
 		if (!ImGui::Begin("Status", 0))
@@ -479,7 +489,6 @@ void Window_Status_Draw()
 	ImGui::Dummy(ScaledByWindowScale(0.0f, 10.0f)); //Extra empty space
 
 	//Positions
-	
 		//Create the child window for the rounded border
 			ImGui::BeginChild("child_pos", ImVec2(ImGui::GetContentRegionAvail().x, ScaledByWindowScale(0.0f)), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);
 
@@ -531,6 +540,8 @@ void Window_Status_Draw()
 
 							ImGui::EndTable();
 						}
+						if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenOverlapped))
+							iAxisHover = 0;
 
 				//Move to Y position
 					ImGui::TableNextRow();
@@ -575,6 +586,8 @@ void Window_Status_Draw()
 
 								ImGui::EndTable();
 						}
+						if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenOverlapped))
+							iAxisHover = 1;
 
 				//Move to Z position
 					ImGui::TableNextRow();
@@ -618,6 +631,8 @@ void Window_Status_Draw()
 
 						ImGui::EndTable();
 					}
+					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenOverlapped))
+						iAxisHover = 2;
 
 				ImGui::EndTable();
 			}
@@ -626,6 +641,48 @@ void Window_Status_Draw()
 			ImGui::EndChild();
 		
 		ImGui::Dummy(ScaledByWindowScale(0.0f, 10.0f)); //Extra empty space
+
+		ImGui::Text("%d", iAxisHover);
+
+	//Zero axis on mouse click
+			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && iAxisHover != -1)
+			{
+				iAxisZero = iAxisHover;
+				ImGui::OpenPopup("Zero Axis##Status");
+			}
+
+			if (ImGui::BeginPopupModal("Zero Axis##Status", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				char sAxis[2] = "";
+				if (iAxisZero == 0)
+					strcpy(sAxis, "X");
+				else if (iAxisZero == 1)
+					strcat(sAxis, "Y");
+				else if (iAxisZero == 2)
+					strcat(sAxis, "Z");
+
+				sprintf(s, "Confirm you wish to set the %s axis to 0?", sAxis);
+
+				ImGui::Text(s);
+				ImGui::Separator();
+				ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space
+
+				if (ImGui::Button("OK", ScaledByWindowScale(120, 30)))
+				{
+					sprintf(s, "G10 L20 P0 %s0", sAxis);
+					Comms_SendString(s); //Send the command
+					ImGui::CloseCurrentPopup();										
+				}
+				ImGui::SameLine();
+				ImGui::Dummy(ScaledByWindowScale(15.0f, 0.0f)); //Extra empty space
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel", ScaledByWindowScale(120, 30)))
+				{
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SetItemDefaultFocus();
+				ImGui::EndPopup();
+			}
 
 	//Feedrate
 		if (ImGui::BeginTable("table_feedrates", 2))
@@ -858,7 +915,7 @@ void Window_Status_Draw()
 	
 	//Emergency Stop button
 		x = 1; //Disabled
-		if (MachineStatus.Status != Carvera::Status::Busy || MachineStatus.Status != Carvera::Status::Homing)
+		if (MachineStatus.Status != Carvera::Status::Busy && MachineStatus.Status != Carvera::Status::Homing)
 			x = 0; //Active
 
 		if (!x)
@@ -891,12 +948,6 @@ void Window_Status_Draw()
 
 		if (!x)
 			ImGui::EndDisabled();
-
-
-	if (ImGui::Button("Program Editor"))
-		ImGui::OpenPopup("Program Editor");
-	ProgramEditor_Draw();
-
 
 	ImGui::PopStyleColor(); //ImGuiCol_ChildBg
 	ImGui::PopStyleVar();	//ImGuiStyleVar_ChildRounding

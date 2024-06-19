@@ -16,6 +16,11 @@
 #include "../FileTransfer.h"
 
 
+#define STATE_RUNFILE_START			0
+#define STATE_RUNFILE_UPLOAD		1
+#define STATE_RUNFILE_RUNNING		2
+
+
 CloutProgram_Op_Run_GCode_File::CloutProgram_Op_Run_GCode_File()
 {
 	sFilename.clear();

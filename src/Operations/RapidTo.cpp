@@ -14,6 +14,10 @@
 #include "../CloutProgram.h"
 
 
+#define STATE_RAPIDTO_START		0
+#define STATE_RAPIDTO_MOVING	1
+
+
 CloutProgram_Op_RapidTo::CloutProgram_Op_RapidTo()
 {
 	CloutProgram_Op();

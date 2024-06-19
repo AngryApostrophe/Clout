@@ -13,7 +13,8 @@
 #include "../Console.h"
 #include "../CloutProgram.h"
 
-
+#define STATE_PROBEOP_START		0
+#define STATE_PROBEOP_RUNNING	1
 
 CloutProgram_Op_ProbeOp::CloutProgram_Op_ProbeOp()
 {
@@ -32,6 +33,18 @@ void CloutProgram_Op_ProbeOp::Change_ProbeOp_Type(int iNewType)
 
 void CloutProgram_Op_ProbeOp::StateMachine()
 {
+	if (iState == STATE_PROBEOP_START)
+	{
+		ProbeOp->iState = PROBE_STATE_START; //Start the operation
+		iState = STATE_PROBEOP_RUNNING;
+	}
+	else if (iState == STATE_PROBEOP_RUNNING)
+	{
+		if (ProbeOp->iState == PROBE_STATE_COMPLETE)
+			iState = STATE_OP_COMPLETE;
+		else
+			ProbeOp->StateMachine();
+	}
 }
 
 void CloutProgram_Op_ProbeOp::DrawDetailTab()

@@ -9,6 +9,7 @@ typedef unsigned long DWORD;
 #define FONT_MAIN		0
 #define FONT_POS_LARGE	1
 #define FONT_POS_SMALL	2
+#define FONT_SELECTION	3
 
 //Global vars
 	extern ImGuiIO* io;

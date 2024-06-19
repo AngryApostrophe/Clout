@@ -191,6 +191,8 @@ void ProgramEditor_Draw()
 				for (x = 0; x < strOpsSections.size(); x++)
 				{
 					ImGui::SeparatorText(strOpsSections[x].c_str());
+
+					ImGui::PushFont(io->Fonts->Fonts[FONT_SELECTION]);
 					
 					for (int y = 0; y < OrganizedOps[x].size(); y++)
 					{
@@ -199,6 +201,8 @@ void ProgramEditor_Draw()
 							EditorProg.AddNewOperation(OrganizedOps[x][y]);
 						}
 					}
+
+					ImGui::PopFont();
 				}
 
 				/*

@@ -45,6 +45,7 @@ public:
 	virtual void ParseFromJSON(const json& j);
 
 	BYTE bProbingType;								//What type of probing operation is this?
+	int iState;										//For the state machine
 
 protected:
 	void RunProbeStep(const char* szCmd, DOUBLE_XYZ* ResultXYZ = 0, bool bFailOnTouch = false);  //Run a probe step from the state machine
@@ -53,8 +54,7 @@ protected:
 	const char *szWindowIdent;						//Identifier of the window for ImGui
 
 	GLuint imgPreview;								//Image to preview the operation
-
-	int iState;										//For the state machine
+	
 	bool bStepIsRunning;							//True if we have sent this step to Carvera, and are just waiting for it to complete.
 
 	DOUBLE_XYZ StartFeedrate;						//What was the feed rate before we started?  We'll restore this when we're done

@@ -31,6 +31,7 @@
 	#include "Resources/ProggyClean.h"
 
 
+
 // Main code
 int main(int, char**)
 {
@@ -145,6 +146,7 @@ int main(int, char**)
 					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 13.0f);	//FONT_MAIN
 					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 26.0f);	//FONT_POS_LARGE
 					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 18.0f);	//FONT_POS_SMALL
+					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 16.0f);	//FONT_SELECTION
 
 					io->Fonts->Build();
 					ImGui_ImplOpenGL3_DestroyFontsTexture();

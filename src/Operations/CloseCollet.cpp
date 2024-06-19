@@ -13,6 +13,12 @@
 #include "../Console.h"
 #include "../CloutProgram.h"
 
+
+#define STATE_CLOSECOLLET_START		0
+#define STATE_CLOSECOLLET_RUNNING	1
+
+
+
 CloutProgram_Op_CloseCollet::CloutProgram_Op_CloseCollet()
 {
 }
