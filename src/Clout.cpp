@@ -642,7 +642,7 @@ void Window_Status_Draw()
 		
 		ImGui::Dummy(ScaledByWindowScale(0.0f, 10.0f)); //Extra empty space
 
-		ImGui::Text("%d", iAxisHover);
+		//ImGui::Text("%d", iAxisHover);
 
 	//Zero axis on mouse click
 			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && iAxisHover != -1)
@@ -694,6 +694,7 @@ void Window_Status_Draw()
 			sprintf(s, "Feed Rate");
 			TextSize = ImGui::CalcTextSize(s);
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x)));
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ScaledByWindowScale(3));
 			ImGui::Text(s);
 
 			ImGui::TableSetColumnIndex(1);
@@ -715,6 +716,7 @@ void Window_Status_Draw()
 			sprintf(s, "Spindle");
 			TextSize = ImGui::CalcTextSize(s);
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x)));
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ScaledByWindowScale(3));
 			ImGui::Text(s);
 
 			ImGui::TableSetColumnIndex(1);
@@ -912,6 +914,7 @@ void Window_Status_Draw()
 		ImGui::EndTable();
 	}
 
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space before the combo box
 	
 	//Emergency Stop button
 		x = 1; //Disabled

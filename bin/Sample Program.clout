@@ -6,12 +6,6 @@
     "Name": "Clout Program",
     "Operations": [
         {
-            "End": 69,
-            "Filename": ".\\test.nc",
-            "Start": 3,
-            "Type": "Run G Code File"
-        },
-        {
             "Tool": -1,
             "Type": "ATC Tool Change"
         },
@@ -20,20 +14,33 @@
             "Type": "Install Touch Probe"
         },
         {
-            "Feedrate": 300.0,
+            "Feedrate": 1000.0,
             "Supply Feedrate": false,
             "Supply WCS": false,
             "Type": "Rapid To",
             "Use X": true,
             "Use Y": true,
-            "Use Z": true,
+            "Use Z": false,
             "WCS": "G54",
-            "X": 40.0,
-            "Y": 140.0,
-            "Z": 10.0
+            "X": 155.0,
+            "Y": 105.0,
+            "Z": 0.0
         },
         {
-            "Bore Diameter": 25.0,
+            "Feedrate": 1000.0,
+            "Supply Feedrate": false,
+            "Supply WCS": false,
+            "Type": "Rapid To",
+            "Use X": false,
+            "Use Y": false,
+            "Use Z": true,
+            "WCS": "G54",
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": -2.0
+        },
+        {
+            "Bore Diameter": 30.0,
             "Fast Speed": 300,
             "Overtravel": 5.0,
             "Probe Op Type": "Bore Center",
@@ -41,6 +48,53 @@
             "Type": "Run Probe Operation",
             "WCS": "G54",
             "Zero WCS": true
+        },
+        {
+            "Feedrate": 1000.0,
+            "Supply Feedrate": false,
+            "Supply WCS": false,
+            "Type": "Rapid To",
+            "Use X": false,
+            "Use Y": false,
+            "Use Z": true,
+            "WCS": "G54",
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": 30.0
+        },
+        {
+            "Confirm": true,
+            "Type": "Open Collet"
+        },
+        {
+            "Tool": 6,
+            "Type": "ATC Tool Change"
+        },
+        {
+            "Feedrate": 1000.0,
+            "Supply Feedrate": false,
+            "Supply WCS": false,
+            "Type": "Rapid To",
+            "Use X": true,
+            "Use Y": true,
+            "Use Z": false,
+            "WCS": "G54",
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": 0.0
+        },
+        {
+            "Feedrate": 1000.0,
+            "Supply Feedrate": false,
+            "Supply WCS": false,
+            "Type": "Rapid To",
+            "Use X": false,
+            "Use Y": false,
+            "Use Z": true,
+            "WCS": "G54",
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": 5.0
         }
     ]
 }
