@@ -111,21 +111,19 @@ void Window_Jog_Draw()
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
 	//Size the window
-		const ImVec2 WindowSize(800, 500);
+		const ImVec2 WindowSize(800, 525);
 		ImGui::SetNextWindowSize(ScaledByWindowScale(WindowSize));
 
 	//Create the modal popup
 		if (!ImGui::BeginPopupModal("Jog Axis", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 			return;
 
-		
-
 //	ImGui::SeparatorText("Setup");
-	ImGui::Dummy(ScaledByWindowScale(0.0f, 5)); //Extra empty space
+	//ImGui::Dummy(ScaledByWindowScale(0.0f, 5)); //Extra empty space
 
 	//Jog buttons
 	ImGui::SetCursorPosX(ScaledByWindowScale(50));	//Bump in the left side a bit
-	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 25));	//Space above and below each button.  Leaves 50 in between them in Y
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ScaledByWindowScale(0, 25));	//Space above and below each button.  Leaves 50 in between them in Y
 	if (ImGui::BeginTable("table_jogaxis", 5 /*, ImGuiTableFlags_Borders*/))
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10);
@@ -263,7 +261,7 @@ void Window_Jog_Draw()
 	}
 	ImGui::PopStyleVar();
 
-	ImGui::Dummy(ScaledByWindowScale(0.0f, 12.0f)); //Extra empty space before the buttons
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 8.0f)); //Extra empty space before the buttons
 
 	
 	ImGui::SetCursorPosX(ScaledByWindowScale((WindowSize.x/2)-50));
@@ -345,6 +343,568 @@ void Window_Control_Draw()
 		ImGui::End();
 }
 
+void Window_Connection_Draw()
+{
+	int x;
+
+	//Create the connection window
+		if (!ImGui::Begin("Connection", 0))
+		{
+			ImGui::End();
+			return;
+		}
+
+	if (bCommsConnected)
+	{
+		if (ImGui::BeginTable("table", 2))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("Status");
+
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("Connected");
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("IP Address");
+
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%s:%d", sConnectedIP, wConnectedPort);
+
+			ImGui::EndTable();
+		}
+
+		if (ImGui::Button("Disconnect"))
+			Comms_Disconnect();
+	}
+	else
+	{
+		if (ImGui::BeginTable("table", 2))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("Status");
+
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("Disconnected");
+
+			ImGui::EndTable();
+		}
+
+		ImGui::SeparatorText("Devices");
+
+		static int item_current_idx = 0; // Here we store our selection data as an index.
+		if (ImGui::BeginListBox("##devices", ScaledByWindowScale(-FLT_MIN, 3 * ImGui::GetTextLineHeightWithSpacing())))
+		{
+			for (x = 0; x < bDetectedDevices; x++)
+			{
+				const bool is_selected = (item_current_idx == x);
+				if (ImGui::Selectable(sDetectedDevices[x][0], is_selected))
+					item_current_idx = x;
+			}
+			ImGui::EndListBox();
+		}
+
+		if (ImGui::Button("Connect", ScaledByWindowScale(90,45)))
+			Comms_ConnectDevice(item_current_idx);
+	}
+
+	ImGui::End();
+}
+
+void Window_Status_Draw()
+{
+	int x;		//General purpose int
+	const BYTE bSlen = 20;
+	char s[bSlen];	//General purpose string
+	ImVec2 vec;
+	float fColWidth;
+
+	ImVec2 TextSize;
+
+	//Create the status window
+		if (!ImGui::Begin("Status", 0))
+		{
+			ImGui::End();
+			return;
+		}
+
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 5.0f)); //Extra empty space
+
+	ImVec4 MachineFontColor(0.8f, 1.0f, 1.0f, 1.0f);
+	ImVec4 TableBgColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
+	//ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));	//		ImGui::PopStyleVar();	//ImGuiStyleVar_CellPadding
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, TableBgColor);
+
+	//Status
+		const unsigned char StatusHeight = 50;
+		
+		//Begin the child window so we get the rounded border
+			ImGui::BeginChild("child_status", ImVec2(ImGui::GetContentRegionAvail().x, ScaledByWindowScale(StatusHeight)), ImGuiChildFlags_Border);
+
+		//Get the string
+			if (!bCommsConnected)
+				sprintf(s, "Offline");
+			else if (MachineStatus.Status == Carvera::Status::Idle)
+				sprintf(s, "Idle");
+			else if (MachineStatus.Status == Carvera::Status::Busy)
+				sprintf(s, "Busy");
+			else if (MachineStatus.Status == Carvera::Status::Homing)
+				sprintf(s, "Homing");
+			else if (MachineStatus.Status == Carvera::Status::Alarm)
+				sprintf(s, "Alarm");
+			else if (MachineStatus.Status == Carvera::Status::Hold)
+				sprintf(s, "Hold");
+
+		//Swtitch to the correct font
+			ImGui::PushFont(io->Fonts->Fonts[FONT_POS_LARGE]);
+
+		//Move to the center of the child window
+			TextSize = ImGui::CalcTextSize(s);
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((ImGui::GetWindowWidth() - TextSize.x) * 0.5f));
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ((ImGui::GetWindowHeight() - TextSize.y) * 0.5f) - ScaledByWindowScale(3)); //Need a little bump upwards, maybe something to do with padding?
+
+		//Draw the text
+			ImGui::TextColored(MachineFontColor, s);
+
+		//Switch back to default font
+			ImGui::PopFont();
+		
+		//End the child window
+			ImGui::EndChild();
+		
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 10.0f)); //Extra empty space
+
+	//Positions
+	
+		//Create the child window for the rounded border
+			ImGui::BeginChild("child_pos", ImVec2(ImGui::GetContentRegionAvail().x, ScaledByWindowScale(0.0f)), ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);
+
+		//Create the table to get everything aligned
+			if (ImGui::BeginTable("table_pos", 2, /*ImGuiTableFlags_BordersOuter |*/ ImGuiTableFlags_BordersInnerH))
+			{
+				ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(30));	//The column with the axis label
+				ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+
+				//X Position
+					ImGui::PushFont(io->Fonts->Fonts[FONT_POS_LARGE]);	//Switch to large font
+					ImGui::TextColored(MachineFontColor, " X");
+
+					ImGui::TableSetColumnIndex(1);	//Jump to data column
+					fColWidth = ImGui::GetColumnWidth();	//Store the width of this column
+
+					//Create another table, this time to make rows for aligning the WCS and MCS coords
+						if (ImGui::BeginTable("table_posx", 1 /*, ImGuiTableFlags_Borders*/))
+						{
+							ImGui::TableNextRow();
+							ImGui::TableSetColumnIndex(0);
+
+							//Working X coord
+								sprintf(s, "%0.04f", MachineStatus.Coord.Working.x); //Get the text
+						
+								//Center in column
+									TextSize = ImGui::CalcTextSize(s);
+									ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x) * 0.5f));
+						
+								ImGui::TextColored(MachineFontColor, s); //Draw it
+								ImGui::PopFont(); //Back to default font
+
+							ImGui::TableNextRow();
+							ImGui::TableSetColumnIndex(0);
+
+							//Machine X coord
+								ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]); //Switch to this font
+								sprintf(s, "%0.04f", MachineStatus.Coord.Machine.x); //Get the text
+						
+								//Center in column
+									TextSize = ImGui::CalcTextSize(s);
+									ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x) * 0.5f));
+
+								ImGui::TextColored(MachineFontColor, s); //Draw it
+								ImGui::PopFont(); //Back to default font
+
+							ImGui::EndTable();
+						}
+
+				//Move to Y position
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+
+				//Y Position
+					ImGui::PushFont(io->Fonts->Fonts[FONT_POS_LARGE]);	//Switch to large font
+					ImGui::TextColored(MachineFontColor, " Y");
+
+					ImGui::TableSetColumnIndex(1);	//Jump to data column
+					fColWidth = ImGui::GetColumnWidth();	//Store the width of this column
+
+					//Create another table, this time to make rows for aligning the WCS and MCS coords
+						if (ImGui::BeginTable("table_posy", 1/*, ImGuiTableFlags_Borders*/))
+						{
+							ImGui::TableNextRow();
+							ImGui::TableSetColumnIndex(0);
+
+							//Working Y coord
+								sprintf(s, "%0.04f", MachineStatus.Coord.Working.y); //Get the text
+
+							//Center in column
+								TextSize = ImGui::CalcTextSize(s);
+								ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x) * 0.5f));
+
+								ImGui::TextColored(MachineFontColor, s); //Draw it
+								ImGui::PopFont(); //Back to default font
+
+								ImGui::TableNextRow();
+								ImGui::TableSetColumnIndex(0);
+
+							//Machine Y coord
+								ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]); //Switch to this font
+								sprintf(s, "%0.04f", MachineStatus.Coord.Machine.y); //Get the text
+
+							//Center in column
+								TextSize = ImGui::CalcTextSize(s);
+								ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x) * 0.5f));
+
+								ImGui::TextColored(MachineFontColor, s); //Draw it
+								ImGui::PopFont(); //Back to default font
+
+								ImGui::EndTable();
+						}
+
+				//Move to Z position
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+
+				//Z Position
+					ImGui::PushFont(io->Fonts->Fonts[FONT_POS_LARGE]);	//Switch to large font
+					ImGui::TextColored(MachineFontColor, " Z");
+
+					ImGui::TableSetColumnIndex(1);	//Jump to data column
+					fColWidth = ImGui::GetColumnWidth();	//Store the width of this column
+
+					if (ImGui::BeginTable("table_posz", 1/*, ImGuiTableFlags_Borders*/))
+					{
+						ImGui::TableNextRow();
+						ImGui::TableSetColumnIndex(0);
+
+						//Working Z coord
+							sprintf(s, "%0.04f", MachineStatus.Coord.Working.z); //Get the text
+
+						//Center in column
+							TextSize = ImGui::CalcTextSize(s);
+							ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x) * 0.5f));
+
+							ImGui::TextColored(MachineFontColor, s); //Draw it
+							ImGui::PopFont(); //Back to default font
+
+							ImGui::TableNextRow();
+							ImGui::TableSetColumnIndex(0);
+
+						//Machine Z coord
+							ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]); //Switch to this font
+							sprintf(s, "%0.04f", MachineStatus.Coord.Machine.z); //Get the text
+
+						//Center in column
+							TextSize = ImGui::CalcTextSize(s);
+							ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x) * 0.5f));
+
+							ImGui::TextColored(MachineFontColor, s); //Draw it
+							ImGui::PopFont(); //Back to default font
+
+						ImGui::EndTable();
+					}
+
+				ImGui::EndTable();
+			}
+
+		//End the child window
+			ImGui::EndChild();
+		
+		ImGui::Dummy(ScaledByWindowScale(0.0f, 10.0f)); //Extra empty space
+
+	//Feedrate
+		if (ImGui::BeginTable("table_feedrates", 2))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			
+			fColWidth = ImGui::GetColumnWidth();
+			sprintf(s, "Feed Rate");
+			TextSize = ImGui::CalcTextSize(s);
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x)));
+			ImGui::Text(s);
+
+			ImGui::TableSetColumnIndex(1);
+
+			ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]); //Switch to this font
+			ImGui::TextColored(MachineFontColor, "%0.0f", MachineStatus.FeedRates.x); //Draw it
+			ImGui::PopFont(); //Back to default font
+
+			ImGui::EndTable();
+		}
+
+	//Spindle
+		if (ImGui::BeginTable("table_spindle", 2))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+
+			fColWidth = ImGui::GetColumnWidth();
+			sprintf(s, "Spindle");
+			TextSize = ImGui::CalcTextSize(s);
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fColWidth - TextSize.x)));
+			ImGui::Text(s);
+
+			ImGui::TableSetColumnIndex(1);
+
+			ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]); //Switch to this font
+			ImGui::TextColored(MachineFontColor, "%0.0f", 12000); //Draw it
+			ImGui::PopFont(); //Back to default font
+
+			ImGui::EndTable();
+		}
+
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f)); //Extra empty space
+
+	if (ImGui::BeginTable("table_status", 3))// , ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersH))
+	{
+		//Positioning mode
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
+		ImGui::Text("Positioning");
+
+		ImGui::TableSetColumnIndex(1);
+
+		if (bCommsConnected)
+		{
+			ImGui::AlignTextToFramePadding();
+
+			//The string to show
+			strcpy(s, "Unknown");
+			if (MachineStatus.Positioning == Carvera::Positioning::Absolute)
+				strcpy(s, "Absolute");
+			else if (MachineStatus.Positioning == Carvera::Positioning::Relative)
+				strcpy(s, "Relative");
+
+			//Calculations for right alignment
+			auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+			if (posX > ImGui::GetCursorPosX())
+				ImGui::SetCursorPosX(posX);
+
+			//Show it
+			ImGui::Text("%s", s);
+
+
+			ImGui::TableSetColumnIndex(2);
+
+			if (ImGui::SmallButton("...##pos"))
+				ImGui::OpenPopup("popup_change_positioning");
+
+			if (ImGui::BeginPopup("popup_change_positioning"))
+			{
+				const char* sPositioning[] = { "Absolute", "Relative" };
+				int iPosIdx = MachineStatus.Positioning;
+
+				ImGui::SeparatorText("Positioning");
+				for (x = 0; x < 2; x++)
+				{
+					if (ImGui::Selectable(sPositioning[x]))
+						iPosIdx = x;
+				}
+				ImGui::EndPopup();
+
+				if (iPosIdx != MachineStatus.Positioning)
+				{
+					if (iPosIdx == 0) //Change to Absolute
+						Comms_SendString("G90");
+					else if (iPosIdx == 1) //Change to Relative
+						Comms_SendString("G91");
+				}
+
+			}
+		}
+
+		//WCS
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
+		ImGui::Text("WCS");
+
+		ImGui::TableSetColumnIndex(1);
+
+		if (bCommsConnected)
+		{
+			ImGui::AlignTextToFramePadding();
+
+			//The string to show
+			strcpy(s, "Unknown");
+			if (MachineStatus.WCS == Carvera::CoordSystem::G53)
+				strcpy(s, "G53");
+			else if (MachineStatus.WCS == Carvera::CoordSystem::G54)
+				strcpy(s, "G54");
+			else if (MachineStatus.WCS == Carvera::CoordSystem::G55)
+				strcpy(s, "G55");
+			else if (MachineStatus.WCS == Carvera::CoordSystem::G56)
+				strcpy(s, "G56");
+			else if (MachineStatus.WCS == Carvera::CoordSystem::G57)
+				strcpy(s, "G57");
+			else if (MachineStatus.WCS == Carvera::CoordSystem::G58)
+				strcpy(s, "G58");
+			else if (MachineStatus.WCS == Carvera::CoordSystem::G59)
+				strcpy(s, "G59");
+
+			//Calculations for right alignment
+			auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+			if (posX > ImGui::GetCursorPosX())
+				ImGui::SetCursorPosX(posX);
+
+			//Show it
+			ImGui::Text("%s", s);
+
+
+
+			ImGui::TableSetColumnIndex(2);
+
+
+			if (ImGui::SmallButton("...##wcs"))
+				ImGui::OpenPopup("popup_change_wcs");
+
+			if (ImGui::BeginPopup("popup_change_wcs"))
+			{
+				int iNewWCS = MachineStatus.WCS;
+				ImGui::SeparatorText("Change WCS");
+				x = Carvera::CoordSystem::G54; //Only show G54 and up
+				while (szWCSChoices[x][0] != 0x0)
+				{
+					if (ImGui::Selectable(szWCSChoices[x]))
+						iNewWCS = x;
+
+					x++;
+				}
+				ImGui::EndPopup();
+
+				if (iNewWCS != MachineStatus.WCS)
+					Comms_SendString(szWCSChoices[iNewWCS]);
+			}
+		}
+
+		//Units
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
+		ImGui::Text("Units");
+
+		ImGui::TableSetColumnIndex(1);
+
+		if (bCommsConnected)
+		{
+			ImGui::AlignTextToFramePadding();
+
+			//The string to show
+			strcpy(s, "Unknown");
+			if (MachineStatus.Units == Carvera::Units::inch)
+				strcpy(s, "Inch");
+			else if (MachineStatus.Units == Carvera::Units::mm)
+				strcpy(s, "Millimeter");
+
+			//Calculations for right alignment
+			auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+			if (posX > ImGui::GetCursorPosX())
+				ImGui::SetCursorPosX(posX);
+
+			//Show it
+			ImGui::Text("%s", s);
+		}
+
+		//Plane
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
+		ImGui::Text("Plane");
+
+		ImGui::TableSetColumnIndex(1);
+
+		if (bCommsConnected)
+		{
+			ImGui::AlignTextToFramePadding();
+
+			//The string to show
+			strcpy(s, "Unknown");
+			if (MachineStatus.Plane == Carvera::Plane::XYZ)
+				strcpy(s, "XYZ");
+			else if (MachineStatus.Plane == Carvera::Plane::XZY)
+				strcpy(s, "XZY");
+			else if (MachineStatus.Plane == Carvera::Plane::YZX)
+				strcpy(s, "YZX");
+
+			//Calculations for right alignment
+			auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+			if (posX > ImGui::GetCursorPosX())
+				ImGui::SetCursorPosX(posX);
+
+			//Show it
+			ImGui::Text("%s", s);
+		}
+
+		ImGui::EndTable();
+	}
+
+	
+	//Emergency Stop button
+		x = 1; //Disabled
+		if (MachineStatus.Status != Carvera::Status::Busy || MachineStatus.Status != Carvera::Status::Homing)
+			x = 0; //Active
+
+		if (!x)
+			ImGui::BeginDisabled();
+
+		if (ImGui::Button("Emergency Stop##Status", ScaledByWindowScale(105,45)))
+		{
+			s[0] = 0x18; //Abort command
+			s[1] = 0x0;
+			Comms_SendString(s);
+		}
+
+		if (!x)
+			ImGui::EndDisabled();
+
+	ImGui::SameLine();
+
+	//Unlock button.  TODO: Maybe click on ALARM status up top instead?
+		x = 0; //Disabled
+		if (MachineStatus.Status == Carvera::Status::Alarm)
+			x = 1; //Active
+
+		if (!x)
+			ImGui::BeginDisabled();
+	
+		if (ImGui::Button("Unlock##Status", ScaledByWindowScale(90, 45)))
+		{
+			Comms_SendString("$X");
+		}
+
+		if (!x)
+			ImGui::EndDisabled();
+
+
+	if (ImGui::Button("Program Editor"))
+		ImGui::OpenPopup("Program Editor");
+	ProgramEditor_Draw();
+
+
+	ImGui::PopStyleColor(); //ImGuiCol_ChildBg
+	ImGui::PopStyleVar();	//ImGuiStyleVar_ChildRounding
+
+
+	ImGui::End(); //End Status window
+}
+
 
 //Our main Init routine
 void Clout_Init()
@@ -382,11 +942,12 @@ void Clout_CreateDefaultLayout()
 	ImGui::DockBuilderAddNode(dockspace_id); // Add empty node
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
-	auto dock_id_preview = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.75f, nullptr, &dockspace_id);
+	auto dock_id_preview = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.8f, nullptr, &dockspace_id);
 	ImGui::DockBuilderDockWindow("Preview", dock_id_preview);
 
-	auto dock_id_status = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.3f, nullptr, &dockspace_id);
+	auto dock_id_status = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.0f, nullptr, &dockspace_id);
 	ImGui::DockBuilderDockWindow("Status", dock_id_status);
+	ImGui::DockBuilderDockWindow("Connection", dock_id_status);
 
 	auto dock_id_control = ImGui::DockBuilderSplitNode(dock_id_status, ImGuiDir_Down, 0.4f, nullptr, &dockspace_id);
 	ImGui::DockBuilderDockWindow("Control", dock_id_control);
@@ -409,10 +970,6 @@ void Clout_Shutdown()
 //Our main app loop.  This gets called every draw frame
 bool Clout_MainLoop()
 {
-	int x;		//General purpose int
-	const BYTE bSlen = 20;
-	char s[bSlen];	//General purpose string
-
 	//Process comms stuff
 		Comms_Update();
 
@@ -422,335 +979,19 @@ bool Clout_MainLoop()
 	//Draw the sub windows
 		Console.Draw();
 		Window_Control_Draw();
+		Window_Connection_Draw();
+		Window_Status_Draw();
 		OperationQueue.DrawList();
 		ModelViewer.Draw();
 
-	//Status window
-		ImGui::Begin("Status", 0); //Create the status window
-
-		ImGui::SeparatorText("Connection");
-			if (bCommsConnected)
-			{
-				if (ImGui::BeginTable("table", 2))
-				{
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::Text("Status");
-
-					ImGui::TableSetColumnIndex(1);
-					ImGui::Text("Connected");
-
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::Text("IP Address");
-
-					ImGui::TableSetColumnIndex(1);
-					ImGui::Text("%s:%d", sConnectedIP, wConnectedPort);
-
-					ImGui::EndTable();
-				}
-			
-				if (ImGui::Button("Disconnect"))
-					Comms_Disconnect();
-			}
-			else
-			{
-				if (ImGui::BeginTable("table", 2))
-				{
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::Text("Status");
-
-					ImGui::TableSetColumnIndex(1);
-					ImGui::Text("Disconnected");
-
-					ImGui::EndTable();
-				}
-			}          
-
-	
-		if (!bCommsConnected)
+	//Setup some window defaults the first time through.  This has to be done after the first draw pass
+		static bool bFirstRun = true;
+		if (bFirstRun)
 		{
-			ImGui::SeparatorText("Devices");
-
-			static int item_current_idx = 0; // Here we store our selection data as an index.
-			if (ImGui::BeginListBox("##devices", ScaledByWindowScale(-FLT_MIN, 3 * ImGui::GetTextLineHeightWithSpacing())))
-			{
-				for (x = 0; x < bDetectedDevices; x++)
-				{
-					const bool is_selected = (item_current_idx == x);
-					if (ImGui::Selectable(sDetectedDevices[x][0], is_selected))
-						item_current_idx = x;
-				}
-				ImGui::EndListBox();
-			}
-
-			if (ImGui::Button("Connect"))
-				Comms_ConnectDevice(item_current_idx);
+			ImGui::SetWindowFocus("Connection");	//Make it default to the Connection page vice Status
+			//ImGui::SetWindowFocus(0);
+			//ImGui::SetWindowFocus("Queue");	//Make it default to the Queue page vice 3d settings
+			bFirstRun = false;
 		}
-
-		ImGui::SeparatorText("Status");
-		
-			if (!bCommsConnected)
-				ImGui::Text("Offline");
-			else if (MachineStatus.Status == Carvera::Status::Idle)
-				ImGui::Text("Idle");
-			else if (MachineStatus.Status == Carvera::Status::Busy)
-				ImGui::Text("Busy");
-			else if (MachineStatus.Status == Carvera::Status::Homing)
-				ImGui::Text("Homing");
-			else if (MachineStatus.Status == Carvera::Status::Alarm)
-				ImGui::Text("Alarm");
-			else if (MachineStatus.Status == Carvera::Status::Hold)
-				ImGui::Text("Hold");
-
-			if (ImGui::BeginTable("table_pos", 3))
-			{
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("X:  %0.04f", MachineStatus.Coord.Working.x);
-
-				ImGui::TableSetColumnIndex(1);
-				ImGui::Text("Y:  %0.04f", MachineStatus.Coord.Working.y);
-
-				ImGui::TableSetColumnIndex(2);
-				ImGui::Text("Z:  %0.04f", MachineStatus.Coord.Working.z);
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("   (%0.04f)", MachineStatus.Coord.Machine.x);
-
-				ImGui::TableSetColumnIndex(1);
-				ImGui::Text("   (%0.04f)", MachineStatus.Coord.Machine.y);
-
-				ImGui::TableSetColumnIndex(2);
-				ImGui::Text("   (%0.04f)", MachineStatus.Coord.Machine.z);
-				
-				ImGui::EndTable();
-			}
-
-			if (ImGui::BeginTable("table_feedrates", 3))
-			{
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("X:  %0.1f", MachineStatus.FeedRates.x);
-
-				ImGui::TableSetColumnIndex(1);
-				ImGui::Text("Y:  %0.1f", MachineStatus.FeedRates.y);
-
-				ImGui::TableSetColumnIndex(2);
-				ImGui::Text("Z:  %0.1f", MachineStatus.FeedRates.z);
-
-				ImGui::EndTable();
-			}
-
-			ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f)); //Extra empty space
-
-			if (ImGui::BeginTable("table_status", 3))// , ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersH))
-			{
-				//Positioning mode
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
-					ImGui::Text("Positioning");
-
-					ImGui::TableSetColumnIndex(1);
-
-					if (bCommsConnected)
-					{
-						ImGui::AlignTextToFramePadding();
-
-						//The string to show
-							strcpy(s, "Unknown");
-							if (MachineStatus.Positioning == Carvera::Positioning::Absolute)
-								strcpy(s, "Absolute");
-							else if (MachineStatus.Positioning == Carvera::Positioning::Relative)
-								strcpy(s, "Relative");
-
-						//Calculations for right alignment
-							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
-							if (posX > ImGui::GetCursorPosX())
-								ImGui::SetCursorPosX(posX);
-
-						//Show it
-							ImGui::Text("%s", s);
-
-
-						ImGui::TableSetColumnIndex(2);
-
-						if (ImGui::SmallButton("...##pos"))
-							ImGui::OpenPopup("popup_change_positioning");
-
-						if (ImGui::BeginPopup("popup_change_positioning"))
-						{
-							const char* sPositioning[] = { "Absolute", "Relative" };
-							int iPosIdx = MachineStatus.Positioning;
-
-							ImGui::SeparatorText("Positioning");
-							for (x = 0; x < 2; x++)
-							{
-								if (ImGui::Selectable(sPositioning[x]))
-									iPosIdx = x;
-							}
-							ImGui::EndPopup();
-
-							if (iPosIdx != MachineStatus.Positioning)
-							{
-								if (iPosIdx == 0) //Change to Absolute
-									Comms_SendString("G90");
-								else if (iPosIdx == 1) //Change to Relative
-									Comms_SendString("G91");
-							}
-							
-						}
-					}
-
-				//WCS
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
-					ImGui::Text("WCS");
-
-					ImGui::TableSetColumnIndex(1);
-
-					if (bCommsConnected)
-					{
-						ImGui::AlignTextToFramePadding();
-
-						//The string to show
-							strcpy(s, "Unknown");
-							if (MachineStatus.WCS == Carvera::CoordSystem::G53)
-								strcpy(s, "G53");
-							else if (MachineStatus.WCS == Carvera::CoordSystem::G54)
-								strcpy(s, "G54");
-							else if (MachineStatus.WCS == Carvera::CoordSystem::G55)
-								strcpy(s, "G55");
-							else if (MachineStatus.WCS == Carvera::CoordSystem::G56)
-								strcpy(s, "G56");
-							else if (MachineStatus.WCS == Carvera::CoordSystem::G57)
-								strcpy(s, "G57");
-							else if (MachineStatus.WCS == Carvera::CoordSystem::G58)
-								strcpy(s, "G58");
-							else if (MachineStatus.WCS == Carvera::CoordSystem::G59)
-								strcpy(s, "G59");
-
-						//Calculations for right alignment
-							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
-							if (posX > ImGui::GetCursorPosX())
-								ImGui::SetCursorPosX(posX);
-
-						//Show it
-							ImGui::Text("%s", s);
-
-					
-
-						ImGui::TableSetColumnIndex(2);
-
-
-						if (ImGui::SmallButton("...##wcs"))
-							ImGui::OpenPopup("popup_change_wcs");
-
-						if (ImGui::BeginPopup("popup_change_wcs"))
-						{
-							int iNewWCS = MachineStatus.WCS;
-							ImGui::SeparatorText("Change WCS");
-							x = Carvera::CoordSystem::G54; //Only show G54 and up
-							while (szWCSChoices[x][0] != 0x0)
-							{
-								if (ImGui::Selectable(szWCSChoices[x]))
-									iNewWCS = x;
-
-								x++;
-							}
-							ImGui::EndPopup();
-
-							if (iNewWCS != MachineStatus.WCS)
-								Comms_SendString(szWCSChoices[iNewWCS]);
-						}
-					}
-
-				//Units
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
-					ImGui::Text("Units");
-
-					ImGui::TableSetColumnIndex(1);
-
-					if (bCommsConnected)
-					{
-						ImGui::AlignTextToFramePadding();
-
-						//The string to show
-							strcpy(s, "Unknown");
-							if (MachineStatus.Units == Carvera::Units::inch)
-								strcpy(s, "Inch");
-							else if (MachineStatus.Units == Carvera::Units::mm)
-								strcpy(s, "Millimeter");
-
-						//Calculations for right alignment
-							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
-							if (posX > ImGui::GetCursorPosX())
-								ImGui::SetCursorPosX(posX);
-
-						//Show it
-							ImGui::Text("%s", s);
-					}
-					
-				//Plane
-					ImGui::TableNextRow();
-					ImGui::TableSetColumnIndex(0);
-					ImGui::AlignTextToFramePadding(); //Vertical align for the button coming later
-					ImGui::Text("Plane");
-
-					ImGui::TableSetColumnIndex(1);
-
-					if (bCommsConnected)
-					{
-						ImGui::AlignTextToFramePadding();
-
-						//The string to show
-							strcpy(s, "Unknown");
-							if (MachineStatus.Plane == Carvera::Plane::XYZ)
-								strcpy(s, "XYZ");
-							else if (MachineStatus.Plane == Carvera::Plane::XZY)
-								strcpy(s, "XZY");
-							else if (MachineStatus.Plane == Carvera::Plane::YZX)
-								strcpy(s, "YZX");
-
-						//Calculations for right alignment
-							auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(s).x - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
-							if (posX > ImGui::GetCursorPosX())
-								ImGui::SetCursorPosX(posX);
-
-						//Show it
-							ImGui::Text("%s", s);
-					}
-
-				ImGui::EndTable();
-			}
-
-			//if (MachineStatus.Status == MACHINE_STATUS::STATUS_BUSY) //Disable button if not busy
-			if (ImGui::Button("Emergency Stop"))
-			{
-				s[0] = 0x18; //Abort command
-				s[1] = 0x0;
-				Comms_SendString(s);
-			}
-			if (ImGui::Button("Unlock"))
-			{
-				Comms_SendString("$X");
-			}
-
-
-			if (ImGui::Button("Program Editor"))
-				ImGui::OpenPopup("Program Editor");
-			ProgramEditor_Draw();
-
-		
-		ImGui::End(); //End Status window
-
-
-
      return false;
 }

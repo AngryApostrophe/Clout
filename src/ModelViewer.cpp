@@ -599,7 +599,7 @@ void MODEL_VIEWER::Draw()
 		ImGui::End();
 		
 	//Preview controls
-		if (ImGui::Begin("Preview Controls")) 
+		if (ImGui::Begin("Preview Controls"))
 		{
 			ImGui::SameLine();
 			ImGui::ColorEdit4("Color", (float*)&bg_color);
@@ -655,8 +655,6 @@ void MODEL_VIEWER::Draw()
 				ImGui::Checkbox("Draw Debug Data", &bDebug_DrawDebugData);
 				ImGui::Checkbox("Draw Shadow Map", &bDebug_DrawShadowMap);
 #endif
-
 		}
 		ImGui::End();
-
 }

@@ -84,6 +84,8 @@ int main(int, char**)
 			io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;		//Enable Docking
 			io->ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;	//Allow us to recenter the mouse when looking around in Model Viewer
 
+			io->IniFilename = ""; //Disable loading of the ini file
+
 		//Main window flags
 			ImGuiWindowFlags window_flags = /*ImGuiWindowFlags_MenuBar |*/ ImGuiWindowFlags_NoDocking; // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into, because it would be confusing to have two docking targets within each others.
 			window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
@@ -121,8 +123,6 @@ int main(int, char**)
 
 		float prev_scale = 0;
 
-		//io->Fonts->Fonts[0];
-
 	// Main loop
 	#ifdef __EMSCRIPTEN__
 	    // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
@@ -142,7 +142,9 @@ int main(int, char**)
 				{
 					prev_scale = xscale;
 					io->Fonts->Clear();
-					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 13.0f);
+					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 13.0f);	//FONT_MAIN
+					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 26.0f);	//FONT_POS_LARGE
+					io->Fonts->AddFontFromMemoryCompressedTTF(ProggyClean_compressed_data, ProggyClean_compressed_size, xscale * 18.0f);	//FONT_POS_SMALL
 
 					io->Fonts->Build();
 					ImGui_ImplOpenGL3_DestroyFontsTexture();

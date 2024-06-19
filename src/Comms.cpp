@@ -2,8 +2,9 @@
 //TODO:    $RST=#   Erases G54 - G59 WCS offsets and G28 / 30 positions stored in EEPROM.
 
 //https://github.com/Smoothieware/smoothieware-website-v1/blob/main/docs/console-commands.md
-//$# could be useful
 //https://smoothieware.github.io/Webif-pack/documentation/web/html/configuring-grbl-v0.html
+//https://smoothieware.github.io/Webif-pack/documentation/web/html/console-commands.html
+//https://github.com/grbl/grbl/wiki/Interfacing-with-Grbl
 
 #include "Platforms/Platforms.h"
 
@@ -152,7 +153,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 
 								msg.iProcessed = 0;
 								strcpy(msg.cData, c);
-								msg.iLen = strlen(msg.cData);
+								msg.iLen = (int)strlen(msg.cData);
 
 								char *z = strstr(msg.cData, "\n");
 								if (z != 0)
@@ -458,7 +459,7 @@ void ProcessUpdateMsg(CarveraMessage &msg)
 			CommaStringTo3Doubles(c, &MachineStatus.FeedRates.x, &MachineStatus.FeedRates.y, &MachineStatus.FeedRates.z);
 
 			//Actually the first one isn't X feedrate.  Y feedrate is shared with X.  The first value always seems to be 0?
-			MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
+				MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
 		}
 
 		//Tool info
@@ -548,7 +549,6 @@ void ProcessUpdateMsg(CarveraMessage &msg)
 //Called from the main loop.  Do some processing of incoming messages
 void Comms_Update()
 {
-	char *c;
 	char *data;
 
 	Comms_ListenForCarveras();
@@ -661,6 +661,9 @@ void Comms_ConnectDevice(BYTE bDeviceIdx)
 		wConnectedPort = atoi(sDetectedDevices[bDeviceIdx][2]);
 
 		Console.AddLog("Connected to %s at %s:%d", sDetectedDevices[bDeviceIdx][0], sConnectedIP, wConnectedPort);
+
+	//Switch to the status page
+		ImGui::SetWindowFocus("Status");
 }
 void Comms_Disconnect()
 {

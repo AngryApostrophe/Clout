@@ -5,6 +5,11 @@ typedef unsigned char BYTE;
 typedef unsigned short WORD;
 typedef unsigned long DWORD;
 
+//Fonts
+#define FONT_MAIN		0
+#define FONT_POS_LARGE	1
+#define FONT_POS_SMALL	2
+
 //Global vars
 	extern ImGuiIO* io;
 	extern GLFWwindow* glfwWindow;	//The main glfw Window object in Main.cpp

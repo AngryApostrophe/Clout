@@ -56,7 +56,11 @@ void _OperationQueue::DrawList()
 
 	bool bDisabled = bIsRunning;	//This can't be updated in the middle of the draw or we'll corrupt the BeginDisabled/EndDisabled stack
 
-	ImGui::Begin("Queue");
+	if (!ImGui::Begin("Queue"))
+	{
+		ImGui::End();
+		return;
+	}
 
 	//Control
 		ImGui::SeparatorText("Control");

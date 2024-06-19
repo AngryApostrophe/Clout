@@ -55,6 +55,15 @@ float ScaledByWindowScale(float in)
 }
 
 
+//Sets cursor position to center the string in the current column
+void CenterTextInColumn(char *s)
+{
+	ImVec2 TextSize = ImGui::CalcTextSize(s);
+	float fWidth = ImGui::GetColumnWidth();
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ((fWidth - TextSize.x) * 0.5f));
+}
+
+
 // Simple helper function to load an image into a OpenGL texture with common settings
 static GLuint LoadTextureCommon()
 {
