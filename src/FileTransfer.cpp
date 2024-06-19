@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 
+#include <chrono>
+using namespace std::chrono;
+
 #include <imgui.h>
 
 #include "Clout.h"
@@ -44,6 +47,8 @@ static std::vector<std::string> sFileLines;
 static std::string sMD5;
 static std::string::iterator XmitIter;
 static std::string::iterator tempXmitIter; //This one may get moved back if a packet failed to send
+
+static steady_clock::time_point LastMsgAttempt; //Used for repeating stuff
 
 
 static unsigned int crc16_ccitt(unsigned char* data, unsigned int len)
@@ -150,6 +155,27 @@ void FileTransfer_BeginUpload(const char *szLocalFilename, int iFirstLine, int i
 		ImGui::OpenPopup("File Transfer Progress");
 }
 
+void FileTransfer_BeginUploadFromMemory(std::string *str)
+{
+	//Copy data into our buffer
+		sRawData = *str;
+
+	//Calculate the MD5
+		sMD5 = md5(sRawData);
+
+	//Setup the transfer
+		bUseCRC = 0;
+		packetno = 0;
+		bTransferComplete = false;
+		iFileTransferState = 0;
+		bMD5Sent = false;
+		XmitIter = sRawData.begin();
+		tempXmitIter = XmitIter;
+
+	//Show the window
+		ImGui::OpenPopup("File Transfer Progress");
+}
+
 
 static void FileTransfer_StateMachine()
 {
@@ -157,6 +183,8 @@ static void FileTransfer_StateMachine()
 	{
 		case 0:	//Tell Carvera we're sending a file
 			Comms_SendString("upload sd/gcodes/Clout.nc");
+			LastMsgAttempt = steady_clock::now();
+			bFileTransferInProgress = true;
 			iFileTransferState++;
 		break;
 
@@ -171,6 +199,10 @@ static void FileTransfer_StateMachine()
 				bUseCRC = false;
 				iFileTransferState++;
 			}
+			else if (TimeSince_ms(LastMsgAttempt) > 1000) //If we didn't hear anything back, try again
+			{
+				iFileTransferState = 0;
+			}
 		break;
 
 		case 2:	//Send the data
@@ -178,7 +210,7 @@ static void FileTransfer_StateMachine()
 			int i = 0;
 			if (packetno == 0)	//If this is our first time through, send just the MD5
 			{
-				i = strlen(sMD5.c_str());
+				i = (int)strlen(sMD5.c_str());
 				memcpy(&xbuff[4 + is_stx], sMD5.c_str(), i);
 			}
 			else
@@ -296,6 +328,11 @@ int FileTransfer_DoTransfer()
 
 		ImGui::EndPopup();
 	}
+
+	if (iFileTransferState == XFER_STATE_COMPLETE)
+		bFileTransferInProgress = false;
+	else
+		bFileTransferInProgress = true;
 
 	if (iFileTransferState == XFER_STATE_COMPLETE)
 		return 1;

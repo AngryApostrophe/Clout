@@ -14,7 +14,7 @@ extern unsigned short wConnectedPort;
 extern unsigned char bDetectedDevices;
 extern char sDetectedDevices[MAX_DEVICES][3][20];
 
-extern bool bOperationRunning;
+extern bool bFileTransferInProgress;
 
 
 
@@ -42,6 +42,8 @@ extern bool bOperationRunning;
 #define CARVERA_MSG_UPLOAD_SUCCESS	17 //File upload successful.  "Info: upload success"
 #define CARVERA_MSG_PARAMETERS		18 //A bunch of parameters, response to "$#"
 #define CARVERA_MSG_DEBUG			19 //Debug parameters, response to "*"
+#define CARVERA_MSG_PLAYING			20 //Beginning to play a gcode file
+#define CARVERA_MSG_CLOUTSYNC		21 //A message we insert into custom GCode to sync up with the end of the file
 
 
 //#ifdef _CHRONO_

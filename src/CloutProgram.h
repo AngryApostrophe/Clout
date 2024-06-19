@@ -142,12 +142,14 @@ public:
 		virtual void ParseToJSON(json& j);
 };
 
+//Custom G Code
 class CloutProgram_Op_Custom_GCode : public CloutProgram_Op
 {
 public:
 	CloutProgram_Op_Custom_GCode();
 
-	std::string szGCode;
+	std::string strGCode;
+	std::string strTransmitted; //This includes the sync stuff at the end
 
 	//Inherited
 		virtual void StateMachine();
@@ -157,6 +159,7 @@ public:
 		virtual void ParseToJSON(json& j);
 };
 
+//Probe Operation
 class CloutProgram_Op_ProbeOp : public CloutProgram_Op
 {
 public:

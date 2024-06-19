@@ -47,7 +47,6 @@ void ProbeOperation_WebCenter::StateMachine()
 	switch (iState)
 	{
 		case PROBE_STATE_IDLE:
-			bOperationRunning = false;
 		break;
 
 		case PROBE_STATE_START:
@@ -60,8 +59,6 @@ void ProbeOperation_WebCenter::StateMachine()
 			StartPos.x = MachineStatus.Coord.Working.x;
 			StartPos.y = MachineStatus.Coord.Working.y;
 			StartPos.z = MachineStatus.Coord.Working.z;
-
-			bOperationRunning = true; //Limit what we show on the console (from comms module)
 
 			bStepIsRunning = false;
 		

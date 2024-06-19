@@ -37,6 +37,8 @@ using namespace std::chrono;
 	BYTE bDetectedDevices = 0;
 	char sDetectedDevices[MAX_DEVICES][3][20];
 
+	bool bFileTransferInProgress; //This is set by the file transfer code.  It stops us from sending regular status requests
+
 //Message Queue
 	std::deque<CarveraMessage> XmitMessageQueue;
 	std::deque<CarveraMessage> RecvMessageQueue;
@@ -55,7 +57,6 @@ using namespace std::chrono;
 
 //Inter-thread comms
 	CloutThreadHandle hCommsThread;
-	bool bOperationRunning = false;		//Set by other modules when a complex operation is running, and we should limit what we show in the console (like "ok"s).  TODO: This may no longer be necessary, revisit later
 
 	CloutMutex hBufferMutex;  //Mutex for accessing send and recv buffers
 
@@ -71,7 +72,7 @@ bool IsMessageIgnored(int iType)
 {
 	std::vector<sHiddenReplies>::iterator iter;
 
-	//First remove any old ones
+/*	//First remove any old ones
 		for (iter = HiddenReplies.begin(); iter != HiddenReplies.end();)
 		{
 			if (TimeSince_ms(iter->Time) > 500) //If we haven't gotten this reply in 500ms, it's not coming
@@ -79,7 +80,7 @@ bool IsMessageIgnored(int iType)
 			else
 				iter++;
 		}
-
+		*/
 	//Loop through all messages in the ignore list looking for this type
 		for (iter = HiddenReplies.begin(); iter != HiddenReplies.end(); iter++)
 		{
@@ -255,7 +256,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 			ReleaseMutex(&hBufferMutex);
 
 		//Send status request if it's time
-			if (TimeSince_ms(LastStatusRqst) > 500)
+			if (TimeSince_ms(LastStatusRqst) > 500 && !bFileTransferInProgress)
 			{
 				if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 				{
@@ -625,8 +626,11 @@ void DetermineMsgType(CarveraMessage &msg)
 		msg.iType = CARVERA_MSG_XMODEM_CAN;
 	else if (strncmp(msg.cData, "Info: upload success", 20) == 0)
 		msg.iType = CARVERA_MSG_UPLOAD_SUCCESS;
-
-
+	else if (strncmp(msg.cData, "Playing ", 8) == 0)
+		msg.iType = CARVERA_MSG_PLAYING;
+	else if (strncmp(msg.cData, "M2 (Clout sync)", 15) == 0)
+		msg.iType = CARVERA_MSG_CLOUTSYNC;
+	
 }
 
 void Comms_ConnectDevice(BYTE bDeviceIdx)
@@ -652,6 +656,7 @@ void Comms_ConnectDevice(BYTE bDeviceIdx)
 	//Connection established
 		bCommsConnected = true;
 		XmitID = 0;
+		bFileTransferInProgress = false;
 
 	//Create the communications thread
 		CloutCreateThread(&hCommsThread, CommsThreadProc);

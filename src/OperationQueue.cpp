@@ -35,7 +35,10 @@ void _OperationQueue::Start()
 void _OperationQueue::Run()
 {
 	if (!bIsRunning || Ops.empty())
+	{
+		bIsRunning = false;
 		return;
+	}
 
 	CloutProgram_Op &op = GetOp(0);
 
@@ -56,7 +59,7 @@ void _OperationQueue::DrawList()
 	int x;
 	char szString[50];
 
-	bool bDisabled = bIsRunning;	//This can't be updated in the middle of the draw or we'll corrupt the BeginDisabled/EndDisabled stack
+	bool bDisabled = bIsRunning || !bCommsConnected;	//This can't be updated in the middle of the draw or we'll corrupt the BeginDisabled/EndDisabled stack
 
 	if (!ImGui::Begin("Queue"))
 	{
