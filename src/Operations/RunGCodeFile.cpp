@@ -141,6 +141,7 @@ void CloutProgram_Op_Run_GCode_File::ReadFromFile()
 
 void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 {
+	char szString[10];
 	int x;
 
 	//Description
@@ -203,10 +204,15 @@ void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 				ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(100, 100, 100, 255));
 
 			ImGui::TableSetColumnIndex(0);
-			ImGui::Text("%d", x);
+
+			//Line number
+				sprintf(szString, "%d", x);
+				ImVec2 TextSize = ImGui::CalcTextSize(szString);
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetColumnWidth() - TextSize.x));
+				ImGui::Text(szString);
 
 			ImGui::TableSetColumnIndex(1);
-			ImGui::Text("%s", sGCode_Line.at(x).c_str());
+			ImGui::Text(" %s", sGCode_Line.at(x).c_str());
 
 			if (bGrayText)
 				ImGui::PopStyleColor();
