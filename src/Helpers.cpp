@@ -170,3 +170,42 @@ void CommaStringTo3Doubles(char* str, double* d1, double* d2, double* d3)
 
 	*d3 = atof(sTemp);
 }
+
+void CommaStringTo3Ints(char* str, int* d1, int* d2, int* d3)
+{
+	char* c = str;
+	char sTemp[100];
+
+	//1st value
+	memset(sTemp, 0, 100);
+
+	while (*c == '-' || *c == '+' || *c == '.' || (*c >= '0' && *c <= '9')) //Only copy out the number characters
+	{
+		strncat(sTemp, c, 1);
+		c++;
+	}
+
+	*d1 = atoi(sTemp);
+
+	//2nd value
+	memset(sTemp, 0, 100);
+	c++; //Probably left off last time at a "," separating numbers
+	while (*c == '-' || *c == '+' || *c == '.' || (*c >= '0' && *c <= '9')) //Only copy out the number characters
+	{
+		strncat(sTemp, c, 1);
+		c++;
+	}
+
+	*d2 = atoi(sTemp);
+
+	//3rd value
+	memset(sTemp, 0, 100);
+	c++; //Probably left off last time at a "," separating numbers
+	while (*c == '-' || *c == '+' || *c == '.' || (*c >= '0' && *c <= '9')) //Only copy out the number characters
+	{
+		strncat(sTemp, c, 1);
+		c++;
+	}
+
+	*d3 = atoi(sTemp);
+}

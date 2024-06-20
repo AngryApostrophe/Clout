@@ -104,6 +104,17 @@ struct MACHINE_STATUS
 
 	int iCurrentTool;
 	float fToolLengthOffset; //Length of the installed tool. 0 if none.
+	
+	double dSpindleRPM;
+	double dSpindleTargetRPM;
+	double dSpindleRPMFactor; //Percentage of full speed
+
+	struct PLAY_STATUS
+	{
+		int iLinesComplete;
+		int iPercentComplete;
+		int iElapsedSecs;
+	}Playing;
 
 	bool bProbeTriggered; //True if the touch probe is triggered.  This is only updated in certain operations by a * command
 };

@@ -60,7 +60,6 @@ void CloutProgram_Op_Custom_GCode::StateMachine()
 		{	
 			//Now wait for it to go idle
 			if (Comms_PopMessageOfType(CARVERA_MSG_CLOUTSYNC))
-			//if (MachineStatus.Status == Carvera::Status::Idle)
 				iState = STATE_OP_COMPLETE;
 			break;
 		}

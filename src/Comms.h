@@ -23,7 +23,7 @@ extern bool bFileTransferInProgress;
 #define CARVERA_OUTBOUND_BYTES		1
 
 #define CARVERA_MSG_UNKNOWN			0  //Unknown message.  Check raw data.
-#define CARVERA_MSG_STATUS			1  //A typical > reply to our ?
+#define CARVERA_MSG_STATUS			1  //A typical > reply to our ?		Kernel::get_query_string() in libs/Kernel.cpp
 #define CARVERA_MSG_VERSION			2  //Response to "version"
 #define CARVERA_MSG_PARSER			3  //Response to "$G". Contains the current GCode parser state
 #define CARVERA_MSG_PROBE			4  //A probing even has occured
@@ -41,9 +41,10 @@ extern bool bFileTransferInProgress;
 #define CARVERA_MSG_XMODEM_CAN		16 //XModem protocol for sending files.  0x16
 #define CARVERA_MSG_UPLOAD_SUCCESS	17 //File upload successful.  "Info: upload success"
 #define CARVERA_MSG_PARAMETERS		18 //A bunch of parameters, response to "$#"
-#define CARVERA_MSG_DEBUG			19 //Debug parameters, response to "*"	diagnose_command() in https://github.com/faecorrigan/CarveraCommunityFirmware/blob/makeraCommunity/src/modules/utils/simpleshell/SimpleShell.cpp
+#define CARVERA_MSG_DEBUG			19 //Debug parameters, response to "*"	diagnose_command() in modules/utils/simpleshell/SimpleShell.cpp
 #define CARVERA_MSG_PLAYING			20 //Beginning to play a gcode file
 #define CARVERA_MSG_CLOUTSYNC		21 //A message we insert into custom GCode to sync up with the end of the file
+#define CARVERA_MSG_PROGRESS		22 //Response to requesting progress of a gcode file
 
 
 //#ifdef _CHRONO_

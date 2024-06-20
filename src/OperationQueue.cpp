@@ -135,16 +135,38 @@ void _OperationQueue::DrawList()
 		if (ImGui::BeginTable("table_OpsList", 1, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY))
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ScaledByWindowScale(0.0, 15));
+			ImGui::PushFont(io->Fonts->Fonts[FONT_SELECTION]);			
 
 			for (x = 0; x < Ops.size(); x++)
 			{
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				
+				//Draw a progress bar if this should have one
+				if (x == 0 && (GetOp(x).iType == CLOUT_OP_RUN_GCODE_FILE || GetOp(x).iType == CLOUT_OP_CUSTOM_GCODE))
+				{
+					ImVec2 curpos = ImGui::GetCursorScreenPos();	//Save current screen location
+					ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImGui::GetColorU32(ImGui::GetStyleColorVec4(ImGuiCol_FrameBg)));	//Bar color to blue
+					ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::GetColorU32( ImGui::GetStyleColorVec4(ImGuiCol_WindowBg)  ));	//Background to black
+					ImGui::ProgressBar(MachineStatus.Playing.iPercentComplete/100.0f, ImVec2(ImGui::GetColumnWidth(),ScaledByWindowScale(18)), "");	//Draw the progress
+					ImGui::PopStyleColor(2);
+					ImGui::SetNextItemAllowOverlap();
+					ImGui::SetCursorScreenPos(curpos);
+				}
+
+				//If we're in the future, make it gray
+				if (x > 0)
+					ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImVec4(0.7f, 0.7f, 0.7f, 1.0f)));
+
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ScaledByWindowScale(3.0f)); //Bump it right just a bit to make room for that progress bar above
 				sprintf(szString, "%s##OpsList%d", GetOp(x).FullText.c_str(), x);
 				ImGui::Selectable(szString);
+
+				if (x > 0)
+					ImGui::PopStyleColor(); //ImGuiCol_Text
 			}
 
+			ImGui::PopFont();
 			ImGui::PopStyleVar();
 
 			ImGui::EndTable();

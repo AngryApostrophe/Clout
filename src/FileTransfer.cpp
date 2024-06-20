@@ -102,7 +102,7 @@ static unsigned int crc16_ccitt(unsigned char* data, unsigned int len)
 
 
 
-void FileTransfer_BeginUpload(const char *szLocalFilename, int iFirstLine, int iLastLine)
+void FileTransfer_BeginUpload(const char *szLocalFilename, int iFirstLine, int iLastLine, bool bAppendSync)
 {
 	int i;
 	sRawData.clear();	//Empty everything out
@@ -137,6 +137,12 @@ void FileTransfer_BeginUpload(const char *szLocalFilename, int iFirstLine, int i
 		for (i = 0; i < sFileLines.size(); i++)
 		{
 			sRawData += sFileLines[i] + "\n";
+		}
+
+	//Append the sync code if necessary
+		if (bAppendSync)
+		{
+			sRawData += "\nM400\nM2 (Clout sync)\n";
 		}
 
 	//Calculate the MD5

@@ -21,11 +21,14 @@
 #define STATE_RUNFILE_RUNNING		2
 
 
+static bool bStepRunning;
+
+
 CloutProgram_Op_Run_GCode_File::CloutProgram_Op_Run_GCode_File()
 {
 	sFilename.clear();
 	iStartLineNum = 0;
-	iLastLineNum = 0;
+	iLastLineNum = -1;
 	iState = 0;
 	sGCode_Line.clear();
 }
@@ -36,21 +39,33 @@ void CloutProgram_Op_Run_GCode_File::StateMachine()
 	{
 		case STATE_RUNFILE_START:
 			ReadFromFile();
-			FileTransfer_BeginUpload(sFilename.c_str(), iStartLineNum, iLastLineNum);
+			FileTransfer_BeginUpload(sFilename.c_str(), iStartLineNum, iLastLineNum, true);
 			iState = STATE_RUNFILE_UPLOAD;
 		break;
 
 		case STATE_RUNFILE_UPLOAD:
 			if (FileTransfer_DoTransfer())
 			{
+				bStepRunning = false;
 				iState = STATE_RUNFILE_RUNNING;
 				Comms_SendString("play sd/gcodes/Clout.nc -v");	//Start running that file
 			}
 		break;
 
 		case STATE_RUNFILE_RUNNING:
-			if (MachineStatus.Status == Carvera::Status::Idle)
-				iState = STATE_OP_COMPLETE;
+			if (!bStepRunning)
+			{
+				//Wait for it to begin playing
+				if (Comms_PopMessageOfType(CARVERA_MSG_PLAYING))
+					bStepRunning = true;
+			}
+			else
+			{
+				//Now wait for it to go idle
+				if (Comms_PopMessageOfType(CARVERA_MSG_CLOUTSYNC))
+					iState = STATE_OP_COMPLETE;
+				break;
+			}
 		break;
 		
 		/*

@@ -45,6 +45,7 @@ class CommsConsole
 
 	void    AddLog(const char* fmt, ...) IM_FMTARGS(2);
 	void    AddLog(CONSOLE_ITEM_TYPE Type, const char* fmt, ...) IM_FMTARGS(3);
+	void    AddLogSimple(CONSOLE_ITEM_TYPE Type, const char* str);
 
 	void    Draw();
 	void    ExecCommand(const char* command_line);

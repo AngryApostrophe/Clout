@@ -12,6 +12,7 @@ bool LoadTextureFromFile(const char* filename, GLuint* out_texture);
 bool LoadCompressedTextureFromMemory(const unsigned char* buf_data, const unsigned int size, GLuint* out_texture);
 
 void CommaStringTo3Doubles(char* str, double* d1, double* d2, double* d3);
+void CommaStringTo3Ints(char* str, int* d1, int* d2, int* d3);
 
 ImVec2 ScaledByFontSize(float x, float y);
 float ScaledByFontSize(float in);

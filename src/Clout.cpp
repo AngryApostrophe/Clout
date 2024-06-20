@@ -976,6 +976,10 @@ void Clout_Init()
 		MachineStatus.Positioning = Carvera::Positioning::Absolute;
 		MachineStatus.bProbeTriggered = false;
 
+		MachineStatus.dSpindleRPM = 0;
+		MachineStatus.dSpindleTargetRPM = 0;
+		MachineStatus.dSpindleRPMFactor = 1.0f;
+
 	//Initialize comms
 		CommsInit();
 

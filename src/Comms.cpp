@@ -180,7 +180,10 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 										else if (msg.iType == CARVERA_MSG_XMODEM_NAK)
 											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Nak>");
 										else*/ if (msg.iType != CARVERA_MSG_OK && msg.iType != CARVERA_MSG_XMODEM_C && msg.iType != CARVERA_MSG_XMODEM_NAK && msg.iType != CARVERA_MSG_XMODEM_ACK)
-											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, msg.cData);
+											Console.AddLogSimple(CommsConsole::ITEM_TYPE_RECV, msg.cData);
+
+											if (msg.iType == CARVERA_MSG_PROGRESS)
+												msg.iLen = msg.iLen;
 										
 										
 										RecvMessageQueue.push_back(msg);
@@ -463,6 +466,24 @@ void ProcessUpdateMsg(CarveraMessage &msg)
 				MachineStatus.FeedRates.x = MachineStatus.FeedRates.y;
 		}
 
+		//Spindle info
+		MachineStatus.dSpindleRPM = 0;
+		MachineStatus.dSpindleTargetRPM = 0;
+		c = strstr(data, "|S:");
+		if (c != 0)
+		{
+			c += 3; //The start of the data
+			CommaStringTo3Doubles(c, &MachineStatus.dSpindleRPM, &MachineStatus.dSpindleTargetRPM, &MachineStatus.dSpindleRPMFactor);
+		}
+
+		//Play status
+		c = strstr(data, "|P:");
+		if (c != 0)
+		{
+			c += 3; //The start of the info
+			CommaStringTo3Ints(c, &MachineStatus.Playing.iLinesComplete, &MachineStatus.Playing.iPercentComplete, &MachineStatus.Playing.iElapsedSecs);
+		}
+
 		//Tool info
 		MachineStatus.iCurrentTool = -1;
 
@@ -598,7 +619,7 @@ void DetermineMsgType(CarveraMessage &msg)
 		msg.iType = CARVERA_MSG_DEBUG;
 	else if (_strnicmp(msg.cData, "G28 means goto", 14) == 0) //Annoying messages in response to a G28 command
 		msg.iType = CARVERA_MSG_G28;
-	else if (strncmp(msg.cData, "<Idle|MPos", 10) == 0 || strncmp(msg.cData, "<Run|MPos", 9) == 0 || strncmp(msg.cData, "<Home|MPos", 10 || strncmp(msg.cData, "<Alarm|MPos", 11)) == 0)
+	else if (strncmp(msg.cData, "<Idle|MPos", 10) == 0 || strncmp(msg.cData, "<Run|MPos", 9) == 0 || strncmp(msg.cData, "<Home|MPos", 10 || strncmp(msg.cData, "<Alarm|MPos", 11) || strncmp(msg.cData, "<Hold|MPos", 10) || strncmp(msg.cData, "<Sleep|MPos", 11) || strncmp(msg.cData, "<Wait|MPos", 10 || strncmp(msg.cData, "<Pause|MPos", 11))) == 0)
 		msg.iType = CARVERA_MSG_STATUS;
 	else if (strncmp(msg.cData, "[PRB:", 5) == 0) //Response to a probing operation	eg: [PRB:-227.990, -1.000, -1.000 : 1]
 		msg.iType = CARVERA_MSG_PROBE;
@@ -630,6 +651,8 @@ void DetermineMsgType(CarveraMessage &msg)
 		msg.iType = CARVERA_MSG_PLAYING;
 	else if (strncmp(msg.cData, "M2 (Clout sync)", 15) == 0)
 		msg.iType = CARVERA_MSG_CLOUTSYNC;
+	else if (strncmp(msg.cData, "file: ", 6) == 0)
+		msg.iType = CARVERA_MSG_PROGRESS;
 	
 }
 

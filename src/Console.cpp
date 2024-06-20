@@ -279,3 +279,16 @@ void CommsConsole::AddLog(CommsConsole::CONSOLE_ITEM_TYPE Type, const char* fmt,
 
 	ReleaseMutex(&ConsoleMutex);
 }
+
+void CommsConsole::AddLogSimple(CommsConsole::CONSOLE_ITEM_TYPE Type, const char* str)
+{
+	if (WaitForMutex(&ConsoleMutex, true) != MUTEX_RESULT_SUCCESS)
+		return;
+
+	CONSOLE_ITEM* NewItem = new CONSOLE_ITEM;
+	NewItem->Type = Type;
+	strcpy(NewItem->string, str);
+	Items.push_back(NewItem);
+
+	ReleaseMutex(&ConsoleMutex);
+}
