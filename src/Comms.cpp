@@ -108,6 +108,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 	int n;
 	int s;
 	char buf[MAX_DATA_LENGTH];
+	int len = 0;
 
 	steady_clock::time_point LastStatusRqst = steady_clock::now();
 	XmitMessageQueue.clear();
@@ -132,11 +133,12 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 			s = select((int)sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
 			if (s > 0) //Something is available to read
 			{					
-				n = recv(sckCarvera, buf, MAX_DATA_LENGTH, 0); //Read it
-				if (n > 0)
+				n = recv(sckCarvera, buf + len, MAX_DATA_LENGTH - len, 0); //Read it
+				len += n;
+				if (n > 0 && memchr(buf, '\n', len)) //If there's no newline, it's a partial message.  Keep reading
 				{
 					//Place this message on the receive queue
-						TerminateString(buf, n);
+						TerminateString(buf, len);
 
 						if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 						{
@@ -146,54 +148,51 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 						}
 
 						//Sometimes multiple messages come in at once, delimited by \n.  Split them up
-							char *c = buf;
-							while (c < buf+n && c != 0)
+						char* start = buf;
+						char* end = strchr(buf, '\n');
+						while (end) {
+							*end = 0;
+
+							CarveraMessage msg;
+							memset(&msg, 0x0, sizeof(msg));
+
+							msg.iProcessed = 0;
+							strcpy(msg.cData, start);
+							msg.iLen = (int)strlen(msg.cData);
+							msg.markpoint = XmitID;
+
+							DetermineMsgType(msg);
+
+							if (msg.iType == CARVERA_MSG_STATUS || msg.iType == CARVERA_MSG_PARSER || msg.iType == CARVERA_MSG_DEBUG)
+								ProcessUpdateMsg(msg);
+
+							//Display on the console
+							if (!IsMessageIgnored(msg.iType)/* && msg.iType != CARVERA_MSG_OK*/)
 							{
-								CarveraMessage msg;
-								memset(&msg, 0x0, sizeof(msg));
+								/*if (msg.iType == CARVERA_MSG_UNKNOWN && msg.iLen == 1)
+									Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "0x%x", msg.cData[0]);
+								else if (msg.iType == CARVERA_MSG_XMODEM_ACK)
+									Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Ack>");
+								else if (msg.iType == CARVERA_MSG_XMODEM_NAK)
+									Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Nak>");
+								else*/ if (msg.iType != CARVERA_MSG_OK && msg.iType != CARVERA_MSG_XMODEM_C && msg.iType != CARVERA_MSG_XMODEM_NAK && msg.iType != CARVERA_MSG_XMODEM_ACK)
+	Console.AddLogSimple(CommsConsole::ITEM_TYPE_RECV, msg.cData);
 
-								msg.iProcessed = 0;
-								strcpy(msg.cData, c);
-								msg.iLen = (int)strlen(msg.cData);
+								if (msg.iType == CARVERA_MSG_PROGRESS)
+									msg.iLen = msg.iLen;
 
-								char *z = strstr(msg.cData, "\n");
-								if (z != 0)
-								{
-									*z = 0x0;
-									msg.iLen = z-c;
-								}
 
-								msg.markpoint = XmitID;
-
-								DetermineMsgType(msg);
-								
-								if (msg.iType == CARVERA_MSG_STATUS || msg.iType == CARVERA_MSG_PARSER || msg.iType == CARVERA_MSG_DEBUG)
-									ProcessUpdateMsg(msg);
-
-								//Display on the console
-									if (!IsMessageIgnored(msg.iType)/* && msg.iType != CARVERA_MSG_OK*/)
-									{
-										/*if (msg.iType == CARVERA_MSG_UNKNOWN && msg.iLen == 1)
-											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "0x%x", msg.cData[0]);
-										else if (msg.iType == CARVERA_MSG_XMODEM_ACK)
-											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Ack>");
-										else if (msg.iType == CARVERA_MSG_XMODEM_NAK)
-											Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Nak>");
-										else*/ if (msg.iType != CARVERA_MSG_OK && msg.iType != CARVERA_MSG_XMODEM_C && msg.iType != CARVERA_MSG_XMODEM_NAK && msg.iType != CARVERA_MSG_XMODEM_ACK)
-											Console.AddLogSimple(CommsConsole::ITEM_TYPE_RECV, msg.cData);
-
-											if (msg.iType == CARVERA_MSG_PROGRESS)
-												msg.iLen = msg.iLen;
-										
-										
-										RecvMessageQueue.push_back(msg);
-									}
-
-								//Move on to the next one
-									c = strstr(c, "\n");
-									if (c != 0)
-										c++; //Move past it
+								RecvMessageQueue.push_back(msg);
 							}
+
+							//Move on to the next message
+							start = end + 1;
+							end = strchr(start, '\n');
+						}
+
+						//The remainder doesn't contain a newline.  Go back to reading from the socket
+						strcpy(buf, start);
+						len = strlen(buf);
 
 						ReleaseMutex(&hBufferMutex);
 				}
@@ -202,7 +201,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 					DisplaySocketError();
 					break;
 				}
-				else //(n == 0)  Connection has been closed
+				else if (n == 0)  //Connection has been closed
 					break;
 				
 			}
@@ -226,15 +225,11 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 					//Make sure it's got the terminator or Carvera won't recognize it
 						strcpy(buf, XmitMessageQueue[0].cData);
 						n = (int)strlen(buf);
-						if (n > 1)
+						if (n > 0 && buf[n - 1] != '\n')
 						{
-							if (buf[n] != '\n')
-							{
-								buf[n + 1] = 0x0;
-								buf[n] = '\n';
-							}
-
-							n = n + 1;
+							buf[n] = '\n';
+							buf[n + 1] = 0x0;
+							n++;
 						}
 				}
 				else
