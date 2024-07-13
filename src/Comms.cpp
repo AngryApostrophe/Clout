@@ -226,15 +226,11 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 					//Make sure it's got the terminator or Carvera won't recognize it
 						strcpy(buf, XmitMessageQueue[0].cData);
 						n = (int)strlen(buf);
-						if (n > 1)
+						if (n > 0 && buf[n - 1] != '\n')
 						{
-							if (buf[n] != '\n')
-							{
-								buf[n + 1] = 0x0;
-								buf[n] = '\n';
-							}
-
-							n = n + 1;
+							buf[n] = '\n';
+							buf[n + 1] = 0x0;
+							n++;
 						}
 				}
 				else
