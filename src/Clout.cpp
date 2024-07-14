@@ -401,6 +401,16 @@ void Window_Connection_Draw()
 
 		ImGui::SeparatorText("Devices");
 
+		static int iDisplayedConnectionType = iWifiMode;
+		ImGui::RadioButton("WiFi##devices", &iDisplayedConnectionType, 1); ImGui::SameLine();
+		ImGui::RadioButton("Serial##devices", &iDisplayedConnectionType, 0);
+
+		//Switch connection type when needed
+			if (iDisplayedConnectionType != iWifiMode)
+			{
+				Comms_ChangeConnectionType(iDisplayedConnectionType);
+			}
+
 		static int item_current_idx = 0; // Here we store our selection data as an index.
 		if (ImGui::BeginListBox("##devices", ScaledByWindowScale(-FLT_MIN, 3 * ImGui::GetTextLineHeightWithSpacing())))
 		{

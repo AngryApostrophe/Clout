@@ -29,14 +29,11 @@ using namespace std::chrono;
 
 	struct timeval tv;
 
+//Serial stuff
+	HANDLE hSerialDevice = 0;
+
 //Status info
-	bool bCommsConnected = false;
-	char sConnectedIP[16];
-	WORD wConnectedPort;
-
-	BYTE bDetectedDevices = 0;
-	char sDetectedDevices[MAX_DEVICES][3][20];
-
+	bool bCommsConnected = false;	
 	bool bFileTransferInProgress; //This is set by the file transfer code.  It stops us from sending regular status requests
 
 //Message Queue
@@ -59,6 +56,15 @@ using namespace std::chrono;
 	CloutThreadHandle hCommsThread;
 
 	CloutMutex hBufferMutex;  //Mutex for accessing send and recv buffers
+
+//Connection stuff
+	int iWifiMode = 1;	//0 = Serial,   1 = Wifi
+
+	char sConnectedIP[16];
+	WORD wConnectedPort;
+
+	BYTE bDetectedDevices = 0;
+	char sDetectedDevices[MAX_DEVICES][3][30];
 
 
 //Make sure the string is null terminated, sometimes they aren't
@@ -105,10 +111,11 @@ void Comms_HideReply(int iType)
 //Sockets thread.  This handles direct socket comms stuff
 THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 {
-	int n;
+	long n;
+	unsigned long ul;
 	int s;
 	char buf[MAX_DATA_LENGTH];
-	int len = 0;
+	unsigned long len = 0;
 
 	steady_clock::time_point LastStatusRqst = steady_clock::now();
 	XmitMessageQueue.clear();
@@ -124,16 +131,32 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 		//Check for incoming messages
 			fd_set stReadFDS;
 			FD_ZERO(&stReadFDS);
-			FD_SET(sckCarvera, &stReadFDS);
+			if (iWifiMode)
+				FD_SET(sckCarvera, &stReadFDS);
 
 			//Set the timeout time.  This has to be done every time because of linux
 				tv.tv_sec = 0;
 				tv.tv_usec = 10000; //10ms
 
-			s = select((int)sckCarvera+1, &stReadFDS, 0, 0, &tv); //Check if any data is available to read
+			//Check if data is available to read
+				if (iWifiMode)
+					s = select((int)sckCarvera + 1, &stReadFDS, 0, 0, &tv);
+				else
+					s = 1; //Serial port won't block, so just assume it's there
+			
 			if (s > 0) //Something is available to read
 			{					
-				n = recv(sckCarvera, buf + len, MAX_DATA_LENGTH - len, 0); //Read it
+				//Read the data
+					if (iWifiMode)
+						n = recv(sckCarvera, buf + len, MAX_DATA_LENGTH - len, 0); //Read it
+					else
+					{
+						if (ReadFile(hSerialDevice, buf + len, MAX_DATA_LENGTH - len, &ul, 0) != 0)
+							n = ul;	//Bytes received
+						else
+							n = -1; //Alert that we had an error
+					}
+
 				len += n;
 				if (n > 0 && memchr(buf, '\n', len)) //If there's no newline, it's a partial message.  Keep reading
 				{
@@ -142,7 +165,6 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 
 						if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 						{
-							//TODO: Error message
 							Console.AddLog(CommsConsole::ITEM_TYPE_ERROR, "Error waiting for receive buffer access");
 							continue;
 						}
@@ -176,7 +198,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 								else if (msg.iType == CARVERA_MSG_XMODEM_NAK)
 									Console.AddLog(CommsConsole::ITEM_TYPE_RECV, "<Nak>");
 								else*/ if (msg.iType != CARVERA_MSG_OK && msg.iType != CARVERA_MSG_XMODEM_C && msg.iType != CARVERA_MSG_XMODEM_NAK && msg.iType != CARVERA_MSG_XMODEM_ACK)
-	Console.AddLogSimple(CommsConsole::ITEM_TYPE_RECV, msg.cData);
+											Console.AddLogSimple(CommsConsole::ITEM_TYPE_RECV, msg.cData);
 
 								if (msg.iType == CARVERA_MSG_PROGRESS)
 									msg.iLen = msg.iLen;
@@ -201,7 +223,7 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 					DisplaySocketError();
 					break;
 				}
-				else if (n == 0)  //Connection has been closed
+				else if (n == 0 && iWifiMode)  //Connection has been closed (only on wifi)
 					break;
 				
 			}
@@ -238,7 +260,18 @@ THREADPROC_DEC CommsThreadProc(THREADPROC_ARG lpParameter)
 					memcpy(buf, XmitMessageQueue[0].cData, n);
 				}
 
-				n = send(sckCarvera,buf, n, 0); //Send the first message in the queue
+				//Write the data to the output
+					if (iWifiMode)
+						n = send(sckCarvera,buf, n, 0);
+					else
+					{
+						unsigned long BytesWritten = 0;
+						if (WriteFile(hSerialDevice, buf, n, &BytesWritten, 0) != 0)
+							n = BytesWritten;
+						else
+							n = -1;	//Alert to an error
+					}
+
 				if (n < 0)
 				{
 					DisplaySocketError();
@@ -339,7 +372,7 @@ int CommsInit()
 		return 1;
 }
 
-void Comms_ListenForCarveras()
+void Comms_ListenForCarverasOnWifi()
 {
 	int x;
 	
@@ -412,8 +445,8 @@ void Comms_ListenForCarveras()
 						strcpy(sDetectedDevices[x][1], sIP);
 						strcpy(sDetectedDevices[x][2], sPort);
 					}
-			}
-		}
+			} //if (iBytes > 0)
+		} //if (t > 0)
 	}
 }
 
@@ -568,7 +601,8 @@ void Comms_Update()
 {
 	char *data;
 
-	Comms_ListenForCarveras();
+	if (iWifiMode)
+		Comms_ListenForCarverasOnWifi();
 
 	if (WaitForMutex(&hBufferMutex, true) != MUTEX_RESULT_SUCCESS)
 	{
@@ -598,7 +632,10 @@ void Comms_Update()
 void CommsDisconnect()
 {
 	//Console.AddLog("Disconnecting");
-	CloseSocket(&sckCarvera); //This alone will alert the sockets thread to shutdown and clean things up
+	if (iWifiMode)
+		CloseSocket(&sckCarvera); //This alone will alert the sockets thread to shutdown and clean things up
+	else
+		CloseHandle(hSerialDevice);
 }
 
 
@@ -651,7 +688,7 @@ void DetermineMsgType(CarveraMessage &msg)
 	
 }
 
-void Comms_ConnectDevice(BYTE bDeviceIdx)
+void Comms_ConnectWifiDevice(BYTE bDeviceIdx)
 {
 	//Create the socket for communicating with Carvera
 		sckCarvera = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -688,6 +725,48 @@ void Comms_ConnectDevice(BYTE bDeviceIdx)
 	//Switch to the status page
 		ImGui::SetWindowFocus("Status");
 }
+
+void Comms_ConnectSerialDevice(BYTE bDeviceIdx)
+{
+	if (ConnectToSerialPort(sDetectedDevices[bDeviceIdx][0], &hSerialDevice) != 1)
+	{
+		return;
+	}
+
+	//Setup timeouts
+		COMMTIMEOUTS timeouts;
+
+		timeouts.ReadIntervalTimeout = MAXDWORD;
+		timeouts.ReadTotalTimeoutMultiplier = MAXDWORD;
+		timeouts.ReadTotalTimeoutConstant = 1;
+		timeouts.WriteTotalTimeoutMultiplier = 1;
+		timeouts.WriteTotalTimeoutConstant = 1;
+		SetCommTimeouts(hSerialDevice, &timeouts);
+
+	//Connection established
+		bCommsConnected = true;
+		XmitID = 0;
+		bFileTransferInProgress = false;
+
+	//Create the communications thread
+		CloutCreateThread(&hCommsThread, CommsThreadProc);
+
+	//Save the info to display on the screen
+		Console.AddLog("Connected to Carvera on %s", sDetectedDevices[bDeviceIdx][0]);
+
+	//Switch to the status page
+		ImGui::SetWindowFocus("Status");
+}
+
+void Comms_ConnectDevice(BYTE bDeviceIdx)
+{
+	if (iWifiMode)
+		Comms_ConnectWifiDevice(bDeviceIdx);
+	else
+		Comms_ConnectSerialDevice(bDeviceIdx);
+}
+
+
 void Comms_Disconnect()
 {
 	CommsDisconnect();
@@ -764,4 +843,13 @@ int Comms_PopMessageOfType(int iType, CarveraMessage *msg, unsigned long Earlies
 	ReleaseMutex(&hBufferMutex);
 
 	return iRes;
+}
+
+void Comms_ChangeConnectionType(int iNewWifiMode)
+{
+	iWifiMode = iNewWifiMode;
+	bDetectedDevices = 0;
+
+	if (!iWifiMode)
+		ListSerialPorts();
 }
