@@ -153,6 +153,19 @@ void ListSerialPorts()
 
 int ConnectToSerialPort(char *szName, HANDLE *hFile)
 {
+	DCB dcb;
+
 	*hFile = CreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
+
+	// Configure the serial port
+	SecureZeroMemory(&dcb, sizeof(DCB));
+	dcb.DCBlength = sizeof(DCB);
+	GetCommState(*hFile, &dcb);
+	dcb.BaudRate = CBR_115200;
+	dcb.ByteSize = 8;
+	dcb.Parity = NOPARITY;
+	dcb.StopBits = ONESTOPBIT;
+	SetCommState(*hFile, &dcb);
+
 	return true;
 }
