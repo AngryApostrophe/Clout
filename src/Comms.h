@@ -8,11 +8,13 @@ unsigned char ProcessIncomingMessage(char* sRecv, const char* sSent=0, bool bSho
 
 extern bool bCommsConnected;
 
+extern int iWifiMode;
+
 extern char sConnectedIP[16];
 extern unsigned short wConnectedPort;
 
 extern unsigned char bDetectedDevices;
-extern char sDetectedDevices[MAX_DEVICES][3][20];
+extern char sDetectedDevices[MAX_DEVICES][3][30];
 
 extern bool bFileTransferInProgress;
 
@@ -74,6 +76,7 @@ void Comms_SendBytes(const char *bytes, int iLen);
 void Comms_Update();
 void Comms_HideReply(int iType);
 int Comms_PopMessageOfType(int iType, CarveraMessage *msg = 0, unsigned long EarliestID = 0);
+void Comms_ChangeConnectionType(int iNewWifiMode);
 
 #define MSG_CONNECT_DEVICE		WM_USER+1
 #define MSG_DISCONNECT			WM_USER+2

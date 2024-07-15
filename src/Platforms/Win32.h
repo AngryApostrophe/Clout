@@ -17,6 +17,10 @@
 //Socket stuff
 	typedef SOCKET CloutSocket;
 
+//Serial stuff
+	void ListSerialPorts();
+	int ConnectToSerialPort(char* szName, HANDLE* hFile);
+
 //Random stuff
 	#if defined(_WIN32) || defined(_WIN64)
 	/* We are on Windows */

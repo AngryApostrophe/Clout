@@ -1,4 +1,3 @@
-
 #include "Platforms.h"
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -7,6 +6,8 @@
 
 #include "../Comms.h"
 #include "../Console.h"
+
+#include <stdio.h>
 
 
 //Mutex stuff
@@ -130,4 +131,28 @@ bool DisplaySocketError(const char *s)	//Returns true if it was an acceptable er
 void CloseSocket(CloutSocket *sock)
 {
 	closesocket(*sock);
+}
+
+void ListSerialPorts()
+{
+	for (int x = 0; x < 255; x++)
+	{
+		char szPortName[30];
+		sprintf(szPortName, "COM%0d", x);
+
+		char TargetPath[500];
+		DWORD dwRes = QueryDosDevice(szPortName, TargetPath, 500);
+
+		if (dwRes > 0)
+		{
+			strcpy(sDetectedDevices[bDetectedDevices][0], szPortName);
+			bDetectedDevices++;
+		}
+	}
+}
+
+int ConnectToSerialPort(char *szName, HANDLE *hFile)
+{
+	*hFile = CreateFile(szName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
+	return true;
 }
