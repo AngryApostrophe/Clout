@@ -254,31 +254,27 @@ void ProbeOperation_BossCenter::DrawSubwindow()	//Could be drawn in either its o
 	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Boss Diameter
-		sprintf(sString, "%%0.3f%s", sUnits);
-		ImGui::InputFloat("Boss diameter", &fBossDiameter, 0.01f, 0.1f, sString);
-		ImGui::SameLine(); HelpMarker("Nominal diameter of the boss, in current machine units.");
+		sprintf(sString, "%.6g%s##Boss", fBossDiameter, sUnits);
+		BUTTON_TO_KEYPAD("Boss diameter", sString, ScaledByWindowScale(120, 0), &fBossDiameter, "Nominal diameter of the boss, in current machine units.")
 
 	//Clearance Distance
-		sprintf(sString, "%%0.2f%s", sUnits);
-		ImGui::InputFloat("Clearance distance", &fClearance, 0.1f, 1.0f, sString);
-		ImGui::SameLine(); HelpMarker("Distance traveled outside the nominal diameter before lowering and probing back in.");
+		sprintf(sString, "%.6g%s##Clearance", fClearance, sUnits);
+		BUTTON_TO_KEYPAD("Clearance distance", sString, ScaledByWindowScale(120, 0), &fClearance, "Distance traveled outside the nominal diameter before lowering and probing back in.")
 
 	//Overtravel Distance
-		sprintf(sString, "%%0.2f%s", sUnits);
-		ImGui::InputFloat("Overtravel distance", &fOvertravel, 0.1f, 1.0f, sString);
-		ImGui::SameLine(); HelpMarker("Distance inside the nominal diameter to continue probing before failing.");
+		sprintf(sString, "%.6g%s##Overtravel", fOvertravel, sUnits);
+		BUTTON_TO_KEYPAD("Overtravel distance", sString, ScaledByWindowScale(120, 0), &fOvertravel, "Distance inside the nominal diameter to continue probing before failing.")
 
 	//Z Depth
-		sprintf(sString, "%%0.2f%s", sUnits);
-		ImGui::InputFloat("Z probing depth", &fZDepth, 0.1f, 1.0f, sString);
-		ImGui::SameLine(); HelpMarker("How far to lower the probe when we start measuring.\nNote: Negative numbers are lower.");
+		sprintf(sString, "%.6g%s##Depth", fZDepth, sUnits);
+		BUTTON_TO_KEYPAD("Z probing depth", sString, ScaledByWindowScale(120, 0), &fZDepth, "How far to lower the probe when we start measuring.\nNote: Negative numbers are lower.")
 
 	//Feed rate
-		ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
-		ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
-
-		ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
-		ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
+		sprintf(sString, "%d##Fast", iProbingSpeedFast);
+		BUTTON_TO_KEYPAD("Probing Speed (Fast)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedFast, "Speed at which the probe moves towards the edge.")
+		
+		sprintf(sString, "%d##Slow", iProbingSpeedSlow);
+		BUTTON_TO_KEYPAD("Probing Speed (Slow)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedSlow, "Speed at which the probe moves off the edge, for high accuracy.")
 	
 	ImGui::PopItemWidth();
 

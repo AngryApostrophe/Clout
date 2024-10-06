@@ -39,6 +39,155 @@ void HelpMarker(const char *sString)
 	}
 }
 
+void Window_Keypad_Draw(const char *name, std::variant <float*, int*> val)
+{
+	static bool bKeypadVisible = false;
+	static bool bBegunTyping = false;
+	const char KeypadBtns[] = "789456123.0";
+	static char sKeypadString[20] = "";
+
+	// Always center this window when appearing
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+	//Size the window
+	//	const ImVec2 WindowSize(600, 500);
+	//	ImGui::SetNextWindowSize(ScaledByWindowScale(WindowSize));
+
+	//Create the window
+	if (!ImGui::BeginPopupModal(name, NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		return;
+	}
+
+	//If this is the run through since opening the keypad, initialize it
+	if (!bKeypadVisible)
+	{
+		bBegunTyping = false;
+		if (val.index() == 0) //float *
+			sprintf_s(sKeypadString, 20, "%0.6g", *std::get<float*>(val));
+		else //int
+			sprintf_s(sKeypadString, 20, "%0d", *std::get<int*>(val));
+		bKeypadVisible = true;
+	}
+
+
+	ImGui::PushFont(io->Fonts->Fonts[FONT_POS_SMALL]);
+	ImGui::InputText("##keypadtext", sKeypadString, 10);
+	ImGui::PopFont();
+
+
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10);
+
+	ImVec2 ButtonSize = ScaledByWindowScale(60, 60);
+
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 8.0f)); //Extra empty space before the buttons
+
+	if (ImGui::Button("Backspace##keypad", ScaledByWindowScale(124, 40)))
+	{
+		if (strlen(sKeypadString) > 0)
+			sKeypadString[strlen(sKeypadString)-1] = 0;
+
+		bBegunTyping = true;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("CLR##keypad", ScaledByWindowScale(60, 40)))
+	{
+		sKeypadString[0] = 0;
+		bBegunTyping = true;
+	}
+
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 4.0f)); //Extra empty space before the buttons
+
+	for (char y = 0; y < 4; y++)
+	{
+		for (char x = 0; x < 3; x++)
+		{
+			if (x == 2 && y == 3) //Skip where the "+/-" would be
+				break;
+			else if (y ==3 && x == 0 && val.index() == 1) //Disable the "." for ints
+				ImGui::BeginDisabled();
+
+			char s[11];
+			char btn[2] = { KeypadBtns[(y * 3) + x],0};
+			sprintf(s, "%c##keypad", btn[0]);
+			if (ImGui::Button(s, ButtonSize))
+			{
+				if (!bBegunTyping)
+				{
+					sKeypadString[0] = 0;
+					bBegunTyping = true;
+				}
+
+				strcat_s(sKeypadString, 20, btn);
+			}
+
+			if (x != 2)
+				ImGui::SameLine();
+
+			if (y == 3 && x == 0 && val.index() == 1) //Disable the "." for ints
+				ImGui::EndDisabled();
+		}
+	}
+	
+	if (ImGui::Button("+/-##keypad", ButtonSize))
+	{
+		if (!bBegunTyping)
+		{
+			sKeypadString[0] = 0;
+			bBegunTyping = true;
+		}
+
+		if (strlen(sKeypadString) == 0)
+			strcat(sKeypadString, "-");
+		else
+		{
+			if (sKeypadString[0] != '-') //Prepend a -''
+			{
+				for (char x = strlen(sKeypadString); x > 0; x--) //Move every char down one to make room
+					sKeypadString[x] = sKeypadString[x-1];
+				sKeypadString[0] = '-';
+			}
+			else //Remove the '-'
+			{
+				for (char x = 0; x < strlen(sKeypadString); x++) //Move every char up on
+					sKeypadString[x] = sKeypadString[x + 1];
+				sKeypadString[strlen(sKeypadString)] = 0x0;
+			}
+		}
+	}
+
+	ImGui::PopStyleVar();
+
+	ImGui::Dummy(ScaledByWindowScale(0.0f, 8.0f)); //Extra empty space before the buttons
+
+
+	//ImGui::SetCursorPosX(ScaledByWindowScale((WindowSize.x / 2) - 50));
+	if (ImGui::Button("Ok##Keypad", ScaledByWindowScale(100, 25)))
+	{
+		if (val.index() == 0) //float *
+			*std::get<float*>(val) = atof(sKeypadString);
+		else  //int *
+			*std::get<int*>(val) = atoi(sKeypadString);
+		bKeypadVisible = false;
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::SetItemDefaultFocus();
+	ImGui::SameLine();
+
+	if (ImGui::Button("Cancel##Keypad", ScaledByWindowScale(120, 25)))
+	{
+		bKeypadVisible = false;
+		ImGui::CloseCurrentPopup();
+	}
+
+
+	//All done
+	ImGui::End();
+}
+
 void Window_ChangeTool_Draw()
 {
 	//Create the window

@@ -1,4 +1,5 @@
 #include "Helpers.h"
+#include <variant>
 
 //My standard types I like to use
 typedef unsigned char BYTE;
@@ -19,6 +20,9 @@ extern char szWCSChoices[9][20]; //List of all available WCSs, and which one is 
 extern const char szWCSNames[9][10]; //List of the WCS names, but none of them are marked as active
 
 void HelpMarker(const char* sString);
+
+void Window_Keypad_Draw(const char* name, std::variant <float*, int*> val);
+#define BUTTON_TO_KEYPAD(title, string, size, var, helper) if (ImGui::Button(string, size)){ImGui::OpenPopup(title);}Window_Keypad_Draw(title, var);ImGui::SameLine(); ImGui::Text(title);ImGui::SameLine(); HelpMarker(helper);
 
 void Clout_Init();
 void Clout_CreateDefaultLayout();

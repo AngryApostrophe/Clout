@@ -416,20 +416,20 @@ void ProbeOperation_SingleAxis::DrawSubwindow()
 	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Travel Distance
-		sprintf(sString, "%%0.2f%s", sUnits);
-		ImGui::InputFloat("Travel distance", &fTravel, 0.1f, 1.0f, sString);
-		ImGui::SameLine(); HelpMarker("How far to probe in the desired direction before failing.");
+		sprintf(sString, "%.6g%s##Travel", fTravel, sUnits);
+		BUTTON_TO_KEYPAD("Travel distance", sString, ScaledByWindowScale(120, 0), &fTravel, "How far to probe in the desired direction before failing.")
 
 	//Probe size
-		sprintf(sString, "%%0.2f%s", sUnits);
-		ImGui::InputFloat("Probe tip diameter", &fProbeTipDiameter, 0.1f, 1.0f, sString);
-		ImGui::SameLine(); HelpMarker("Diameter of the tip of the probe, required to accurately calculate the edge");
+		sprintf(sString, "%.6g%s##Diameter", fProbeTipDiameter, sUnits);
+		BUTTON_TO_KEYPAD("Probe tip diameter", sString, ScaledByWindowScale(120, 0), &fProbeTipDiameter, "Diameter of the tip of the probe, required to accurately calculate the edge.")
 
 	//Feed rate
-		ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
-		ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
-		ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
-		ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
+			sprintf(sString, "%d##Fast", iProbingSpeedFast);
+		BUTTON_TO_KEYPAD("Probing Speed (Fast)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedFast, "Speed at which the probe moves towards the edge.")
+
+			sprintf(sString, "%d##Slow", iProbingSpeedSlow);
+		BUTTON_TO_KEYPAD("Probing Speed (Slow)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedSlow, "Speed at which the probe moves off the edge, for high accuracy.")
+
 
 	ImGui::PopItemWidth();
 

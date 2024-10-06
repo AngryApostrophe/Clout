@@ -166,21 +166,19 @@ void ProbeOperation_BoreCenter::DrawSubwindow()
 	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
 
 	//Bore Diameter
-		sprintf(sString, "%%0.3f%s", sUnits);
-		ImGui::InputFloat("Bore diameter", &fBoreDiameter, 0.01f, 0.1f, sString);
-		ImGui::SameLine(); HelpMarker("Nominal diameter of the bore, in current machine units.");
+		sprintf(sString, "%.6g%s##Diameter", fBoreDiameter, sUnits);
+		BUTTON_TO_KEYPAD("Bore diameter", sString, ScaledByWindowScale(120, 0), &fBoreDiameter, "Nominal diameter of the bore, in current machine units.")
 
 	//Overtravel Distance
-		sprintf(sString, "%%0.2f%s", sUnits);
-		ImGui::InputFloat("Overtravel distance", &fOvertravel, 0.1f, 1.0f, sString);
-		ImGui::SameLine(); HelpMarker("Distance beyond the nominal diameter to continue probing before failing.");
+		sprintf(sString, "%.6g%s##Overtravel", fOvertravel, sUnits);
+		BUTTON_TO_KEYPAD("Overtravel distance", sString, ScaledByWindowScale(120, 0), &fOvertravel, "Distance beyond the nominal diameter to continue probing before failing.")
 
 	//Feed rate
-		ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
-		ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
+		sprintf(sString, "%d##Fast", iProbingSpeedFast);
+		BUTTON_TO_KEYPAD("Probing Speed (Fast)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedFast, "Speed at which the probe moves towards the edge.")
 
-		ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
-		ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
+		sprintf(sString, "%d##Slow", iProbingSpeedSlow);
+		BUTTON_TO_KEYPAD("Probing Speed (Slow)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedSlow, "Speed at which the probe moves off the edge, for high accuracy.")
 
 	ImGui::PopItemWidth();
 

@@ -199,45 +199,49 @@ void ProbeOperation_PocketCenter::DrawSubwindow()
 	ImGui::SeparatorText("Setup");
 
 	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ScaledByWindowScale(450.0f)) * 0.5f);	//Center the image in the window
-	ImGui::PushItemWidth(ScaledByWindowScale(200));	//Set the width of the textboxes
+	
 
-	const char szAxisChoices[][2] = { "X", "Y" };
-	if (ImGui::BeginCombo("Probe Axis##PocketCenter", szAxisChoices[iAxisIndex]))
-	{
-		for (int x = 0; x < 2; x++)
+	//Probe Axis
+		ImGui::PushItemWidth(ScaledByWindowScale(120));	//Set the width of the combo box
+
+		const char szAxisChoices[][2] = { "X", "Y" };
+		if (ImGui::BeginCombo("##Probe Axis_PocketCenter", szAxisChoices[iAxisIndex]))
 		{
-			//Add the item
-			const bool is_selected = (iAxisIndex == x);
-			if (ImGui::Selectable(szAxisChoices[x], is_selected))
-				iAxisIndex = x;
+			for (int x = 0; x < 2; x++)
+			{
+				//Add the item
+				const bool is_selected = (iAxisIndex == x);
+				if (ImGui::Selectable(szAxisChoices[x], is_selected))
+					iAxisIndex = x;
 
-			// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-			if (is_selected)
-				ImGui::SetItemDefaultFocus();
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
 		}
+		ImGui::PopItemWidth();
 
-		ImGui::EndCombo();
-	}
-	ImGui::SameLine(); HelpMarker("Axis in which to probe.");
+		ImGui::SameLine(); ImGui::Text("Probe axis");
+		ImGui::SameLine(); HelpMarker("Axis in which to probe.");
 
 	//Pocket width
-	sprintf(sString, "%%0.3f%s", sUnits);
-	ImGui::InputFloat("Pocket width", &fPocketWidth, 0.01f, 0.1f, sString);
-	ImGui::SameLine(); HelpMarker("Nominal total width of the pocket, in current machine units.");
+		sprintf(sString, "%.6g%s##Width", fPocketWidth, sUnits);
+		BUTTON_TO_KEYPAD("Pocket width", sString, ScaledByWindowScale(120, 0), &fPocketWidth, "Nominal total width of the pocket, in current machine units.")
 
 	//Overtravel Distance
-	sprintf(sString, "%%0.2f%s", sUnits);
-	ImGui::InputFloat("Overtravel distance", &fOvertravel, 0.1f, 1.0f, sString);
-	ImGui::SameLine(); HelpMarker("Distance beyond the nominal pocket width to continue probing before failing.");
+		sprintf(sString, "%.6g%s##Overrtravel", fOvertravel, sUnits);
+		BUTTON_TO_KEYPAD("Overtravel distance", sString, ScaledByWindowScale(120, 0), &fOvertravel, "Distance beyond the nominal pocket width to continue probing before failing.")
 
-	//Feed rate
-	ImGui::InputInt("Probing Speed (Fast)", &iProbingSpeedFast);
-	ImGui::SameLine(); HelpMarker("Speed at which the probe moves towards the edge.");
-	ImGui::InputInt("Probing Speed (Slow)", &iProbingSpeedSlow);
-	ImGui::SameLine(); HelpMarker("Speed at which the probe moves off the edge, for high accuracy.");
-
-	ImGui::PopItemWidth();
-
+	//Feed rates
+		//Fast
+			sprintf(sString, "%d##Fast", iProbingSpeedFast);
+			BUTTON_TO_KEYPAD("Probing Speed (Fast)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedFast, "Speed at which the probe moves towards the edge.")
+	
+		//Slow
+			sprintf(sString, "%d##Slow", iProbingSpeedSlow);
+			BUTTON_TO_KEYPAD("Probing Speed(Slow)", sString, ScaledByWindowScale(120, 0), &iProbingSpeedSlow, "Speed at which the probe moves off the edge, for high accuracy.")
 
 	ImGui::SeparatorText("Completion");
 
