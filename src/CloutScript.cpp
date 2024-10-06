@@ -8,7 +8,7 @@
 #include "Clout.h"
 #include "Console.h"
 #include "Probing/Probing.h"
-#include "CloutProgram.h"
+#include "CloutScript.h"
 
 
 std::vector<const char*> strOperationName = {
@@ -42,26 +42,26 @@ std::vector<std::vector<int>> OrganizedOps = {
 };
 
 
-  void CloutProgram_InstantiateNewOp(CloutProgram_Op_Datatypes &Op, int iOpType)
+  void CloutScript_InstantiateNewOp(CloutScript_Op_Datatypes &Op, int iOpType)
  {
 	 if (iOpType == CLOUT_OP_ATC_TOOL_CHANGE)
-		 Op = CloutProgram_Op_ATC_Tool_Change();
+		 Op = CloutScript_Op_ATC_Tool_Change();
 	 else if (iOpType == CLOUT_OP_RAPID_TO)
-		 Op = CloutProgram_Op_RapidTo();
+		 Op = CloutScript_Op_RapidTo();
 	 else if (iOpType == CLOUT_OP_INSTALL_PROBE)
-		 Op = CloutProgram_Op_InstallTouchProbe();
+		 Op = CloutScript_Op_InstallTouchProbe();
 	 else if (iOpType == CLOUT_OP_PROBE_OP)
-		 Op = CloutProgram_Op_ProbeOp();
+		 Op = CloutScript_Op_ProbeOp();
 	 else if (iOpType == CLOUT_OP_RUN_GCODE_FILE)
-		 Op = CloutProgram_Op_Run_GCode_File();
+		 Op = CloutScript_Op_Run_GCode_File();
 	 else if (iOpType == CLOUT_OP_CUSTOM_GCODE)
-		 Op = CloutProgram_Op_Custom_GCode();
+		 Op = CloutScript_Op_Custom_GCode();
 	 else if (iOpType == CLOUT_OP_OPEN_COLLET)
-		 Op = CloutProgram_Op_OpenCollet();
+		 Op = CloutScript_Op_OpenCollet();
 	 else if (iOpType == CLOUT_OP_CLOSE_COLLET)
-		 Op = CloutProgram_Op_CloseCollet();
+		 Op = CloutScript_Op_CloseCollet();
 	 else if (iOpType == CLOUT_OP_HOME_XY)
-		 Op = CloutProgram_Op_HomeXY();
+		 Op = CloutScript_Op_HomeXY();
 
 	 //Setup the base stuff
 		 //if(OpBaseClass(Op).FullText.empty())
@@ -73,20 +73,20 @@ std::vector<std::vector<int>> OrganizedOps = {
 
 //Handlers to convert to/from JSON
 
-void to_json(json& j, CloutProgram_Op_Datatypes& refOp)
+void to_json(json& j, CloutScript_Op_Datatypes& refOp)
 {
 	OpBaseClass(refOp).ParseToJSON(j);
 }
 
-void from_json(const json& j, CloutProgram_Op_Datatypes &refOp)
+void from_json(const json& j, CloutScript_Op_Datatypes &refOp)
 {
 	OpBaseClass(refOp).ParseFromJSON(j);
 }
 
-void to_json(json& j, CloutProgram& Prog)
+void to_json(json& j, CloutScript& Prog)
 {
 }
-void from_json(const json& j, CloutProgram& Prog)
+void from_json(const json& j, CloutScript& Prog)
 {	
 	Prog.Ops.clear();
 
@@ -110,8 +110,8 @@ void from_json(const json& j, CloutProgram& Prog)
 				}
 
 		//Create the operation
-			CloutProgram_Op_Datatypes NewOp;
-			CloutProgram_InstantiateNewOp(NewOp, iOpType);	//This creates the new object with the appropriate datatype
+			CloutScript_Op_Datatypes NewOp;
+			CloutScript_InstantiateNewOp(NewOp, iOpType);	//This creates the new object with the appropriate datatype
 
 		//Read the data
 			jOp.get_to(NewOp);
@@ -122,32 +122,32 @@ void from_json(const json& j, CloutProgram& Prog)
 }
 
 
-CloutProgram::CloutProgram()
+CloutScript::CloutScript()
 {
 	Ops.clear();
 	jData.clear();
 };
 
-void CloutProgram::AddOperation(CloutProgram_Op_Datatypes NewOp)
+void CloutScript::AddOperation(CloutScript_Op_Datatypes NewOp)
 {
 	Ops.push_back(NewOp);
 }
 
-void CloutProgram::AddNewOperation(int iType)
+void CloutScript::AddNewOperation(int iType)
 {
-	CloutProgram_Op_Datatypes NewOp;
-	CloutProgram_InstantiateNewOp(NewOp, iType);	//This creates the new object with the appropriate datatype
+	CloutScript_Op_Datatypes NewOp;
+	CloutScript_InstantiateNewOp(NewOp, iType);	//This creates the new object with the appropriate datatype
 
 	//If it's a probe op, give it a default sub-op
 		if (iType == CLOUT_OP_PROBE_OP)
-			std::get<CloutProgram_Op_ProbeOp>(NewOp).Change_ProbeOp_Type(PROBE_OP_TYPE_BORE);
+			std::get<CloutScript_Op_ProbeOp>(NewOp).Change_ProbeOp_Type(PROBE_OP_TYPE_BORE);
 
 			
 
 	AddOperation(NewOp);
 }
 
-void CloutProgram::MoveOperationUp(int iIdx)
+void CloutScript::MoveOperationUp(int iIdx)
 {
 	if (iIdx == 0)
 		return;
@@ -155,7 +155,7 @@ void CloutProgram::MoveOperationUp(int iIdx)
 	std::swap(Ops[iIdx-1], Ops[iIdx]);
 }
 
-void CloutProgram::LoadFromFile(const char *szFilename)
+void CloutScript::LoadFromFile(const char *szFilename)
 {
 	Ops.clear();
 	jData.clear();
@@ -169,7 +169,7 @@ void CloutProgram::LoadFromFile(const char *szFilename)
 		jData.get_to(*this);
 }
 
-void CloutProgram::SaveToFile(const char* szFilename)
+void CloutScript::SaveToFile(const char* szFilename)
 {
 	//Rebuild the JSON data
 		jData.clear();
@@ -198,7 +198,7 @@ void CloutProgram::SaveToFile(const char* szFilename)
 		fb.close();
 }
 
-void CloutProgram::Erase()
+void CloutScript::Erase()
 {
 	Ops.clear();
 }

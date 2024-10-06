@@ -14,7 +14,7 @@ using namespace std::chrono;
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 #include "../Probing/Probing.h"
 
@@ -33,13 +33,13 @@ static steady_clock::time_point LastStatusRqst;
 static bool bStepRunning;
 
 
-CloutProgram_Op_InstallTouchProbe::CloutProgram_Op_InstallTouchProbe()
+CloutScript_Op_InstallTouchProbe::CloutScript_Op_InstallTouchProbe()
 {
 	bConfirmFunction = true;
 	bProbeStatus = false;
 }
 
-void CloutProgram_Op_InstallTouchProbe::StateMachine()
+void CloutScript_Op_InstallTouchProbe::StateMachine()
 {
 	switch (iState)
 	{
@@ -174,7 +174,7 @@ void CloutProgram_Op_InstallTouchProbe::StateMachine()
 	}
 }
 
-void CloutProgram_Op_InstallTouchProbe::DrawDetailTab()
+void CloutScript_Op_InstallTouchProbe::DrawDetailTab()
 {
 	//Description
 	ImGui::Text("Work with the user to install a touch probe");
@@ -185,19 +185,19 @@ void CloutProgram_Op_InstallTouchProbe::DrawDetailTab()
 	HelpMarker("If selected, after installation of the probe you will be asked to touch the probe to confirm it works.");
 }
 
-void CloutProgram_Op_InstallTouchProbe::DrawEditorSummaryInfo()
+void CloutScript_Op_InstallTouchProbe::DrawEditorSummaryInfo()
 {
 	ImGui::Text("Confirm function: %s", (bConfirmFunction ? "Yes" : "No"));
 }
 
-void CloutProgram_Op_InstallTouchProbe::ParseFromJSON(const json& j)
+void CloutScript_Op_InstallTouchProbe::ParseFromJSON(const json& j)
 {
 	bConfirmFunction = j.value("Confirm Function", true);
 }
 
-void CloutProgram_Op_InstallTouchProbe::ParseToJSON(json& j)
+void CloutScript_Op_InstallTouchProbe::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Confirm Function"] = bConfirmFunction;
 }

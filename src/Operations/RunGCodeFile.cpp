@@ -11,7 +11,7 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 #include "../FileTransfer.h"
 
@@ -24,7 +24,7 @@
 static bool bStepRunning;
 
 
-CloutProgram_Op_Run_GCode_File::CloutProgram_Op_Run_GCode_File()
+CloutScript_Op_Run_GCode_File::CloutScript_Op_Run_GCode_File()
 {
 	sFilename.clear();
 	iStartLineNum = 0;
@@ -33,7 +33,7 @@ CloutProgram_Op_Run_GCode_File::CloutProgram_Op_Run_GCode_File()
 	sGCode_Line.clear();
 }
 
-void CloutProgram_Op_Run_GCode_File::StateMachine()
+void CloutScript_Op_Run_GCode_File::StateMachine()
 {
 	switch (iState)
 	{
@@ -120,7 +120,7 @@ void CloutProgram_Op_Run_GCode_File::StateMachine()
 	}
 }
 
-void CloutProgram_Op_Run_GCode_File::ReadFromFile()
+void CloutScript_Op_Run_GCode_File::ReadFromFile()
 {
 	std::ifstream file(sFilename);
 	if (file.is_open())
@@ -139,7 +139,7 @@ void CloutProgram_Op_Run_GCode_File::ReadFromFile()
 	}
 }
 
-void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
+void CloutScript_Op_Run_GCode_File::DrawDetailTab()
 {
 	char szString[10];
 	int x;
@@ -222,14 +222,14 @@ void CloutProgram_Op_Run_GCode_File::DrawDetailTab()
 	}
 }
 
-void CloutProgram_Op_Run_GCode_File::DrawEditorSummaryInfo()
+void CloutScript_Op_Run_GCode_File::DrawEditorSummaryInfo()
 {
 	ImGui::Text("Filename:  %s", sFilename.c_str());
 	ImGui::Text("Start Line:  %d", iStartLineNum);
 	ImGui::Text("Last Line:  %d", iLastLineNum);
 }
 
-void CloutProgram_Op_Run_GCode_File::ParseFromJSON(const json& j)
+void CloutScript_Op_Run_GCode_File::ParseFromJSON(const json& j)
 {
 	iStartLineNum = j.value("Start", 0);
 	iLastLineNum = j.value("End", -1);
@@ -240,9 +240,9 @@ void CloutProgram_Op_Run_GCode_File::ParseFromJSON(const json& j)
 		ReadFromFile();
 }
 
-void CloutProgram_Op_Run_GCode_File::ParseToJSON(json& j)
+void CloutScript_Op_Run_GCode_File::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Start"] = iStartLineNum;
 	j["End"] = iLastLineNum;

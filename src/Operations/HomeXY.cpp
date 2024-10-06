@@ -11,7 +11,7 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 
 #define STATE_HOMEXY_START		0
@@ -19,12 +19,12 @@
 #define STATE_HOMEXY_RUNNING	2
 
 
-CloutProgram_Op_HomeXY::CloutProgram_Op_HomeXY()
+CloutScript_Op_HomeXY::CloutScript_Op_HomeXY()
 {
 	bRemoveOffsets = false;
 }
 
-void CloutProgram_Op_HomeXY::StateMachine()
+void CloutScript_Op_HomeXY::StateMachine()
 {
 	switch (iState)
 	{
@@ -45,7 +45,7 @@ void CloutProgram_Op_HomeXY::StateMachine()
 	}
 }
 
-void CloutProgram_Op_HomeXY::DrawDetailTab()
+void CloutScript_Op_HomeXY::DrawDetailTab()
 {
 	//Description
 	ImGui::Text("Home the X&Y axis");
@@ -58,20 +58,20 @@ void CloutProgram_Op_HomeXY::DrawDetailTab()
 	ImGui::EndDisabled();
 }
 
-void CloutProgram_Op_HomeXY::DrawEditorSummaryInfo()
+void CloutScript_Op_HomeXY::DrawEditorSummaryInfo()
 {
 }
 
-void CloutProgram_Op_HomeXY::ParseFromJSON(const json& j)
+void CloutScript_Op_HomeXY::ParseFromJSON(const json& j)
 {
-	CloutProgram_Op::ParseFromJSON(j);
+	CloutScript_Op::ParseFromJSON(j);
 
 	bRemoveOffsets = j.value("Remove Offsets", false);
 }
 
-void CloutProgram_Op_HomeXY::ParseToJSON(json& j)
+void CloutScript_Op_HomeXY::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Remove Offsets"] = bRemoveOffsets;
 }

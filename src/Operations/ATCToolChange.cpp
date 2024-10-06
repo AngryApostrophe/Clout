@@ -11,19 +11,19 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 
 #define STATE_ATCCHANGE_START		0
 #define STATE_ATCCHANGE_RUNNING		1
 
 
-CloutProgram_Op_ATC_Tool_Change::CloutProgram_Op_ATC_Tool_Change()
+CloutScript_Op_ATC_Tool_Change::CloutScript_Op_ATC_Tool_Change()
 {
 	iNewTool = -99;
 }
 
-void CloutProgram_Op_ATC_Tool_Change::StateMachine()
+void CloutScript_Op_ATC_Tool_Change::StateMachine()
 {
 	char sCmd[30];
 
@@ -50,7 +50,7 @@ void CloutProgram_Op_ATC_Tool_Change::StateMachine()
 	}
 }
 
-void CloutProgram_Op_ATC_Tool_Change::GenerateFullTitle()
+void CloutScript_Op_ATC_Tool_Change::GenerateFullTitle()
 {
 	FullText.clear();
 	FullText = "ATC Tool Change: ";
@@ -65,7 +65,7 @@ void CloutProgram_Op_ATC_Tool_Change::GenerateFullTitle()
 		FullText += "<Empty>";
 };
 
-void CloutProgram_Op_ATC_Tool_Change::DrawDetailTab()
+void CloutScript_Op_ATC_Tool_Change::DrawDetailTab()
 {
 	//Description
 		ImGui::Text("Use the Automatic Tool Changer to switch to a new tool");
@@ -96,7 +96,7 @@ void CloutProgram_Op_ATC_Tool_Change::DrawDetailTab()
 	HelpMarker("Select the new tool to change to.");
 }
 
-void CloutProgram_Op_ATC_Tool_Change::DrawEditorSummaryInfo()
+void CloutScript_Op_ATC_Tool_Change::DrawEditorSummaryInfo()
 {
 	if (iNewTool > 0)
 		ImGui::Text("New Tool:  %d", iNewTool);
@@ -106,16 +106,16 @@ void CloutProgram_Op_ATC_Tool_Change::DrawEditorSummaryInfo()
 		ImGui::Text("New Tool:  <Empty spindle>");
 }
 
-void CloutProgram_Op_ATC_Tool_Change::ParseFromJSON(const json& j)
+void CloutScript_Op_ATC_Tool_Change::ParseFromJSON(const json& j)
 {
 	iNewTool = j.value("Tool", -99);
 
 	GenerateFullTitle();
 }
 
-void CloutProgram_Op_ATC_Tool_Change::ParseToJSON(json& j)
+void CloutScript_Op_ATC_Tool_Change::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Tool"] = iNewTool;
 }

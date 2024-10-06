@@ -11,17 +11,17 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 #define STATE_PROBEOP_START		0
 #define STATE_PROBEOP_RUNNING	1
 
-CloutProgram_Op_ProbeOp::CloutProgram_Op_ProbeOp()
+CloutScript_Op_ProbeOp::CloutScript_Op_ProbeOp()
 {
 	ProbeOp.reset();
 }
 
-void CloutProgram_Op_ProbeOp::Change_ProbeOp_Type(int iNewType)
+void CloutScript_Op_ProbeOp::Change_ProbeOp_Type(int iNewType)
 {
 	Probing_InstantiateNewOp(ProbeOp, iNewType);
 
@@ -31,7 +31,7 @@ void CloutProgram_Op_ProbeOp::Change_ProbeOp_Type(int iNewType)
 		FullText +=	szProbeOpNames[iNewType];
 }
 
-void CloutProgram_Op_ProbeOp::StateMachine()
+void CloutScript_Op_ProbeOp::StateMachine()
 {
 	if (iState == STATE_PROBEOP_START)
 	{
@@ -47,7 +47,7 @@ void CloutProgram_Op_ProbeOp::StateMachine()
 	}
 }
 
-void CloutProgram_Op_ProbeOp::DrawDetailTab()
+void CloutScript_Op_ProbeOp::DrawDetailTab()
 {
 	int iNewProbeOpType = -1;
 
@@ -91,11 +91,11 @@ void CloutProgram_Op_ProbeOp::DrawDetailTab()
 			Change_ProbeOp_Type(iNewProbeOpType);
 }
 
-void CloutProgram_Op_ProbeOp::DrawEditorSummaryInfo()
+void CloutScript_Op_ProbeOp::DrawEditorSummaryInfo()
 {
 }
 
-void CloutProgram_Op_ProbeOp::ParseFromJSON(const json& j)
+void CloutScript_Op_ProbeOp::ParseFromJSON(const json& j)
 {
 	ProbeOp.reset();
 
@@ -124,9 +124,9 @@ void CloutProgram_Op_ProbeOp::ParseFromJSON(const json& j)
 		ProbeOp->ParseFromJSON(j);
 }
 
-void CloutProgram_Op_ProbeOp::ParseToJSON(json& j)
+void CloutScript_Op_ProbeOp::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Probe Op Type"] = szProbeOpNames[ProbeOp->bProbingType];
 	ProbeOp->ParseToJSON(j);

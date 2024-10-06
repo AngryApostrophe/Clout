@@ -11,16 +11,16 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 
 #define STATE_RAPIDTO_START		0
 #define STATE_RAPIDTO_MOVING	1
 
 
-CloutProgram_Op_RapidTo::CloutProgram_Op_RapidTo()
+CloutScript_Op_RapidTo::CloutScript_Op_RapidTo()
 {
-	CloutProgram_Op();
+	CloutScript_Op();
 
 	bUseAxis[0] = false;
 	bUseAxis[1] = false;
@@ -34,7 +34,7 @@ CloutProgram_Op_RapidTo::CloutProgram_Op_RapidTo()
 	WCS = Carvera::CoordSystem::G54;
 }
 
-void CloutProgram_Op_RapidTo::GenerateFullTitle()
+void CloutScript_Op_RapidTo::GenerateFullTitle()
 {
 	char szString[20];
 
@@ -63,7 +63,7 @@ void CloutProgram_Op_RapidTo::GenerateFullTitle()
 	}
 };
 
-void CloutProgram_Op_RapidTo::StateMachine()
+void CloutScript_Op_RapidTo::StateMachine()
 {
 	char sCmd[50];
 	char sTmp[20];
@@ -128,7 +128,7 @@ void CloutProgram_Op_RapidTo::StateMachine()
 	}
 }
 
-void CloutProgram_Op_RapidTo::DrawDetailTab()
+void CloutScript_Op_RapidTo::DrawDetailTab()
 {
 	//Description
 	ImGui::Text("G0 - Rapid move to a new location");
@@ -223,7 +223,7 @@ void CloutProgram_Op_RapidTo::DrawDetailTab()
 	HelpMarker("(optional) Which coordinate system to reference.");
 }
 
-void CloutProgram_Op_RapidTo::DrawEditorSummaryInfo()
+void CloutScript_Op_RapidTo::DrawEditorSummaryInfo()
 {
 	ImGui::Text("Coords:  (%0.03f,  %0.03f,  %0.03f)", Coords.x, Coords.y, Coords.z);
 
@@ -234,7 +234,7 @@ void CloutProgram_Op_RapidTo::DrawEditorSummaryInfo()
 		ImGui::Text("WCS: %s", szWCSChoices[WCS - 1]);
 }
 
-void CloutProgram_Op_RapidTo::ParseFromJSON(const json& j)
+void CloutScript_Op_RapidTo::ParseFromJSON(const json& j)
 {
 	Coords.x = j.value("X", 0.0f);
 	Coords.y = j.value("Y", 0.0f);
@@ -269,9 +269,9 @@ void CloutProgram_Op_RapidTo::ParseFromJSON(const json& j)
 	GenerateFullTitle();
 }
 
-void CloutProgram_Op_RapidTo::ParseToJSON(json& j)
+void CloutScript_Op_RapidTo::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["X"] = Coords.x;
 	j["Y"] = Coords.y;

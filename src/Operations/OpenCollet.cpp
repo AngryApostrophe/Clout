@@ -11,7 +11,7 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 
 #define STATE_OPENCOLLET_START		0
@@ -19,11 +19,11 @@
 
 
 
-CloutProgram_Op_OpenCollet::CloutProgram_Op_OpenCollet()
+CloutScript_Op_OpenCollet::CloutScript_Op_OpenCollet()
 {
 }
 
-void CloutProgram_Op_OpenCollet::StateMachine()
+void CloutScript_Op_OpenCollet::StateMachine()
 {
 	switch (iState)
 	{
@@ -63,7 +63,7 @@ void CloutProgram_Op_OpenCollet::StateMachine()
 	}
 }
 
-void CloutProgram_Op_OpenCollet::DrawDetailTab()
+void CloutScript_Op_OpenCollet::DrawDetailTab()
 {
 	//Description
 	ImGui::Text("Open the collet to manually remove a tool");
@@ -74,20 +74,20 @@ void CloutProgram_Op_OpenCollet::DrawDetailTab()
 	HelpMarker("If selected, operator will be asked to confirm ready to open collet to avoid dropping a tool");
 }
 
-void CloutProgram_Op_OpenCollet::DrawEditorSummaryInfo()
+void CloutScript_Op_OpenCollet::DrawEditorSummaryInfo()
 {
 }
 
-void CloutProgram_Op_OpenCollet::ParseFromJSON(const json& j)
+void CloutScript_Op_OpenCollet::ParseFromJSON(const json& j)
 {
-	CloutProgram_Op::ParseFromJSON(j);
+	CloutScript_Op::ParseFromJSON(j);
 
 	bConfirmWithOperator = j.value("Confirm", true);
 }
 
-void CloutProgram_Op_OpenCollet::ParseToJSON(json& j)
+void CloutScript_Op_OpenCollet::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Confirm"] = bConfirmWithOperator;
 }

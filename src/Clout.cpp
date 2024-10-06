@@ -10,8 +10,8 @@ using namespace std;
 #include "Console.h"
 #include "ModelViewer.h"
 #include "Probing/Probing.h"
-#include "CloutProgram.h"
-#include "ProgramEditor.h"
+#include "CloutScript.h"
+#include "ScriptEditor.h"
 #include "OperationQueue.h"
 
 

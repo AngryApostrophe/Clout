@@ -11,7 +11,7 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 
 #define STATE_CLOSECOLLET_START		0
@@ -19,11 +19,11 @@
 
 
 
-CloutProgram_Op_CloseCollet::CloutProgram_Op_CloseCollet()
+CloutScript_Op_CloseCollet::CloutScript_Op_CloseCollet()
 {
 }
 
-void CloutProgram_Op_CloseCollet::StateMachine()
+void CloutScript_Op_CloseCollet::StateMachine()
 {
 	switch (iState)
 	{
@@ -62,7 +62,7 @@ void CloutProgram_Op_CloseCollet::StateMachine()
 	}
 }
 
-void CloutProgram_Op_CloseCollet::DrawDetailTab()
+void CloutScript_Op_CloseCollet::DrawDetailTab()
 {
 	//Description
 		ImGui::Text("Clamp the collet onto a manually inserted tool");
@@ -73,20 +73,20 @@ void CloutProgram_Op_CloseCollet::DrawDetailTab()
 		HelpMarker("If selected, operator will be asked to confirm ready to clamp the collet");
 }
 
-void CloutProgram_Op_CloseCollet::DrawEditorSummaryInfo()
+void CloutScript_Op_CloseCollet::DrawEditorSummaryInfo()
 {
 }
 
-void CloutProgram_Op_CloseCollet::ParseFromJSON(const json& j)
+void CloutScript_Op_CloseCollet::ParseFromJSON(const json& j)
 {
-	CloutProgram_Op::ParseFromJSON(j);
+	CloutScript_Op::ParseFromJSON(j);
 
 	bConfirmWithOperator = j.value("Confirm", true);
 }
 
-void CloutProgram_Op_CloseCollet::ParseToJSON(json& j)
+void CloutScript_Op_CloseCollet::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Confirm"] = bConfirmWithOperator;
 }

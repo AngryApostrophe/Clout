@@ -1,0 +1,2 @@
+
+void ScriptEditor_Draw();

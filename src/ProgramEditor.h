@@ -1,2 +1,0 @@
-
-void ProgramEditor_Draw();

@@ -9,10 +9,10 @@
 #include "Comms.h"
 #include "Console.h"
 
-#include "CloutProgram.h"
+#include "CloutScript.h"
 #include "OperationQueue.h"
 
-#include "ProgramEditor.h"
+#include "ScriptEditor.h"
 
 _OperationQueue OperationQueue;  //The one and only queue for Clout
 
@@ -40,7 +40,7 @@ void _OperationQueue::Run()
 		return;
 	}
 
-	CloutProgram_Op &op = GetOp(0);
+	CloutScript_Op &op = GetOp(0);
 
 	if (op.iState != STATE_OP_COMPLETE)
 		op.StateMachine();
@@ -101,7 +101,7 @@ void _OperationQueue::DrawList()
 				IGFD::FileDialogConfig config;
 				config.path = ".";
 				config.flags = ImGuiFileDialogFlags_Modal;
-				const char* filters = "Clout Program (*.clout){.clout},All files (*.*){.*}";
+				const char* filters = "Clout Script (*.clout){.clout},All files (*.*){.*}";
 				GuiFileDialog->OpenDialog("OpQueueLoadFileDlgKey", "Load File", filters, config);
 			}
 
@@ -111,8 +111,8 @@ void _OperationQueue::DrawList()
 			{
 				if (GuiFileDialog->IsOk())
 				{
-					CloutProgram Prog(GuiFileDialog->GetFilePathName().c_str());
-					AddProgramToQueue(Prog);
+					CloutScript Script(GuiFileDialog->GetFilePathName().c_str());
+					AddScriptToQueue(Script);
 				}
 
 				// Close it
@@ -125,8 +125,8 @@ void _OperationQueue::DrawList()
 		ImGui::SameLine();
 
 		if (ImGui::Button("Editor", ScaledByWindowScale(50, 35)))
-			ImGui::OpenPopup("Program Editor");
-		ProgramEditor_Draw();
+			ImGui::OpenPopup("Script Editor");
+		ScriptEditor_Draw();
 
 	//Operations list
 		ImGui::SeparatorText("Operation List");
@@ -176,20 +176,20 @@ void _OperationQueue::DrawList()
 		ImGui::End();
 }
 
-void _OperationQueue::AddOpToQueue(CloutProgram_Op_Datatypes& NewOp)
+void _OperationQueue::AddOpToQueue(CloutScript_Op_Datatypes& NewOp)
 {
 	Ops.push_back(NewOp);
 }
 
-void _OperationQueue::AddProgramToQueue(CloutProgram& Program)
+void _OperationQueue::AddScriptToQueue(CloutScript& Script)
 {
 	/*std::for_each(Program.Ops.begin(), Program.Ops.end(), [this](const CloutProgram_Op_Datatypes NewOp)
 	{ 
 		Ops.push_back(NewOp);
 	});*/
 
-	for (int x = 0; x < Program.Ops.size(); x++)
+	for (int x = 0; x < Script.Ops.size(); x++)
 	{
-		Ops.push_back(Program.Ops.at(x));
+		Ops.push_back(Script.Ops.at(x));
 	}
 }

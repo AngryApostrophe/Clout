@@ -11,7 +11,7 @@
 #include "../Helpers.h"
 #include "../Comms.h"
 #include "../Console.h"
-#include "../CloutProgram.h"
+#include "../CloutScript.h"
 
 #include "../FileTransfer.h"
 
@@ -23,13 +23,13 @@
 static bool bStepRunning;
 
 
-CloutProgram_Op_Custom_GCode::CloutProgram_Op_Custom_GCode()
+CloutScript_Op_Custom_GCode::CloutScript_Op_Custom_GCode()
 {
 	iState = 0;
 	strGCode.clear();
 }
 
-void CloutProgram_Op_Custom_GCode::StateMachine()
+void CloutScript_Op_Custom_GCode::StateMachine()
 {
 	switch (iState)
 	{
@@ -66,7 +66,7 @@ void CloutProgram_Op_Custom_GCode::StateMachine()
 	}
 }
 
-void CloutProgram_Op_Custom_GCode::DrawDetailTab()
+void CloutScript_Op_Custom_GCode::DrawDetailTab()
 {
 	//Description
 	ImGui::Text("Run custom G Code as entered below");
@@ -76,18 +76,18 @@ void CloutProgram_Op_Custom_GCode::DrawDetailTab()
 	ImGui::InputTextMultiline("##CustomGCode", &strGCode, TextViewSize);
 }
 
-void CloutProgram_Op_Custom_GCode::DrawEditorSummaryInfo()
+void CloutScript_Op_Custom_GCode::DrawEditorSummaryInfo()
 {
 }
 
-void CloutProgram_Op_Custom_GCode::ParseFromJSON(const json& j)
+void CloutScript_Op_Custom_GCode::ParseFromJSON(const json& j)
 {
 	strGCode = j.value("Code", "");
 }
 
-void CloutProgram_Op_Custom_GCode::ParseToJSON(json& j)
+void CloutScript_Op_Custom_GCode::ParseToJSON(json& j)
 {
-	CloutProgram_Op::ParseToJSON(j);
+	CloutScript_Op::ParseToJSON(j);
 
 	j["Code"] = strGCode;
 }

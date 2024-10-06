@@ -51,8 +51,8 @@ set  (CLOUT_SOURCES
 	"${PROJECT_SOURCE_DIR}/src/Helpers.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Console.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Comms.cpp"
-	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.cpp"
-	"${PROJECT_SOURCE_DIR}/src/CloutProgram.cpp"
+	"${PROJECT_SOURCE_DIR}/src/ScriptEditor.cpp"
+	"${PROJECT_SOURCE_DIR}/src/CloutScript.cpp"
 	"${PROJECT_SOURCE_DIR}/src/OperationQueue.cpp"
 	"${PROJECT_SOURCE_DIR}/src/FileTransfer.cpp"
 	)
@@ -79,8 +79,8 @@ set  (CLOUT_HEADERS
 	"${PROJECT_SOURCE_DIR}/src/Helpers.h"
 	"${PROJECT_SOURCE_DIR}/src/Console.h"
 	"${PROJECT_SOURCE_DIR}/src/Comms.h"
-	"${PROJECT_SOURCE_DIR}/src/ProgramEditor.h"
-	"${PROJECT_SOURCE_DIR}/src/CloutProgram.h"
+	"${PROJECT_SOURCE_DIR}/src/ScriptEditor.h"
+	"${PROJECT_SOURCE_DIR}/src/CloutScript.h"
 	"${PROJECT_SOURCE_DIR}/src/OperationQueue.h"
 	"${PROJECT_SOURCE_DIR}/src/FileTransfer.h"
 	)

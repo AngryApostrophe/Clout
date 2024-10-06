@@ -9,18 +9,18 @@
 #include "Clout.h"
 #include "Helpers.h"
 #include "Console.h"
-#include "CloutProgram.h"
+#include "CloutScript.h"
 #include "Probing/Probing.h"
 
 
 
-CloutProgram EditorProg;	//The program we're currently editing
+CloutScript EditorScript;	//The script we're currently editing
 
 
 #define OP_TITLE_PADDING	7.0f	//This effects the size of the operations in the list
 
 
-void ProgramEditor_Draw()
+void ScriptEditor_Draw()
 {
 	static int iActive = -1;
 	static int iHovered = -1;
@@ -29,11 +29,11 @@ void ProgramEditor_Draw()
 
 	int x;
 
-	if (!ImGui::BeginPopupModal("Program Editor", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	if (!ImGui::BeginPopupModal("Script Editor", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		return;
 	
 	const ImVec2 TableSize = ScaledByWindowScale(800, 700);
-	if (ImGui::BeginTable("table_ProgramEditor", 2 , ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, TableSize))
+	if (ImGui::BeginTable("table_ScriptEditor", 2 , ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, TableSize))
 	{
 		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(300));
 		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ScaledByWindowScale(500));
@@ -44,16 +44,16 @@ void ProgramEditor_Draw()
 		//Click on item to open/close.  This needs to go before we update it for this draw cycle
 			if (iActive != -1 && !ImGui::IsMouseDown(ImGuiMouseButton_Left) && bTriggerToggle) //We release a left mouse click
 			{
-				CloutProgram_Op& ActiveOp = EditorProg.GetOp(iActive);
+				CloutScript_Op& ActiveOp = EditorScript.GetOp(iActive);
 
 				ActiveOp.bEditorExpanded = !ActiveOp.bEditorExpanded; //Toggle this page
 
 				if (ActiveOp.bEditorExpanded) //If we opened it, close all the others
 				{
-					for (x = 0; x < EditorProg.Ops.size(); x++)
+					for (x = 0; x < EditorScript.Ops.size(); x++)
 					{
 						if (x != iActive)
-							EditorProg.GetOp(x).bEditorExpanded = false;
+							EditorScript.GetOp(x).bEditorExpanded = false;
 					}
 				}
 				
@@ -67,9 +67,9 @@ void ProgramEditor_Draw()
 		//List of operations
 			static int iClickedDelete = -1;
 
-			for (x = 0; x < EditorProg.Ops.size(); x++)
+			for (x = 0; x < EditorScript.Ops.size(); x++)
 			{
-				CloutProgram_Op &BaseOp = EditorProg.GetOp(x);
+				CloutScript_Op &BaseOp = EditorScript.GetOp(x);
 
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ScaledByWindowScale(0.0, OP_TITLE_PADDING));
 			
@@ -122,7 +122,7 @@ void ProgramEditor_Draw()
 
 					if (ImGui::Button("OK", ScaledByWindowScale(120, 0)))
 					{
-						EditorProg.Ops.erase(EditorProg.Ops.begin() + iClickedDelete);
+						EditorScript.Ops.erase(EditorScript.Ops.begin() + iClickedDelete);
 
 						if (iActive == iClickedDelete) //If we deleted the one we're viewing, "unview" it
 							iActive = -1;
@@ -137,7 +137,7 @@ void ProgramEditor_Draw()
 					if (ImGui::Button("Cancel", ScaledByWindowScale(120, 0)))
 					{ 
 						ImGui::CloseCurrentPopup();
-						EditorProg.GetOp(iClickedDelete).bKeepItem = true;
+						EditorScript.GetOp(iClickedDelete).bKeepItem = true;
 						iClickedDelete = -1;
 					}
 					
@@ -161,9 +161,9 @@ void ProgramEditor_Draw()
 					iHovered++;
 				}
 
-				if (iHigherItem >= 0 && iHigherItem < EditorProg.Ops.size())
+				if (iHigherItem >= 0 && iHigherItem < EditorScript.Ops.size())
 				{
-					EditorProg.MoveOperationUp(iHigherItem);
+					EditorScript.MoveOperationUp(iHigherItem);
 					ImGui::ResetMouseDragDelta();
 					bHaveDragged = true;
 				}
@@ -183,7 +183,7 @@ void ProgramEditor_Draw()
 		//Add Operation button
 			ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f));
 
-			if (ImGui::Button("Add Operation##ProgramEditor", ScaledByWindowScale(120, 0)))
+			if (ImGui::Button("Add Operation##ScriptEditor", ScaledByWindowScale(120, 0)))
 				ImGui::OpenPopup("popup_add_operation");
 
 			if (ImGui::BeginPopup("popup_add_operation"))
@@ -198,7 +198,7 @@ void ProgramEditor_Draw()
 					{
 						if (ImGui::Selectable(strOperationName[OrganizedOps[x][y]]))
 						{
-							EditorProg.AddNewOperation(OrganizedOps[x][y]);
+							EditorScript.AddNewOperation(OrganizedOps[x][y]);
 						}
 					}
 
@@ -211,7 +211,7 @@ void ProgramEditor_Draw()
 				{
 					if (ImGui::Selectable(strOperationName[x]))
 					{
-						EditorProg.AddNewOperation(x);
+						EditorScript.AddNewOperation(x);
 					}
 				}*/
 				ImGui::EndPopup();
@@ -221,13 +221,13 @@ void ProgramEditor_Draw()
 		//Draw the editor tab
 			ImGui::TableSetColumnIndex(1);
 
-			ImGui::BeginChild("ProgramEditorChild");
+			ImGui::BeginChild("ScriptEditorChild");
 
 			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
 				iHovered = -1;
 			
 			if (iActive != -1)
-				EditorProg.GetOp(iActive).DrawDetailTab();
+				EditorScript.GetOp(iActive).DrawDetailTab();
 
 			ImGui::EndChild();
 		
@@ -239,23 +239,23 @@ void ProgramEditor_Draw()
 		
 
 		//Load Program
-			if (ImGui::Button("Load Program##ProgramEditor", ScaledByWindowScale(120, 0)))
+			if (ImGui::Button("Load Script##ScriptEditor", ScaledByWindowScale(120, 0)))
 			{
 				//Setup the file dialog
 				IGFD::FileDialogConfig config;
 				config.path = ".";
 				config.flags = ImGuiFileDialogFlags_Modal;
-				const char* filters = "Clout Program (*.clout){.clout},All files (*.*){.*}";
-				GuiFileDialog->OpenDialog("ProgramEditorLoadFileDlgKey", "Load File", filters, config);
+				const char* filters = "Clout Script (*.clout){.clout},All files (*.*){.*}";
+				GuiFileDialog->OpenDialog("ScriptEditorLoadFileDlgKey", "Load File", filters, config);
 			}
 
 			// Show the File dialog
 			ImVec2 MinSize(ScaledByWindowScale(750, 450));
-			if (GuiFileDialog->Display("ProgramEditorLoadFileDlgKey", ImGuiWindowFlags_NoCollapse, MinSize))
+			if (GuiFileDialog->Display("ScriptEditorLoadFileDlgKey", ImGuiWindowFlags_NoCollapse, MinSize))
 			{
 				if (GuiFileDialog->IsOk())
 				{
-					EditorProg.LoadFromFile(GuiFileDialog->GetFilePathName().c_str());
+					EditorScript.LoadFromFile(GuiFileDialog->GetFilePathName().c_str());
 				}
 
 				// Close it
@@ -266,22 +266,22 @@ void ProgramEditor_Draw()
 		
 
 		//Save Program
-			if (ImGui::Button("Save Program##ProgramEditor", ScaledByWindowScale(120, 0)))
+			if (ImGui::Button("Save Script##ScriptEditor", ScaledByWindowScale(120, 0)))
 			{
 				//Setup the file dialog
 				IGFD::FileDialogConfig config;
 				config.path = ".";
 				config.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_ConfirmOverwrite;
-				const char* filters = "Clout Program (*.clout){.clout},All files (*.*){.*}";
-				GuiFileDialog->OpenDialog("ProgramEditorSaveFileDlgKey", "Save File", filters, config);
+				const char* filters = "Clout Script (*.clout){.clout},All files (*.*){.*}";
+				GuiFileDialog->OpenDialog("ScriptEditorSaveFileDlgKey", "Save File", filters, config);
 			}
 
 			// Show the File dialog
-				if (GuiFileDialog->Display("ProgramEditorSaveFileDlgKey", ImGuiWindowFlags_NoCollapse, MinSize))
+				if (GuiFileDialog->Display("ScriptEditorSaveFileDlgKey", ImGuiWindowFlags_NoCollapse, MinSize))
 				{
 					if (GuiFileDialog->IsOk())
 					{
-						EditorProg.SaveToFile(GuiFileDialog->GetFilePathName().c_str());
+						EditorScript.SaveToFile(GuiFileDialog->GetFilePathName().c_str());
 					}
 
 					// Close it
@@ -292,7 +292,7 @@ void ProgramEditor_Draw()
 
 	ImGui::Dummy(ScaledByWindowScale(0.0f, 15.0f)); //Extra empty space before the buttons
 
-	if (ImGui::Button("Exit##ProgramEditor", ScaledByWindowScale(120, 0)))
+	if (ImGui::Button("Exit##ScriptEditor", ScaledByWindowScale(120, 0)))
 	{
 		ImGui::CloseCurrentPopup();
 	}

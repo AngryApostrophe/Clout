@@ -12,11 +12,11 @@ public:
 	void Start();	//Begins running the queue
 	void Run();		//The main processor
 
-	void AddOpToQueue(CloutProgram_Op_Datatypes &NewOp);
-	void AddProgramToQueue(CloutProgram &Program);
+	void AddOpToQueue(CloutScript_Op_Datatypes &NewOp);
+	void AddScriptToQueue(CloutScript &Script);
 
-	std::deque <CloutProgram_Op_Datatypes> Ops;	//All of the individual operations
-	CloutProgram_Op& GetOp(int idx) { return OpBaseClass(Ops[idx]); };	//Get a reference to the base class of Op[idx]
+	std::deque <CloutScript_Op_Datatypes> Ops;	//All of the individual operations
+	CloutScript_Op& GetOp(int idx) { return OpBaseClass(Ops[idx]); };	//Get a reference to the base class of Op[idx]
 
 	bool bIsRunning;
 };

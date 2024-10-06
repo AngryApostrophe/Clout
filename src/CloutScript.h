@@ -6,7 +6,7 @@ using json = nlohmann::json;
 
 #include "Probing/Probing.h"
 
-#define OpBaseClass(var) std::visit([](CloutProgram_Op& outputvar) -> CloutProgram_Op& { return outputvar; }, var)
+#define OpBaseClass(var) std::visit([](CloutScript_Op& outputvar) -> CloutScript_Op& { return outputvar; }, var)
 
 
 #define CLOUT_JSON_VER_MAJ	1	//JSON file major version
@@ -33,27 +33,27 @@ extern std::vector<std::vector<int>> OrganizedOps;
 
 
 //Forward declare types
-class CloutProgram_Op;
-class CloutProgram_Op_ATC_Tool_Change;
-class CloutProgram_Op_InstallTouchProbe;
-class CloutProgram_Op_RapidTo;
-class CloutProgram_Op_Custom_GCode;
-class CloutProgram_Op_ProbeOp;
-class CloutProgram_Op_Run_GCode_File;
-class CloutProgram_Op_OpenCollet;
-class CloutProgram_Op_CloseCollet;
-class CloutProgram_Op_HomeXY;
+class CloutScript_Op;
+class CloutScript_Op_ATC_Tool_Change;
+class CloutScript_Op_InstallTouchProbe;
+class CloutScript_Op_RapidTo;
+class CloutScript_Op_Custom_GCode;
+class CloutScript_Op_ProbeOp;
+class CloutScript_Op_Run_GCode_File;
+class CloutScript_Op_OpenCollet;
+class CloutScript_Op_CloseCollet;
+class CloutScript_Op_HomeXY;
 
-using CloutProgram_Op_Datatypes = std::variant<CloutProgram_Op, CloutProgram_Op_ATC_Tool_Change, CloutProgram_Op_InstallTouchProbe, CloutProgram_Op_RapidTo, CloutProgram_Op_Custom_GCode, CloutProgram_Op_ProbeOp, CloutProgram_Op_Run_GCode_File, CloutProgram_Op_OpenCollet, CloutProgram_Op_CloseCollet, CloutProgram_Op_HomeXY>;
+using CloutScript_Op_Datatypes = std::variant<CloutScript_Op, CloutScript_Op_ATC_Tool_Change, CloutScript_Op_InstallTouchProbe, CloutScript_Op_RapidTo, CloutScript_Op_Custom_GCode, CloutScript_Op_ProbeOp, CloutScript_Op_Run_GCode_File, CloutScript_Op_OpenCollet, CloutScript_Op_CloseCollet, CloutScript_Op_HomeXY>;
 
 
 
 #define STATE_OP_COMPLETE	9999	//Each op will set to this state when it's complete and ready to move on
 
-class CloutProgram_Op
+class CloutScript_Op
 {
 public:
-	CloutProgram_Op() { iType = CLOUT_OP_NULL; iState=0; bEditorExpanded = false; FullText.clear(); bKeepItem = true; };
+	CloutScript_Op() { iType = CLOUT_OP_NULL; iState=0; bEditorExpanded = false; FullText.clear(); bKeepItem = true; };
 
 	int iType; //What type of operation is this?
 
@@ -80,10 +80,10 @@ public:
 
 
 //ATC Tool Change
-class CloutProgram_Op_ATC_Tool_Change : public CloutProgram_Op
+class CloutScript_Op_ATC_Tool_Change : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_ATC_Tool_Change();
+	CloutScript_Op_ATC_Tool_Change();
 
 	void GenerateFullTitle();
 
@@ -99,10 +99,10 @@ public:
 
 
 //Install touch probe
-class CloutProgram_Op_InstallTouchProbe : public CloutProgram_Op
+class CloutScript_Op_InstallTouchProbe : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_InstallTouchProbe();
+	CloutScript_Op_InstallTouchProbe();
 
 	bool bConfirmFunction;	//True if we wish to confirm that the touch probe is working before moving on
 
@@ -118,10 +118,10 @@ public:
 
 
 //Rapid To
-class CloutProgram_Op_RapidTo : public CloutProgram_Op
+class CloutScript_Op_RapidTo : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_RapidTo();
+	CloutScript_Op_RapidTo();
 
 	void GenerateFullTitle();
 
@@ -143,10 +143,10 @@ public:
 };
 
 //Custom G Code
-class CloutProgram_Op_Custom_GCode : public CloutProgram_Op
+class CloutScript_Op_Custom_GCode : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_Custom_GCode();
+	CloutScript_Op_Custom_GCode();
 
 	std::string strGCode;
 	std::string strTransmitted; //This includes the sync stuff at the end
@@ -160,10 +160,10 @@ public:
 };
 
 //Probe Operation
-class CloutProgram_Op_ProbeOp : public CloutProgram_Op
+class CloutScript_Op_ProbeOp : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_ProbeOp();
+	CloutScript_Op_ProbeOp();
 
 	std::shared_ptr<ProbeOperation> ProbeOp;	//Pointer to this probing op object
 
@@ -178,11 +178,11 @@ public:
 };
 
 //Run a gcode file
-class CloutProgram_Op_Run_GCode_File : public CloutProgram_Op
+class CloutScript_Op_Run_GCode_File : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_Run_GCode_File();
-	~CloutProgram_Op_Run_GCode_File() {};
+	CloutScript_Op_Run_GCode_File();
+	~CloutScript_Op_Run_GCode_File() {};
 
 	std::string sFilename;
 	
@@ -202,11 +202,11 @@ public:
 };
 
 //Open Collet
-class CloutProgram_Op_OpenCollet : public CloutProgram_Op
+class CloutScript_Op_OpenCollet : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_OpenCollet();
-	~CloutProgram_Op_OpenCollet() {};
+	CloutScript_Op_OpenCollet();
+	~CloutScript_Op_OpenCollet() {};
 
 	bool bConfirmWithOperator;	//True if we want to ask the operator if he's ready, so we don't drop something important
 
@@ -219,11 +219,11 @@ public:
 };
 
 //Close Collet
-class CloutProgram_Op_CloseCollet : public CloutProgram_Op
+class CloutScript_Op_CloseCollet : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_CloseCollet();
-	~CloutProgram_Op_CloseCollet() {};
+	CloutScript_Op_CloseCollet();
+	~CloutScript_Op_CloseCollet() {};
 
 	bool bConfirmWithOperator;	//True if we want to ask the operator if he's ready
 
@@ -236,11 +236,11 @@ public:
 };
 
 //Home XY
-class CloutProgram_Op_HomeXY : public CloutProgram_Op
+class CloutScript_Op_HomeXY : public CloutScript_Op
 {
 public:
-	CloutProgram_Op_HomeXY();
-	~CloutProgram_Op_HomeXY() {};
+	CloutScript_Op_HomeXY();
+	~CloutScript_Op_HomeXY() {};
 
 	bool bRemoveOffsets;	//True if we want to remove all WCS offsets and set 0,0 back to bottom left corner
 
@@ -262,18 +262,18 @@ public:
 
 
 
-class CloutProgram
+class CloutScript
 {
 public:
-	CloutProgram();
-	CloutProgram(const char* szFilename) { CloutProgram(); LoadFromFile(szFilename); };
-	~CloutProgram(){};
+	CloutScript();
+	CloutScript(const char* szFilename) { CloutScript(); LoadFromFile(szFilename); };
+	~CloutScript(){};
 
 	void LoadFromFile(const char *szFilename);
 	void SaveToFile(const char* szFilename);
 	
-	void AddOperation(std::shared_ptr<CloutProgram_Op> NewOp); //Add a new operation to the program
-	void AddOperation(CloutProgram_Op_Datatypes NewOp); //Add a new operation to the program
+	void AddOperation(std::shared_ptr<CloutScript_Op> NewOp); //Add a new operation to the program
+	void AddOperation(CloutScript_Op_Datatypes NewOp); //Add a new operation to the program
 	void AddNewOperation(int iType); //Create a new operation of the given type and add it to the program
 
 	void DeleteOperation(int iIndex); //Delete an operation from the program
@@ -282,8 +282,8 @@ public:
 
 	void Erase();	//Erase the current program
 
-	std::vector <CloutProgram_Op_Datatypes> Ops;
-	CloutProgram_Op& GetOp(int idx){  return OpBaseClass(Ops[idx]); };	//Get a reference to the base class of Op[idx]
+	std::vector <CloutScript_Op_Datatypes> Ops;
+	CloutScript_Op& GetOp(int idx){  return OpBaseClass(Ops[idx]); };	//Get a reference to the base class of Op[idx]
 
 
 	json jData; //JSON Data
@@ -292,9 +292,9 @@ public:
 
 
 //JSON import/export handlers
-//void to_json(json& j, const CloutProgram_Op Op);
-//void from_json(const json& j, CloutProgram_Op& Op);
-void to_json(json& j, CloutProgram_Op_Datatypes& refOp);
-void from_json(const json& j, CloutProgram_Op_Datatypes& refOp);
-void to_json(json& j, const CloutProgram& C);
-void from_json(const json& j, CloutProgram& Prog);
+//void to_json(json& j, const CloutScript_Op Op);
+//void from_json(const json& j, CloutScript_Op& Op);
+void to_json(json& j, CloutScript_Op_Datatypes& refOp);
+void from_json(const json& j, CloutScript_Op_Datatypes& refOp);
+void to_json(json& j, const CloutScript& C);
+void from_json(const json& j, CloutScript& Prog);
